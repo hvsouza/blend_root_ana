@@ -351,7 +351,7 @@ public:
             } 
           } 
 //           cout << headers << endl;
-          if(headers_npoints!=memorydepth){
+          if(headers_npoints!=memorydepth && headers_npoints!=memorydepth-1){
             cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n correct the memorydepth!!! " << endl;
             cout << "current: " << memorydepth << endl;
             cout << "set to: " << headers_npoints << endl; 
@@ -447,6 +447,7 @@ public:
         
       }
       if(fin[0].eof()){
+        numberoflines--;
         break;
       }
       if(eventFile<maxEvents){t1->Fill();tEvent+=1;}
