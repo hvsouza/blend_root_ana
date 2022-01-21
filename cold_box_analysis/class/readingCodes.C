@@ -355,7 +355,7 @@ public:
             cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n correct the memorydepth!!! " << endl;
             cout << "current: " << memorydepth << endl;
             cout << "set to: " << headers_npoints << endl; 
-            return 1;
+            return;
           }
 //           else{
 //               cout << "@@@@@ \n\n ALLLL GOOOOOD!!!" << endl;
