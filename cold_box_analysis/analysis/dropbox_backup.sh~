@@ -1,0 +1,13 @@
+#!/bin/bash
+
+file1=20201016_all_elj_data
+file2=20201020_all_elj_data_better_purity
+file3=20201021_all_elj_data_220uF_gamma
+file4=20201123_elj_alpha_lar
+file5=20201123_elj_muon_lar
+file6=20201124_elj_alpha_rerun
+file7=202012*
+file8=2021*
+
+rsync -av$1 --progress --exclude=*.txt --exclude=*ADC.root --exclude=analyzed.root --exclude=sphe_waveforms_Ch*.root --exclude=sphe_histograms_darkCount_Ch* --exclude=*.so --exclude=*.d --exclude=*.pcm {$file1,$file2,$file3,$file4,$file5,$file6,$file7,$file8} "/home/lableptons/Dropbox/Unicamp/Doutorado/Root/Programs/italy/ADC_LAr_tests/analysis/"
+
