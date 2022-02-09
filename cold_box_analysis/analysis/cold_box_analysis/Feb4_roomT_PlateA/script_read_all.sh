@@ -14,7 +14,7 @@ for x in $(eval "ls -d */ | grep 000 | sed 's:/$::'"); do
   if [ $variables -eq 2502 ]; then
     eval "root -l -b -q ../adc_read_all_data_2502.C"
   else
-    eval "root -l -b -q ../adc_read_all_data_1252.C"
+    eval "root -l -b -q ../adc_read_all_data_10002.C"
   fi
   cd "../"
 done 

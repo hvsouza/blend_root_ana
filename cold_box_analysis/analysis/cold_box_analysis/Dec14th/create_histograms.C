@@ -4,8 +4,8 @@
 void create_histograms(){
   vector<Double_t> volts = {10,12.5,15,17.5,20,22,25,27.5,30,5,7.5};
   Int_t n = volts.size();
-  vector<string> filesC2 = {"C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl10V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl12p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl15V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl17p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl20V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl22p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl25V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl27p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl30V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl7p5V00000"};
-//   vector<string> filesC2 = {"C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl10V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl12p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl15V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl17p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl20V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl22p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl25V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl27p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl30V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl7p5V00000"};
+//   vector<string> filesC2 = {"C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl10V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl12p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl15V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl17p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl20V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl22p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl25V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl27p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl30V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl7p5V00000"};
+  vector<string> filesC2 = {"C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl10V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl12p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl15V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl17p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl20V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl22p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl25V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl27p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl30V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl7p5V00000"};
 
   string conc = "/analyzed.root";
 
@@ -21,7 +21,7 @@ void create_histograms(){
   Double_t charge = 0;
   c1->Divide(4,3,0,0);
   c1->Update();
-  
+
   for(Int_t i = 0; i<n; i++){
     filesC2[i] = filesC2[i]+conc;
     f[i] = new TFile(filesC2[i].c_str(),"READ");
@@ -57,9 +57,10 @@ void create_histograms(){
   vector<Double_t> ErSTD(n);
   for(Int_t i = 0; i<n; i++){
     avgs[i] = fga[i]->GetParameter(1);
-    Eravgs[i] = fga[i]->GetParError(1);
     ErSTD[i] = fga[i]->GetParameter(2);
-    sigma_mu[i] = ErSTD[i]/avgs[i];
+    Eravgs[i] = sqrt(pow(fga[i]->GetParError(1),2)+pow(ErSTD[i],2)/h[i]->GetEntries());
+
+    sigma_mu[i] = 100*ErSTD[i]/avgs[i];
     Ersigma_mu[i] = sigma_mu[i]*sqrt(pow(fga[i]->GetParError(2)/ErSTD[i],2)+pow(fga[i]->GetParError(1)/avgs[i],2));
   }
   gStyle->SetPadTickX(1);
@@ -67,24 +68,24 @@ void create_histograms(){
   TCanvas *c2 = new TCanvas();
 
   TGraphErrors *gmeans = new TGraphErrors(n,&volts[0],&avgs[0],0,&Eravgs[0]);
-  TGraphErrors *gSTDs = new TGraphErrors(n,&volts[0],&avgs[0],0,&ErSTD[0]);
-  gSTDs->GetXaxis()->SetTitle("LED Voltage (V)");
-  gSTDs->GetYaxis()->SetTitle("Average charge (V*ns)");
+//   TGraphErrors *gSTDs = new TGraphErrors(n,&volts[0],&avgs[0],0,&ErSTD[0]);
+  gmeans->GetXaxis()->SetTitle("LED Voltage (V)");
+  gmeans->GetYaxis()->SetTitle("Average charge (V*ns)");
   gmeans->SetMarkerStyle(21);
   gmeans->SetMarkerSize(0.5);
-  gSTDs->SetMarkerSize(0);
+//   gSTDs->SetMarkerSize(0);
 //   gSTDs->SetLineWidth(2);
-  gSTDs->Draw("AP []");
-  gmeans->Draw("SAME P");
+//   gSTDs->Draw("AP []");
+  gmeans->Draw("AP");
   gmeans->Fit("pol1");
   
   TCanvas *c3 = new TCanvas();
 
-  TGraphErrors *gstdmu = new TGraphErrors(n,&volts[0],&sigma_mu[0],0,&Ersigma_mu[0]);
-  TF1 *myfunc = new TF1("myfunc","sqrt([0]*[0]+pow([1]/sqrt(x),2)+pow([2]/x,2))",0,35);
+  TGraphErrors *gstdmu = new TGraphErrors(n,&avgs[0],&sigma_mu[0],&Eravgs[0],&Ersigma_mu[0]);
+  TF1 *myfunc = new TF1("myfunc","sqrt([0]*[0]+[1]*[1]/x+pow([2]/x,2))",0,35);
   myfunc->SetParameters(1,2,3);
-  gstdmu->GetXaxis()->SetTitle("LED Voltage (V)");
-  gstdmu->GetYaxis()->SetTitle("#sigma/#mu");
+  gstdmu->GetXaxis()->SetTitle("#mu (nV.s)");
+  gstdmu->GetYaxis()->SetTitle("#sigma/#mu (%)");
   gstdmu->SetMarkerStyle(21);
   gstdmu->SetMarkerSize(0.5);
   gstdmu->Draw("AP");
