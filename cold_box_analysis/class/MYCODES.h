@@ -43,7 +43,7 @@ using namespace std;
 
 #include "variables.C"
 #include "SignalProcessing.C"
-
+#include "timeReader.C"
 #include "readingCodes.C"
 // #include "readingCodes_gamma.C"
 #include "calibrationCodes.C"

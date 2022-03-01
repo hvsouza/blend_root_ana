@@ -190,6 +190,12 @@ public:
   vector<Int_t> navg;
   vector<vector<Double_t>> avg;
   vector<Double_t> time;
+
+
+
+  string format_time = "hh:mm:ss";
+  string format_date = "dd-mmm-yyyy";
+  
   void adc_read_all_data(){
     
     readFiles("files.txt"); //use it like this
@@ -271,6 +277,7 @@ public:
     Double_t tEvent = 0;
     vector<ADC_DATA> ch(channels.size());
     vector<TBranch*> bch(channels.size());
+
     
     Bool_t first_file = true;
     avg.resize(channels.size());
@@ -294,6 +301,7 @@ public:
         filesdata >> temp;
         file_ch[i] = temp;
       }
+      // cout << "C1 = " << file_ch[0] << " C2 = " << file_ch[1] << endl;
       if(filesdata.bad() || filesdata.fail()){
         break;
       }
@@ -366,6 +374,10 @@ public:
     
   }
   
+
+
+
+
   
   // This function will read your data and create a root file with the same name
   void readData(vector<string> file_ch,string rootfile, Double_t &tEvent){
@@ -377,7 +389,7 @@ public:
     vector<ADC_DATA> ch(channels.size());
     vector<TBranch*> bch(channels.size());
     vector<string> filename_ch(channels.size());
-    
+    TimeREADER myTimer;
     
     DENOISE dn;
     
@@ -420,106 +432,136 @@ public:
     Int_t headers_npoints = 0;
     Int_t headers_nwvfs = 0;
     Bool_t withTimestamp=true;
-    if(isBinary==false){
-      for(Int_t i = 0; i<channels.size(); i++){
-          getline(fin[i],headers);
-          fin[i] >> headers >> headers_nwvfs >> headers >> headers_npoints;
-          getline(fin[i],headers);
-          getline(fin[i],headers);
-          if(withTimestamp){
-            getline(fin[i],headers);
-            for(Int_t ln=0;ln<headers_nwvfs;ln++){
-              getline(fin[i],headers);
-            } 
+
+    string date, time;
+    Double_t stamp;
+    vector<Double_t> event_time;
+    Double_t starting_time = 0;
+    Int_t aux_time = 0;
+    for(Int_t i = 0; i<channels.size(); i++){
+      if(isBinary==false){
+        
+        // LECROYWR104MXi-A/� 49455 Waveform
+        // Segments 2000 SegmentSize 2502
+        // Segment TrigTime TimeSinceSegment1
+        // #1 01-Jan-2002 00:32:41 0                 
+        // #2 01-Jan-2002 00:32:41 0.0001    
+        
+        getline(fin[i],headers);
+        // cout << headers << endl;
+        fin[i] >> headers >> headers_nwvfs >> headers >> headers_npoints;
+        // cout << headers << endl;
+        getline(fin[i],headers); // taking extra \r
+        getline(fin[i],headers);
+
+        if(headers_npoints!=memorydepth && headers_npoints!=memorydepth-1){
+          cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n correct the memorydepth!!! " << endl;
+          cout << "current: " << memorydepth << endl;
+          cout << "set to: " << headers_npoints << endl; 
+          return;
+        }
+        //           else{
+        //               cout << "@@@@@ \n\n ALLLL GOOOOOD!!!" << endl;
+        //               return 1;
+        //           }
+        //             cout << headers << endl;
+        //         }
+        if(withTimestamp){
+          //getline(fin[i],headers);
+          for(Int_t ln=0;ln<headers_nwvfs;ln++){
+            fin[i] >> headers >> date >> time >> stamp;
+            // cout << ln <<  " " << headers_nwvfs << " " <<  headers << " " << date << " " <<  time << endl;
+            if(ln==0){
+              // cout << date << " " << time << endl;
+              starting_time = myTimer.timeRead(date,time,format_date,format_time);
+              event_time.push_back(starting_time);
+              // printf("Starting time = %1.f\n",starting_time);
+            }
+            else{
+              
+              starting_time+=stamp;
+              event_time.push_back(starting_time);
+            }
           } 
-//           cout << headers << endl;
-          if(headers_npoints!=memorydepth && headers_npoints!=memorydepth-1){
-            cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n correct the memorydepth!!! " << endl;
-            cout << "current: " << memorydepth << endl;
-            cout << "set to: " << headers_npoints << endl; 
-            return;
-          }
-//           else{
-//               cout << "@@@@@ \n\n ALLLL GOOOOOD!!!" << endl;
-//               return 1;
-//           }
-          //             cout << headers << endl;
-//         }
+        }
+        getline(fin[i],headers);
+        getline(fin[i],headers);
+        // cout << headers << endl;
       }
     }
+    
     while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
-      
+      Int_t n_reads = 0;
       for(Int_t i = 0; i<channels.size(); i++){
-        if(isBinary==false){
-          
-//           fin[i] >> headers >> headers >> headers >> timestamp;
-          
-//           getline(fin[i],headers);
-//           getline(fin[i],headers);
+        if(isBinary==false){ 
+
           
           for(int j = 0; j < memorydepth; j++)
-          {
-            fin[i] >> timestamp >> temp;
-//             cout << temp << endl;
-            if(fin[i].bad() || fin[i].fail()){
-              break;
+            {
+              fin[i] >> timestamp >> temp;
+              // cout << temp << endl;
+              if(fin[i].bad() || fin[i].fail()){
+                break;
+              }
+              n_reads++;
+              raw[j] = temp;
+              ch[i].wvf[j] = temp;
             }
-            raw[j] = temp;
-            ch[i].wvf[j] = temp;
-          }
-//           cout << "............................ \n";
-//           getline(fin[i],headers);
+          //           cout << "............................ \n";
+          //           getline(fin[i],headers);
         }
+        if((fin[i].bad() || fin[i].fail()) && n_reads<headers_npoints-5) break; // giving a 5 points relaxiation 
+ 
         
         else{
           for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text) 
             fin[i].read((char *) &headbin, nbytes);
-//             printf("%d\n",headbin);
+            //             printf("%d\n",headbin);
           }
           timestamp = headbin;
-          
-//           printf("%.0f\n",timestamp);
+
+          //           printf("%.0f\n",timestamp);
           for(int j = 0; j < memorydepth; j++)
-          {
-            fin[i].read((char *) &valbin, 2);
-//             if(j==0) printf("%d\n -- \n",valbin);
+            {
+              fin[i].read((char *) &valbin, 2);
+              //             if(j==0) printf("%d\n -- \n",valbin);
 
-            if(fin[i].bad() || fin[i].fail()){
-              break;
+              if(fin[i].bad() || fin[i].fail()){
+                break;
+              }
+              raw[j] = valbin;
             }
-            raw[j] = valbin;
-          }
         }
-                      
-          
-            
 
-          
-        if(i==0){
-            if(timestamp<0){
-              timestamp = timeCicle+timestamp;
-            }
-            if(timestamp<temptime){
-                deltastamp = timestamp+timeCicle-temptime;
-            }
-            else{
-                deltastamp = timestamp - temptime;
-            }
-            
-            temptime = timestamp;
-            
-            if(init_time!=0 && eventFile<maxEvents){
-                currentTime = currentTime+deltastamp*8*TMath::Power(10,-9);
-            }
-            else{
-                init_time = 1;
-            }
-            
-            ch[i].time = currentTime;
-        }
+
+        // if(i==0){
+        //   if(timestamp<0){
+        //     timestamp = timeCicle+timestamp;
+        //   }
+        //   if(timestamp<temptime){
+        //     deltastamp = timestamp+timeCicle-temptime;
+        //   }
+        //   else{
+        //     deltastamp = timestamp - temptime;
+        //   }
+
+        //   temptime = timestamp;
+
+        //   if(init_time!=0 && eventFile<maxEvents){
+        //     currentTime = currentTime+deltastamp*8*TMath::Power(10,-9);
+        //   }
+        //   else{
+        //     init_time = 1;
+        //   }
+        //   ch[i].time = currentTime;
+        // }
+
+        ch[i].time = event_time[aux_time];
+        // printf("time of event = %11f\n",event_time[aux_time]);
+        aux_time++;
         if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
         bl = baseline(ch[i].wvf,ch[i].selection);
-        
+      
         getvalues(i,ch[i],bl);
         ch[i].event = tEvent;
         
@@ -528,10 +570,10 @@ public:
         
         
       }
-      if(fin[0].eof()){
-        numberoflines--;
-        break;
-      }
+      // if(fin[0].eof()){
+        // numberoflines--;
+        // break;
+      // }
       if(eventFile<maxEvents){t1->Fill();tEvent+=1;}
       if(OnlyOneEvent == true && eventFile==stopEvent-1){
         closeMyWhile=true;
@@ -544,7 +586,7 @@ public:
     f1->WriteObject(t1,"t1","TObject::kOverwrite");
     
     f1->Close();
-    
+  
   }
   
   
