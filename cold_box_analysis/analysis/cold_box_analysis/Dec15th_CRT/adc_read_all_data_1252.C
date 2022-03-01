@@ -4,11 +4,11 @@
 
 void adc_read_all_data_1252(){
     
-    system("rm files.txt");
-    system("ls -1 *.txt| sed -e 's/.txt$//' > files.txt");
+    // system("rm files.txt");
+    // system("ls -1 *.txt| sed -e 's/.txt$//' > files.txt");
     
     Read r;
-        
+
     r.dtime = 4;
     r.nbits = 14;
     r.isBinary = false;
@@ -25,7 +25,7 @@ void adc_read_all_data_1252(){
     r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely 
     r.stopEvent = 2;
       
-    r.channels = {1};
+    r.channels = {1,2};
     
     
     r.adc_read_all_data();
