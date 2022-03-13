@@ -632,7 +632,7 @@ Int_t channel = 1;
 
 TH1D *hbase = new TH1D("hbase","histogram for baseline",5*800,-400,400);
 TH1D *hbase_smooth = new TH1D("hbase_smooth","histogram for baseline smoothed",5*800,-400,400);
-TH1D *hcharge = new TH1D("hcharge","",1000,-5,5);
+TH1D *hcharge = new TH1D("hcharge","",100000,-5,5);
 TH1D *hzero = new TH1D("hzero","",120000,-200000,2*1300000);
 TH1D *hnobase = new TH1D("hnobase","",120000,-200000,2*1300000);
 
@@ -808,7 +808,7 @@ void giveMeSphe_darkCount(string name){
   }
   else{
     makeSimpleHistogram(name);
-    get_wave_form = false;
+    // get_wave_form = false;
   }
   if(get_wave_form==false){
     fwvf->Close();
@@ -1522,7 +1522,18 @@ Bool_t checkAreas(Double_t totalmany){ //return true if the points did not touch
 }
 
 void makeSimpleHistogram(string filename){
-  
+
+  if(channel==1){
+    sphe_charge = sphe_charge_ch0; // wave0
+    sphe_charge2 = sphe_charge2_ch0; // wave0
+    delta = sphe_charge2 - sphe_charge;
+    sphe_std = sphe_std_ch0;
+  }
+  if(creation){
+    twvf->Branch("charge",&wvfcharge,"charge/D");
+    twvf->Branch("wvf",&wvf,"wvf[5000]/D");
+    twvf->Branch("valid",&valid,"valid/O");
+  }
   cout << "reading: " << filename << endl;
   string rootfile = filename + ".root";
   
@@ -1533,17 +1544,73 @@ void makeSimpleHistogram(string filename){
   bch->SetAddress(&ch);
   Int_t nentries = t1->GetEntries();
   Double_t charge = 0;
+  Bool_t noise = false;
+  Int_t noise_hits = 0;
+  Double_t max = -1e12;
+  ofstream ftmp;
+  ftmp.open("valid_events.log",ios::out);
   for(Int_t i = 0; i<nentries; i++){
     bch->GetEvent(i);
+    noise = false;
+    max = -1e12;
     for(Int_t j = start/dtime; j<finish/dtime; j++){
       charge += dtime*ch.wvf[j];
+      if(ch.wvf[j]>=max){
+        max = ch.wvf[j];
+      }
+      if(ch.wvf[j]>too_big) noise=true;
+      if(ch.wvf[j]<lowerThreshold){
+        noise_hits++;
+        if(noise_hits>=maxHits){
+          noise = true;
+          break;
+        }
+      }
     }
-    hcharge->Fill(charge);
+    for(Int_t j = 0; j<600; j++){
+      if(ch.wvf[j]<lowerThreshold){
+        noise_hits++;
+        if(noise_hits>=maxHits){
+          noise = true;
+          break;
+        }
+      }
+    }
+    for(Int_t j = 750; j<memorydepth; j++){
+      if(ch.wvf[j]<lowerThreshold){
+        noise_hits++;
+        if(noise_hits>=maxHits){
+          noise = true;
+          break;
+        }
+      }
+    }
+
+    
+    
+    if(noise==false){
+      valid = false;
+      for(Int_t j = 500; j<memorydepth; j++){
+        wvf[j] = ch.wvf[j];
+      }
+      if(charge*dtime>=delta/1.2 && charge*dtime<=delta*1.4){
+
+        valid = true;
+      }
+      wvfcharge = charge*dtime;
+      twvf->Fill();
+      hcharge->Fill(charge*dtime);
+      ftmp << i << "\n";
+    }
     charge=0;
   }
+  ftmp.close();
   
     
-    
+    if(get_wave_form){
+//         fwvf->WriteObject(cwvf,Form("all valid waveforms of ch%i",channel),"TObject::kOverwrite");
+        // fwvf->WriteObject(gmean,Form("mean_ch%i",channel),"TObject::kOverwrite");
+    }
     fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),channel),"TObject::kOverwrite");
 
     f1->Close();

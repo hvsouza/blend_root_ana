@@ -198,7 +198,7 @@ public:
   
   void adc_read_all_data(){
     
-    readFiles("files.txt"); //use it like this
+    readFiles("files.log"); //use it like this
     //     readData("myfile", 100); //or like this
     return;
     
@@ -431,7 +431,7 @@ public:
     int nbytes = 4;
     Int_t headers_npoints = 0;
     Int_t headers_nwvfs = 0;
-    Bool_t withTimestamp=true;
+    Bool_t withTimestamp=false;
 
     string date, time;
     Double_t stamp;
@@ -452,7 +452,6 @@ public:
         fin[i] >> headers >> headers_nwvfs >> headers >> headers_npoints;
         // cout << headers << endl;
         getline(fin[i],headers); // taking extra \r
-        getline(fin[i],headers);
 
         if(headers_npoints!=memorydepth && headers_npoints!=memorydepth-1){
           cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n correct the memorydepth!!! " << endl;
@@ -466,40 +465,41 @@ public:
         //           }
         //             cout << headers << endl;
         //         }
+        event_time.resize(headers_nwvfs);
         if(withTimestamp){
-          //getline(fin[i],headers);
+          getline(fin[i],headers); // reads the header of time stamp
           for(Int_t ln=0;ln<headers_nwvfs;ln++){
             fin[i] >> headers >> date >> time >> stamp;
             // cout << ln <<  " " << headers_nwvfs << " " <<  headers << " " << date << " " <<  time << endl;
             if(ln==0){
               // cout << date << " " << time << endl;
               starting_time = myTimer.timeRead(date,time,format_date,format_time);
-              event_time.push_back(starting_time);
+              event_time[ln] = starting_time;
               // printf("Starting time = %1.f\n",starting_time);
             }
             else{
-              
               starting_time+=stamp;
-              event_time.push_back(starting_time);
+              event_time[ln] = starting_time;
             }
-          } 
+          }
+          getline(fin[i],headers); // reads the extra \r
         }
-        getline(fin[i],headers);
+         
         getline(fin[i],headers);
         // cout << headers << endl;
       }
     }
-    
+    Int_t n_reads = 0;    
     while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
-      Int_t n_reads = 0;
+
       for(Int_t i = 0; i<channels.size(); i++){
         if(isBinary==false){ 
 
           
           for(int j = 0; j < memorydepth; j++)
             {
-              fin[i] >> timestamp >> temp;
-              // cout << temp << endl;
+              if(withTimestamp) fin[i] >> timestamp >> temp;
+              else fin[i] >> temp;
               if(fin[i].bad() || fin[i].fail()){
                 break;
               }
@@ -510,8 +510,6 @@ public:
           //           cout << "............................ \n";
           //           getline(fin[i],headers);
         }
-        if((fin[i].bad() || fin[i].fail()) && n_reads<headers_npoints-5) break; // giving a 5 points relaxiation 
- 
         
         else{
           for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text) 
@@ -533,7 +531,10 @@ public:
             }
         }
 
-
+        if((fin[i].bad() || fin[i].fail()) && n_reads<headers_npoints-5){
+          cout << "problems ??" << endl;
+          break; // giving a 5 points relaxiation 
+        }
         // if(i==0){
         //   if(timestamp<0){
         //     timestamp = timeCicle+timestamp;

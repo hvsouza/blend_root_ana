@@ -28,20 +28,20 @@ void create_histograms(){
     t1[i] = (TTree*)f[i]->Get("t1");
     bch[i] = t1[i]->GetBranch("Ch1");
     bch[i]->SetAddress(&ch[i]);
-    // h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200,-2,3);
-    h[i] = new TH1D(Form("h%d",i),Form("h%d",i),20000,-1,1);
+    h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200,-2,3);
+    // h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200,-0.01,0.01);
     
     for(Int_t j = 0; j<t1[i]->GetEntries(); j++){
       bch[i]->GetEvent(j);
       charge = 0;
-      for(Int_t k = 0/4; k<1000/4; k++){
-       charge = ch[i].wvf[k];
-       h[i]->Fill(charge);
-      }
-      // for(Int_t k = 1730/4; k<2000/4.; k++){
-       // charge += ch[i].wvf[k];
+      // for(Int_t k = 0/4; k<1000/4; k++){
+      //  charge = ch[i].wvf[k];
+      //  h[i]->Fill(charge);
       // }
-      // h[i]->Fill(charge);
+      for(Int_t k = 1730/4; k<2000/4.; k++){
+       charge += ch[i].wvf[k];
+      }
+      h[i]->Fill(charge);
     }
     c1->cd(i+1);
     h[i]->Draw();
