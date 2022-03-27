@@ -177,7 +177,7 @@ public:
   Bool_t OnlyOneEvent = false; // Do you want only one event? Choose it wisely 
   Int_t stopEvent = 2000;
   
-  Int_t maxEvents = 10000;
+  Int_t maxEvents = 100000;
     
   Double_t baselineTime = 10000; // time limit to start looking for baseline
   Double_t chargeTime = 18000; // last time to integrate 
@@ -285,7 +285,9 @@ public:
     for(Int_t i = 0; i<channels.size(); i++){
       avg[i].resize(memorydepth,0);
     }
-  
+
+    if(isBinary) file_extension = ".dat";
+    else file_extension = ".txt";
     
     if(filesdata.good() && filesdata.is_open()){ // Ok
       cout << "Reading file " << files << " ... " << endl;
@@ -310,27 +312,6 @@ public:
       if(first_file){
         first_file = false;
         
-        // _________________ old version - I find that writing the names like this will be much easier now _____ //
-// //         string adc_ref = "ADC";
-// //         size_t found  = file_ch[0].find(adc_ref);
-// //         found = found+2; // here I have the position of "C" from ADC
-// //         char *nameFragment = new char[file_ch[0].length()+1]; // files will always be "2_wave0_47V50_40ADC_Ch0_something" 
-// //         // ..........................................................................0123456789012345678
-// //         // soo root file can be wave_47V50_40ADC that is location 2-18 excluding 6 (in waveX)
-// //         // BUT the threshould can be >99 ADCs... so files will be like              "2_wave0_47V50_200ADC_Ch0_something"
-// //         // ..........................................................................01234567890123456789
-// //         // Because of this, I changed the code to use the "find" function...
-// //         
-// //         
-// //         
-// //         strcpy(nameFragment,file_ch[0].c_str());
-// //         string name;
-// //         for(Int_t pts = 2; pts <=found; pts++){
-// //           if(pts!=6){
-// //             name = name + nameFragment[pts];
-// //           }
-// //           
-// //         }
         rootfile = "analyzed.root";
         
         string erase = "rm " + rootfile;
@@ -398,7 +379,7 @@ public:
     Int_t numberoflines=0;
     Double_t temp;
     vector<Double_t> raw(memorydepth);
-     
+    
     for(Int_t i = 0; i<channels.size(); i++){
       bch[i] = t1->GetBranch(Form("Ch%i",channels[i]));
       bch[i]->SetAddress(&ch[i]);
@@ -409,7 +390,7 @@ public:
     vector<ifstream> fin(channels.size());
     for(Int_t i = 0; i<channels.size(); i++){
       if(!isBinary) fin[i].open(filename_ch[i].c_str(),ios::in);
-      else          fin[i].open(filename_ch[i].c_str(),ios::out | ios::binary);
+      else          fin[i].open(filename_ch[i].c_str(),ios::in | ios::binary);
       // here i check if the data file is open (or exist), if not, I remove the .root files and close the program. 
       if(fin[i].good() && fin[i].is_open()){ // Ok
         cout << "Reading file " << filename_ch[i] << " ... " << endl;
@@ -438,15 +419,15 @@ public:
     vector<Double_t> event_time;
     Double_t starting_time = 0;
     Int_t aux_time = 0;
+    event_time.resize(memorydepth);
     for(Int_t i = 0; i<channels.size(); i++){
       if(isBinary==false){
-        
         // LECROYWR104MXi-A/� 49455 Waveform
         // Segments 2000 SegmentSize 2502
         // Segment TrigTime TimeSinceSegment1
         // #1 01-Jan-2002 00:32:41 0                 
         // #2 01-Jan-2002 00:32:41 0.0001    
-        
+        continue;
         getline(fin[i],headers);
         // cout << headers << endl;
         fin[i] >> headers >> headers_nwvfs >> headers >> headers_npoints;
@@ -465,7 +446,7 @@ public:
         //           }
         //             cout << headers << endl;
         //         }
-        event_time.resize(headers_nwvfs);
+        
         if(withTimestamp){
           getline(fin[i],headers); // reads the header of time stamp
           for(Int_t ln=0;ln<headers_nwvfs;ln++){
@@ -489,9 +470,9 @@ public:
         // cout << headers << endl;
       }
     }
-    Int_t n_reads = 0;    
     while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
-
+      Int_t n_reads = 0;    
+    
       for(Int_t i = 0; i<channels.size(); i++){
         if(isBinary==false){ 
 
@@ -501,6 +482,7 @@ public:
               if(withTimestamp) fin[i] >> timestamp >> temp;
               else fin[i] >> temp;
               if(fin[i].bad() || fin[i].fail()){
+                cout << "going ... ";
                 break;
               }
               n_reads++;
@@ -514,7 +496,7 @@ public:
         else{
           for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text) 
             fin[i].read((char *) &headbin, nbytes);
-            //             printf("%d\n",headbin);
+            // printf("%d\n",headbin);
           }
           timestamp = headbin;
 
@@ -527,12 +509,13 @@ public:
               if(fin[i].bad() || fin[i].fail()){
                 break;
               }
+              // cout << valbin << endl;
               raw[j] = valbin;
             }
         }
 
-        if((fin[i].bad() || fin[i].fail()) && n_reads<headers_npoints-5){
-          cout << "problems ??" << endl;
+        if((fin[i].bad() || fin[i].fail()) && n_reads<memorydepth-5){
+          // cout << "problems ??" << endl;
           break; // giving a 5 points relaxiation 
         }
         // if(i==0){
@@ -561,6 +544,11 @@ public:
         // printf("time of event = %11f\n",event_time[aux_time]);
         aux_time++;
         if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
+        else{
+          for(Int_t l = 0; l<memorydepth; l++){
+            ch[i].wvf[l] = raw[l];
+          }
+        }
         bl = baseline(ch[i].wvf,ch[i].selection);
       
         getvalues(i,ch[i],bl);
@@ -570,6 +558,10 @@ public:
         
         
         
+      }
+      if((fin[0].bad() || fin[0].fail()) && n_reads<memorydepth-5){
+        // cout << "problems ??" << endl;
+        break; // giving a 5 points relaxiation 
       }
       // if(fin[0].eof()){
         // numberoflines--;
@@ -582,7 +574,7 @@ public:
       eventFile++;
       
     }
-    cout << tEvent << " events in " << numberoflines << " lines" << endl;
+    cout << tEvent << " events in " << numberoflines << " lines " << endl;
     
     f1->WriteObject(t1,"t1","TObject::kOverwrite");
     
@@ -639,14 +631,15 @@ public:
         i++;
       }
     }
+    // return 0;
     result/=bins;
     if(bins > (baselineTime/dtime)/3.){
       selection = 0;
-      return 0;
+      return result;
     }
     else{
       selection = 1;
-      return 0;
+      return res0;
     }
   }
 };
