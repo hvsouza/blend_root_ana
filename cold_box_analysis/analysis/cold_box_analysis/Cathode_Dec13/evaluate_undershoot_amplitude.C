@@ -5,7 +5,7 @@
 class OUTPUT{
 public:
   Double_t charge;
-  Double_t undershoot;
+  Double_t slow;
     
   OUTPUT();
   const char *tobranch = Form("charge/D:slow/D");
@@ -13,7 +13,7 @@ public:
 
 OUTPUT::OUTPUT(){
   charge = 0;
-  undershoot = 0;
+  slow = 0;
   }
 
 
@@ -79,15 +79,13 @@ void evaluate_undershoot_amplitude(){
   // vector<Double_t> volts = {10,12.5,15,17.5,20,22,25,27.5,30,5,7.5};
   vector<Double_t> volts = {0,10};
   Int_t n = volts.size();
-  TFile *fout = new TFile("C1_output_charges.root","RECREATE");
+  TFile *fout = new TFile("C2_output_charges.root","RECREATE");
   TTree *tout = new TTree("t1","t1");
   vector<OUTPUT> out(n);
   vector<TBranch*> br(n);
   for (Int_t i = 0; i<n; i++) br[i] = tout->Branch(Form("E%.0f",volts[i]),&out[i],out[0].tobranch);
-  vector<string> filesC2 = {"C1XArapuca_Efield_0kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_10kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_5kV_A4ch2_250MHz_cosmic00000"};
-//   vector<string> filesC2 = {"C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl10V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl12p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl15V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl17p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl20V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl22p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl25V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl27p5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl30V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl5V00000","C1XArapuca_Efield_0kV_CRPon_A1ch1_250MHz_LEDwith20nsampl7p5V00000"};
-  // vector<string> filesC2 = {"C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl10V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl12p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl15V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl17p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl20V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl22p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl25V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl27p5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl30V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl5V00000","C2XArapuca_Efield_0kV_CRPon_A4ch2_250MHz_LEDwith20nsampl7p5V00000"};
-
+  // vector<string> filesC2 = {"C1XArapuca_Efield_0kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_10kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_5kV_A4ch2_250MHz_cosmic00000"};
+  vector<string> filesC2 = {"C2XArapuca_Efield_0kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_10kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_5kV_A1ch1_250MHz_cosmic00000"};
   string conc = "/analyzed.root";
 
   vector<TFile*> f(n);
@@ -161,6 +159,7 @@ void evaluate_undershoot_amplitude(){
       Int_t never_negative = true;
       Double_t newBase = getbaseline(ch[i].wvf);
       for(Int_t k = 800/4; k<2000/4.; k++){
+      // for(Int_t k = 840/4; k<3600/4.; k++){ \\ Ajib
 
 	charge += ch[i].wvf[k];
 	if(ch[i].wvf[k]<=undershoot && k>1100/4) undershoot = ch[i].wvf[k];
@@ -203,7 +202,7 @@ void evaluate_undershoot_amplitude(){
         hcor[i]->Fill(charge*4);
         // filling normally here
         out[i].charge = charge*4;
-        out[i].undershoot = charge_undershoot*4;
+        out[i].slow = charge_undershoot*4;
         br[i]->Fill();
           
       }
@@ -267,12 +266,14 @@ void evaluate_undershoot_amplitude(){
     Double_t stddev = getstddev(vcharge_normal[i],time_rise_normal[i],fexpo[i]);
     // I am assuming the std is not fixed, but proportional to the amplitude of the charge. So:
     stddev = stddev/fexpo[i]->Eval(200);
+    Double_t refval = 0;
     for(Int_t j = 0; j<vcharge_sat[i].size(); j++){
-      vcharge_corrected[i].push_back(rd->Gaus(fexpo[i]->Eval(time_rise_sat[i][j]),stddev*fexpo[i]->Eval(time_rise_sat[i][j])));
+      refval = fexpo[i]->Eval(time_rise_sat[i][j]); 
+      vcharge_corrected[i].push_back(rd->Gaus(refval,stddev*refval));
       hcor[i]->Fill(vcharge_corrected[i][j]);
 
       out[i].charge = vcharge_corrected[i][j];
-      out[i].undershoot = vundercharge_sat[i][j];
+      out[i].slow = vundercharge_sat[i][j];
       br[i]->Fill();
     }
         
