@@ -321,7 +321,7 @@ void makeSphe(string histogram){
     
     hcharge->GetXaxis()->SetRangeUser(-5000,200000);
     hcharge->StatOverflows(kTRUE);
-    lastOne->SetRange(xmin,xmax);
+    lastOne->SetRange(-1000,xmax);
     
     
     for(Int_t i = 0; i<(2+n_peaks); i++){
@@ -632,7 +632,7 @@ Int_t channel = 1;
 
 TH1D *hbase = new TH1D("hbase","histogram for baseline",5*800,-400,400);
 TH1D *hbase_smooth = new TH1D("hbase_smooth","histogram for baseline smoothed",5*800,-400,400);
-TH1D *hcharge = new TH1D("hcharge","",100000,-5,5);
+TH1D *hcharge = new TH1D("hcharge","",100000,-50000,50000);
 TH1D *hzero = new TH1D("hzero","",120000,-200000,2*1300000);
 TH1D *hnobase = new TH1D("hnobase","",120000,-200000,2*1300000);
 
@@ -907,7 +907,7 @@ void integrateSignal(){
       totalmany = 0;
       
       
-      if((peakPosition[i]+timeHigh>=peakPosition[i+1] && i+1!=npeaks) || next_is_bad || peakPosition[i]<waitingInterval){
+      if((peakPosition[i]+2*timeHigh>=peakPosition[i+1] && i+1!=npeaks) || next_is_bad || peakPosition[i]<waitingInterval){
 
         selected_peaks.push_back(temp_peak.at(peakPosition[i]/dtime));
         selected_time.push_back(peakPosition[i]);
@@ -1106,7 +1106,8 @@ void searchForPeaks(){
     for(Int_t i = 0; i<n; i++){
       
       if(i>timeLow/dtime && i<(n-timeHigh/dtime) && (i>=start/dtime && i<=actual_finish/dtime)){ //searching out of the beginning
-        if(i>baselineTime/dtime && temp_peak[i]>300){
+        // if(i>baselineTime/dtime && temp_peak[i]>300){ // not sure why this was here
+        if(i>baselineTime/dtime){
             break;
         }
         if(peak_smooth[i]>(mean+tolerance*stddev) && peak_smooth[i-1]<(mean+tolerance*stddev) && (i<=gapstart || i>=gapend)){
