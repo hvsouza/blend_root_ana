@@ -1,58 +1,15 @@
 /* 
- To this values, do:
-analysistree->cd();anatree->GetMaximum("no_hits_stored");anatree->GetMaximum("ntracks_pandoraTrack")
- */
+   To this values, do:
+   analysistree->cd();anatree->GetMaximum("no_hits_stored");anatree->GetMaximum("ntracks_pandoraTrack")
+*/
 #define maxHits 1617
 #define maxTracks 10
 
-
-TFile *f;
-TDirectoryFile *fd;
-TTree *t1;
-
-
-TBranch *b_subrun;
-TBranch *b_event;
-TBranch *b_evttime;
-TBranch *b_isdata;
-TBranch *b_taulife;
-TBranch *b_triggernumber;
-TBranch *b_triggertime;
-TBranch *b_no_hits;
-TBranch *b_no_hits_stored;
-TBranch *b_hit_plane;
-TBranch *b_hit_wire;
-TBranch *b_hit_channel;
-TBranch *b_hit_peakT;
-TBranch *b_hit_tpc;
-TBranch *b_hit_charge;
-TBranch *b_hit_ph;
-TBranch *b_hit_goodnessOfFit;
-TBranch *b_hit_trkid ;
-
-TBranch *b_ntracks_pandoraTrack;
-TBranch *b_trkId_pandoraTrack;
-TBranch *b_trkdqdx_pandoraTrack;
-TBranch *b_ntrkhits_pandoraTrack;
-TBranch *b_trkstartx_pandoraTrack;
-TBranch *b_trkstarty_pandoraTrack;
-TBranch *b_trkstartz_pandoraTrack;
-TBranch *b_trkendx_pandoraTrack;
-TBranch *b_trkendy_pandoraTrack;
-TBranch *b_trkendz_pandoraTrack;
-TBranch *b_trktheta_pandoraTrack;
-TBranch *b_trkphi_pandoraTrack;
-
-// Double_t xlenght = 337.5;
-// Double_t ylenght = 337.5;
-// Double_t zlenght = 337.5;
-
-vector<Double_t> wallx = {-170,0}; //in cm // folling Laura Z. standard
-vector<Double_t> wally = {0,300}; //in cm
-vector<Double_t> wallz = {-10,25}; //in cm
 class DATA{
 
 public:
+
+  string file_name = "ana_hist_something.root";
   Int_t subrun;
   Int_t event;
   Double_t evttime; //epoch time in seconds
@@ -77,6 +34,7 @@ public:
   Short_t trkId_pandoraTrack[maxTracks];
   Short_t ntrkhits_pandoraTrack[maxTracks][3];
   Float_t trkdqdx_pandoraTrack[maxTracks][3][2000];
+  Float_t trkxyz_pandoraTrack[maxTracks][3][2000][3];
   Float_t trkstartx_pandoraTrack[maxTracks];
   Float_t trkstarty_pandoraTrack[maxTracks];
   Float_t trkstartz_pandoraTrack[maxTracks];
@@ -87,89 +45,68 @@ public:
   Float_t trkphi_pandoraTrack[maxTracks];
 
 
-  Float_t *startz = trkstartx_pandoraTrack;
-  Float_t *startx = trkstarty_pandoraTrack;
-  Float_t *starty = trkstartz_pandoraTrack;
-  Float_t *endz = trkendx_pandoraTrack;
-  Float_t *endx = trkendy_pandoraTrack;
-  Float_t *endy = trkendz_pandoraTrack;
+  Float_t startz[maxTracks];
+  Float_t startx[maxTracks];
+  Float_t starty[maxTracks];
+  Float_t endz[maxTracks];
+  Float_t endx[maxTracks];
+  Float_t endy[maxTracks];
+
+  vector<vector<Bool_t>> selected_dqdx;
+  vector<vector<Bool_t>> selected_phi;
 
 
   vector<Color_t> planesColor = {kRed,kBlue,kMagenta+2};
   vector<string> planesName{"U Induction","Y Induction","Z Collection"};
+
+  vector<Double_t> wallx = {-170,0}; //in cm // folling Laura Z. standard
+  vector<Double_t> wally = {0,300}; //in cm
+  vector<Double_t> wallz = {-10,25}; //in cm
+  Double_t pi = TMath::Pi();
+
+  Double_t phi = 0;
+  Double_t theta = 0;
   
-  void read_tree(){
-    f = new TFile("ana_hist.root","READ");
-    fd = (TDirectoryFile*)f->Get("analysistree");
-    fd->cd();
-    t1 = (TTree*)fd->Get("anatree");
+  TFile *f;
+  TDirectoryFile *fd;
+  TTree *t1;
 
 
+  TBranch *b_subrun;
+  TBranch *b_event;
+  TBranch *b_evttime;
+  TBranch *b_isdata;
+  TBranch *b_taulife;
+  TBranch *b_triggernumber;
+  TBranch *b_triggertime;
+  TBranch *b_no_hits;
+  TBranch *b_no_hits_stored;
+  TBranch *b_hit_plane;
+  TBranch *b_hit_wire;
+  TBranch *b_hit_channel;
+  TBranch *b_hit_peakT;
+  TBranch *b_hit_tpc;
+  TBranch *b_hit_charge;
+  TBranch *b_hit_ph;
+  TBranch *b_hit_goodnessOfFit;
+  TBranch *b_hit_trkid ;
 
-    b_subrun = t1->GetBranch("subrun");
-    b_event = t1->GetBranch("event");
-    b_evttime = t1->GetBranch("evttime");
-    b_isdata = t1->GetBranch("isdata");
-    b_taulife = t1->GetBranch("taulife");
-    b_triggernumber = t1->GetBranch("triggernumber");
-    b_triggertime = t1->GetBranch("triggertime");
-    b_no_hits = t1->GetBranch("no_hits");
-    b_no_hits_stored = t1->GetBranch("no_hits_stored");
-    b_hit_plane = t1->GetBranch("hit_plane");
-    b_hit_wire = t1->GetBranch("hit_wire");
-    b_hit_channel = t1->GetBranch("hit_channel");
-    b_hit_peakT = t1->GetBranch("hit_peakT");
-    b_hit_tpc = t1->GetBranch("hit_tpc");
-    b_hit_charge = t1->GetBranch("hit_charge");
-    b_hit_ph = t1->GetBranch("hit_ph");
-    b_hit_goodnessOfFit = t1->GetBranch("hit_goodnessOfFit");
-    b_hit_trkid  = t1->GetBranch("hit_trkid");
+  TBranch *b_ntracks_pandoraTrack;
+  TBranch *b_trkId_pandoraTrack;
+  TBranch *b_trkdqdx_pandoraTrack;
+  TBranch *b_ntrkhits_pandoraTrack;
+  TBranch *b_trkxyz_pandoraTrack;
+  TBranch *b_trkstartx_pandoraTrack;
+  TBranch *b_trkstarty_pandoraTrack;
+  TBranch *b_trkstartz_pandoraTrack;
+  TBranch *b_trkendx_pandoraTrack;
+  TBranch *b_trkendy_pandoraTrack;
+  TBranch *b_trkendz_pandoraTrack;
+  TBranch *b_trktheta_pandoraTrack;
+  TBranch *b_trkphi_pandoraTrack;
 
-    b_ntracks_pandoraTrack = t1->GetBranch("ntracks_pandoraTrack");
-    b_trkId_pandoraTrack = t1->GetBranch("trkId_pandoraTrack");
-    b_ntrkhits_pandoraTrack = t1->GetBranch("ntrkhits_pandoraTrack");
-    b_trkdqdx_pandoraTrack = t1->GetBranch("trkdqdx_pandoraTrack");
-    b_trkstartx_pandoraTrack = t1->GetBranch("trkstartx_pandoraTrack");
-    b_trkstarty_pandoraTrack = t1->GetBranch("trkstarty_pandoraTrack");
-    b_trkstartz_pandoraTrack = t1->GetBranch("trkstartz_pandoraTrack");
-    b_trkendx_pandoraTrack = t1->GetBranch("trkendx_pandoraTrack");
-    b_trkendy_pandoraTrack = t1->GetBranch("trkendy_pandoraTrack");
-    b_trkendz_pandoraTrack = t1->GetBranch("trkendz_pandoraTrack");
-    b_trktheta_pandoraTrack = t1->GetBranch("trktheta_pandoraTrack");
-    b_trkphi_pandoraTrack = t1->GetBranch("trkphi_pandoraTrack");
-
-    b_subrun->SetAddress(&subrun);
-    b_event->SetAddress(&event);
-    b_evttime->SetAddress(&evttime);
-    b_isdata->SetAddress(&isdata);
-    b_taulife->SetAddress(&taulife);
-    b_triggernumber->SetAddress(&triggernumber);
-    b_triggertime->SetAddress(&triggertime);
-    b_no_hits->SetAddress(&no_hits);
-    b_no_hits_stored->SetAddress(&no_hits_stored);
-    b_hit_wire->SetAddress(&hit_wire);
-    b_hit_channel->SetAddress(&hit_channel);
-    b_hit_peakT->SetAddress(&hit_peakT);
-    b_hit_plane->SetAddress(&hit_plane);
-    b_hit_tpc->SetAddress(&hit_tpc);
-    b_hit_charge->SetAddress(&hit_charge);
-    b_hit_ph->SetAddress(&hit_ph);
-    b_hit_goodnessOfFit->SetAddress(&hit_goodnessOfFit);
-    b_hit_trkid->SetAddress(&hit_trkid);
-
-    b_ntracks_pandoraTrack->SetAddress(&ntracks_pandoraTrack);
-    b_trkId_pandoraTrack->SetAddress(&trkId_pandoraTrack);
-    b_ntrkhits_pandoraTrack->SetAddress(&ntrkhits_pandoraTrack);
-    b_trkdqdx_pandoraTrack->SetAddress(&trkdqdx_pandoraTrack);
-    b_trkstartx_pandoraTrack->SetAddress(&trkstartx_pandoraTrack);
-    b_trkstarty_pandoraTrack->SetAddress(&trkstarty_pandoraTrack);
-    b_trkstartz_pandoraTrack->SetAddress(&trkstartz_pandoraTrack);
-    b_trkendx_pandoraTrack->SetAddress(&trkendx_pandoraTrack);
-    b_trkendy_pandoraTrack->SetAddress(&trkendy_pandoraTrack);
-    b_trkendz_pandoraTrack->SetAddress(&trkendz_pandoraTrack);
-    b_trktheta_pandoraTrack->SetAddress(&trktheta_pandoraTrack);
-    b_trkphi_pandoraTrack->SetAddress(&trkphi_pandoraTrack);
-  }
+  DATA(string fname);
+  void read_tree();
 
 
   void plot_tracks(Int_t mevent=-99){
@@ -183,7 +120,7 @@ public:
     vector<Double_t> blankx = {wallx[0],wallx[1]};
     vector<Double_t> blanky = {wally[0],wally[1]};
     vector<Double_t> blankz = {wallz[0],wallz[1]};
-    TCanvas *ccb = new TCanvas("ccb","ccb",1920,0,1920,680);
+    TCanvas *ccb = new TCanvas("ccb","ccb",1920,0,1920,640);
     TGraph2D *gphantom = new TGraph2D(2,&blankx[0],&blanky[0],&blankz[0]);
     gphantom->SetNameTitle("TDE","TDE");
     gphantom->GetXaxis()->SetTitle("x");
@@ -191,6 +128,17 @@ public:
     gphantom->GetZaxis()->SetTitle("z");
     gphantom->Draw("P");
 
+    Int_t nbinsx = abs(blankx[1]-blankx[0])*10;
+    Int_t nbinsy = abs(blanky[1]-blanky[0])*10;
+
+    Double_t hmaxz = 50;
+    Double_t hminz = -550;
+    Int_t nbinsz = abs(hmaxz-hminz)*10;
+    
+    TH2D *hxy = new TH2D("hxy","hxy",nbinsx,blankx[0],blankx[1],nbinsy,blanky[0],blanky[1]);
+    TH2D *hxz = new TH2D("hxz","hxz",nbinsx,blankx[0],blankx[1],nbinsz,hminz,hmaxz);
+
+    
     vector<TPolyLine3D*> tracks;
     Int_t ntracks=0;
     for(Int_t l = 0; l<t1->GetEntries(); l++){
@@ -199,9 +147,13 @@ public:
       if(event==mevent || not_selecting_event){
 
         for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
+          getCoordinates(itr);
           Float_t tracklength = startz[itr] - endz[itr];//the values are negative, so watchout.
-          endz[itr] = 23 - abs(tracklength); 
-          startz[itr] = 23;// assuming always enter on the top
+          // if(abs(tracklength)>23){
+          //   cout << "track length = " << abs(tracklength) << " = " << startz[itr] << " - " << endz[itr] << " event " << event << " track " << itr << endl; 
+          // }
+          // endz[itr] = 23 - abs(tracklength); 
+          // startz[itr] = 23;// assuming always enter on the top
 
                   
           tracks.push_back(new TPolyLine3D(2));
@@ -209,14 +161,35 @@ public:
           tracks[ntracks]->SetPoint(1,endx[itr], endy[itr], endz[itr]);
           // cout << hit_tpc[i] << endl;
           tracks[ntracks]->SetLineWidth(linewidth);
-
-          // if(selection_dqdx(itr)){
-            tracks[ntracks]->SetLineColor(kBlue);      
+          
+          // if(selected_phi[l][itr]){
+            tracks[ntracks]->SetLineColor(kBlue);
+            Bool_t checker = false;
+            for(Int_t j2 = 0; j2<3; j2++){
+              for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
+                if(itr==8 && event == 32){
+                  cout << event << " " << itr << " " << j2 << " " << k2 << " " << endz[itr] << " " << startz[itr] << " " << trkxyz_pandoraTrack[itr][j2][k2][0] << endl;
+                  if(trkxyz_pandoraTrack[itr][j2][k2][0]==endz[itr] && checker==false){
+                    // cout << event << " " << j2 << " " << k2 << " " << endz[itr] << " " << startz[itr] << " " << trkxyz_pandoraTrack[itr][j2][k2][0] << endl;
+                    // cout << "........................... found... " << endl;
+                    checker = true;
+                  }
+                }
+                hxy->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],trkxyz_pandoraTrack[itr][j2][k2][2]);
+                hxz->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],trkxyz_pandoraTrack[itr][j2][k2][0]);
+              }
+            }
+            if(checker==false){
+              cout << event << " " << itr << " " << endz[itr] << " " << startz[itr] << endl;
+              cout << "Somethings is wrong!!! \n\n" << endl;
+              // return;
+            }
           // }
           // else{
             // tracks[ntracks]->SetLineColor(kRed);      
           // }
           ntracks++;
+          
           
         }
 
@@ -230,13 +203,25 @@ public:
       // tracks[k]->Print();
     }
 
+    TCanvas *cxy = new TCanvas("cxy","cxy",1920,702,960,334);
+    cxy->cd();
+    hxy->GetXaxis()->SetTitle("x");
+    hxy->GetYaxis()->SetTitle("y");
+    hxy->Draw("colz");
+
+    TCanvas *cxz = new TCanvas("cxz","cxz",2880,702,960,334);
+    cxz->cd();
+    hxz->GetXaxis()->SetTitle("x");
+    hxz->GetYaxis()->SetTitle("z");
+    hxz->Draw("colz");
+       
 
     return;
 
 
   }
 
-void printInfo(string name, Float_t variable){
+  void printInfo(string name, Float_t variable){
     cout << name << ": " << variable << " ";
   }
   void test_some_events(Int_t mevent=-99, Int_t mtpc = -99, Int_t mplane = -99){
@@ -318,13 +303,15 @@ void printInfo(string name, Float_t variable){
         // for(Int_t i = 0; i<1; i++){
 
         Double_t trackTotaldqdx = 0;
+        vector<Double_t> total_dqdx = {0,0,0};
         for(Int_t j2 = 0; j2<3; j2++){          
           for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[i2][j2]; k2++){
-
+            total_dqdx[j2]+=trkdqdx_pandoraTrack[i2][j2][k2];
             ht[j2]->Fill(trkdqdx_pandoraTrack[i2][j2][k2]);
-            cout << trkId_pandoraTrack[i2] << " " << j2 << " " << k2 << " " << trkdqdx_pandoraTrack[i2][j2][k2] << " " << ntrkhits_pandoraTrack[i2][j2] << endl;
-              // trackTotaldqdx += trkdqdx_pandoraTrack[i2][j2][k2];
+            // cout << trkId_pandoraTrack[i2] << " " << j2 << " " << k2 << " " << trkdqdx_pandoraTrack[i2][j2][k2] << " " << ntrkhits_pandoraTrack[i2][j2] << endl;
+            // trackTotaldqdx += trkdqdx_pandoraTrack[i2][j2][k2];
           }
+          // ht[j2]->Fill(total_dqdx[j2]/ntrkhits_pandoraTrack[i2][j2]);
         }
 
       }
@@ -362,20 +349,77 @@ void printInfo(string name, Float_t variable){
   }
 
 
-  // Bool_t selection_dqdx(Int_t i2){
-  //   vector<Double_t> planes_threshold= {200,300,300};
-  //   for(Int_t j2 = 0; j2<3; j2++){
-  //     for(Int_t k2 = 0; k2<2000; k2++){
-  //       if(trkdqdx_pandoraTrack[i2][j2][k2]!=0){
-  //         // trkdqdx_pandoraTrack[i2][j2][k2];
-  //         // trackTotaldqdx += trkdqdx_pandoraTrack[i2][j2][k2];
-  //       }
-  //       else break;
-  //     }
-  //   }
-   
-  // }
+  void selection_dqdx(){
+
+    for(Int_t l = 0; l<t1->GetEntries(); l++){
+      t1->GetEntry(l);
+      vector<Double_t> planes_threshold= {120,120,120};
+      vector<Bool_t> selected = {false,false,false};
+      Int_t ntrues=0;
+      for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
+        for(Int_t j2 = 0; j2<3; j2++){
+          for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[i2][j2]; k2++){
+            if(trkdqdx_pandoraTrack[i2][j2][k2]>planes_threshold[j2]){
+              if(selected[j2]==false){
+                selected[j2] = true;
+                ntrues++;
+              }
+            }
+          }
+        }
+        if(ntrues>=2){
+          selected_dqdx[l][i2] = true;
+        }
+        else{
+          selected_dqdx[l][i2] = false;
+        }
+      }
+
+    }
+  }
+
+
+  void getNewPhiThe(Int_t i2){
+    Double_t old_phi = trkphi_pandoraTrack[i2];
+    if(old_phi<0) old_phi = 2*pi+old_phi;
+    Double_t old_theta = trktheta_pandoraTrack[i2];
+    Double_t xp = sin(old_phi)*sin(old_theta);
+    Double_t yp = cos(old_theta);
+    Double_t zp = cos(old_phi)*sin(old_theta);
+
+    theta = atan(sqrt(xp*xp+yp*yp)/zp);
+    phi = atan(yp/xp);
+  }
   
+  void selection_phi(){
+    for(Int_t l = 0; l<t1->GetEntries(); l++){
+      t1->GetEntry(l);
+      for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
+        getNewPhiThe(i2);
+        if(abs(in_angle(phi))<10){
+          // cout << in_angle(trkphi_pandoraTrack[i2]) << endl;
+          selected_phi[l][i2] = true;
+        }
+        else{
+          selected_phi[l][i2] = false;
+        }
+      }
+    }
+  }
+   
+  void getCoordinates(Int_t itr){
+
+    startz[itr] = trkstartx_pandoraTrack[itr];
+    startx[itr] = trkstarty_pandoraTrack[itr];
+    starty[itr] = trkstartz_pandoraTrack[itr];
+    endz[itr] = trkendx_pandoraTrack[itr];
+    endx[itr] = trkendy_pandoraTrack[itr];
+    endy[itr] = trkendz_pandoraTrack[itr];
+  }
+
+  Double_t in_angle(Double_t val){
+    return val*180/pi;
+  }
   void checkBothTPCsHit(vector<Bool_t> &passTPC1, vector<Bool_t> &passTPC2, Int_t i)
   {
       
@@ -401,15 +445,103 @@ void printInfo(string name, Float_t variable){
           cout << "\n";
         }
         // else{
-          // cout << passTPC1[idp] << " " << passTPC2[idp] << " ";
+        // cout << passTPC1[idp] << " " << passTPC2[idp] << " ";
         // }
       }
       // cout << "\n";
     }
   }
-
-
+  
 };
+
+
+DATA::DATA(string fname){
+  file_name = fname;
+  read_tree();
+  selected_phi.resize(t1->GetEntries());
+  selected_dqdx.resize(t1->GetEntries());
+  for(Int_t l = 0; l<t1->GetEntries(); l++){
+    t1->GetEntry(l);
+    selected_phi[l].resize(ntracks_pandoraTrack,true);
+    selected_dqdx[l].resize(ntracks_pandoraTrack,true);
+  }
+}
+
+
+void DATA::read_tree(){
+  f = new TFile(file_name.c_str(),"READ");
+  fd = (TDirectoryFile*)f->Get("analysistree");
+  fd->cd();
+  t1 = (TTree*)fd->Get("anatree");
+
+
+
+  b_subrun = t1->GetBranch("subrun");
+  b_event = t1->GetBranch("event");
+  b_evttime = t1->GetBranch("evttime");
+  b_isdata = t1->GetBranch("isdata");
+  b_taulife = t1->GetBranch("taulife");
+  b_triggernumber = t1->GetBranch("triggernumber");
+  b_triggertime = t1->GetBranch("triggertime");
+  b_no_hits = t1->GetBranch("no_hits");
+  b_no_hits_stored = t1->GetBranch("no_hits_stored");
+  b_hit_plane = t1->GetBranch("hit_plane");
+  b_hit_wire = t1->GetBranch("hit_wire");
+  b_hit_channel = t1->GetBranch("hit_channel");
+  b_hit_peakT = t1->GetBranch("hit_peakT");
+  b_hit_tpc = t1->GetBranch("hit_tpc");
+  b_hit_charge = t1->GetBranch("hit_charge");
+  b_hit_ph = t1->GetBranch("hit_ph");
+  b_hit_goodnessOfFit = t1->GetBranch("hit_goodnessOfFit");
+  b_hit_trkid  = t1->GetBranch("hit_trkid");
+
+  b_ntracks_pandoraTrack = t1->GetBranch("ntracks_pandoraTrack");
+  b_trkId_pandoraTrack = t1->GetBranch("trkId_pandoraTrack");
+  b_ntrkhits_pandoraTrack = t1->GetBranch("ntrkhits_pandoraTrack");
+  b_trkdqdx_pandoraTrack = t1->GetBranch("trkdqdx_pandoraTrack");
+  b_trkxyz_pandoraTrack = t1->GetBranch("trkxyz_pandoraTrack");
+  b_trkstartx_pandoraTrack = t1->GetBranch("trkstartx_pandoraTrack");
+  b_trkstarty_pandoraTrack = t1->GetBranch("trkstarty_pandoraTrack");
+  b_trkstartz_pandoraTrack = t1->GetBranch("trkstartz_pandoraTrack");
+  b_trkendx_pandoraTrack = t1->GetBranch("trkendx_pandoraTrack");
+  b_trkendy_pandoraTrack = t1->GetBranch("trkendy_pandoraTrack");
+  b_trkendz_pandoraTrack = t1->GetBranch("trkendz_pandoraTrack");
+  b_trktheta_pandoraTrack = t1->GetBranch("trktheta_pandoraTrack");
+  b_trkphi_pandoraTrack = t1->GetBranch("trkphi_pandoraTrack");
+
+  b_subrun->SetAddress(&subrun);
+  b_event->SetAddress(&event);
+  b_evttime->SetAddress(&evttime);
+  b_isdata->SetAddress(&isdata);
+  b_taulife->SetAddress(&taulife);
+  b_triggernumber->SetAddress(&triggernumber);
+  b_triggertime->SetAddress(&triggertime);
+  b_no_hits->SetAddress(&no_hits);
+  b_no_hits_stored->SetAddress(&no_hits_stored);
+  b_hit_wire->SetAddress(&hit_wire);
+  b_hit_channel->SetAddress(&hit_channel);
+  b_hit_peakT->SetAddress(&hit_peakT);
+  b_hit_plane->SetAddress(&hit_plane);
+  b_hit_tpc->SetAddress(&hit_tpc);
+  b_hit_charge->SetAddress(&hit_charge);
+  b_hit_ph->SetAddress(&hit_ph);
+  b_hit_goodnessOfFit->SetAddress(&hit_goodnessOfFit);
+  b_hit_trkid->SetAddress(&hit_trkid);
+
+  b_ntracks_pandoraTrack->SetAddress(&ntracks_pandoraTrack);
+  b_trkId_pandoraTrack->SetAddress(&trkId_pandoraTrack);
+  b_ntrkhits_pandoraTrack->SetAddress(&ntrkhits_pandoraTrack);
+  b_trkdqdx_pandoraTrack->SetAddress(&trkdqdx_pandoraTrack);
+  b_trkxyz_pandoraTrack->SetAddress(&trkxyz_pandoraTrack);
+  b_trkstartx_pandoraTrack->SetAddress(&trkstartx_pandoraTrack);
+  b_trkstarty_pandoraTrack->SetAddress(&trkstarty_pandoraTrack);
+  b_trkstartz_pandoraTrack->SetAddress(&trkstartz_pandoraTrack);
+  b_trkendx_pandoraTrack->SetAddress(&trkendx_pandoraTrack);
+  b_trkendy_pandoraTrack->SetAddress(&trkendy_pandoraTrack);
+  b_trkendz_pandoraTrack->SetAddress(&trkendz_pandoraTrack);
+  b_trktheta_pandoraTrack->SetAddress(&trktheta_pandoraTrack);
+  b_trkphi_pandoraTrack->SetAddress(&trkphi_pandoraTrack);
+}
 
 
 
