@@ -1,8 +1,9 @@
 #include "class/analyzer.C"
 void testing_code(){
-  DATA data;
+  DATA data("ana_hist.root");
 
-  data.read_tree();
+  // data.read_tree(); // dont need this anymore
+  data.selection_phi();
   data.plot_tracks();
   
   data.test_some_events();

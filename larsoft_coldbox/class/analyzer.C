@@ -61,7 +61,7 @@ public:
 
   vector<Double_t> wallx = {-170,0}; //in cm // folling Laura Z. standard
   vector<Double_t> wally = {0,300}; //in cm
-  vector<Double_t> wallz = {-10,25}; //in cm
+  vector<Double_t> wallz = {-5,25}; //in cm
   Double_t pi = TMath::Pi();
 
   Double_t phi = 0;
@@ -130,13 +130,10 @@ public:
 
     Int_t nbinsx = abs(blankx[1]-blankx[0])*10;
     Int_t nbinsy = abs(blanky[1]-blanky[0])*10;
-
-    Double_t hmaxz = 50;
-    Double_t hminz = -550;
-    Int_t nbinsz = abs(hmaxz-hminz)*10;
+    Int_t nbinsz = abs(blankz[1]-blankz[0])*10;
     
     TH2D *hxy = new TH2D("hxy","hxy",nbinsx,blankx[0],blankx[1],nbinsy,blanky[0],blanky[1]);
-    TH2D *hxz = new TH2D("hxz","hxz",nbinsx,blankx[0],blankx[1],nbinsz,hminz,hmaxz);
+    TH2D *hxz = new TH2D("hxz","hxz",nbinsx,blankx[0],blankx[1],nbinsz,blankz[0],blankz[1]);
 
     
     vector<TPolyLine3D*> tracks;
@@ -149,45 +146,35 @@ public:
         for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
           getCoordinates(itr);
           Float_t tracklength = startz[itr] - endz[itr];//the values are negative, so watchout.
-          // if(abs(tracklength)>23){
-          //   cout << "track length = " << abs(tracklength) << " = " << startz[itr] << " - " << endz[itr] << " event " << event << " track " << itr << endl; 
-          // }
-          // endz[itr] = 23 - abs(tracklength); 
-          // startz[itr] = 23;// assuming always enter on the top
 
-                  
+
+          if(selected_phi[l][itr]){
+            for(Int_t j2 = 0; j2<3; j2++){
+              for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
+                Float_t zpoint = 23 - abs(trkxyz_pandoraTrack[itr][j2][k2][0]-startz[itr]);
+                // cout << zpoint << endl;
+                hxy->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],trkxyz_pandoraTrack[itr][j2][k2][2]);
+                hxz->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],zpoint);
+              }
+            }
+          }
+  
+
+          endz[itr] = 23 - abs(tracklength); 
+          startz[itr] = 23;// assuming always enter on the top
+
           tracks.push_back(new TPolyLine3D(2));
           tracks[ntracks]->SetPoint(0,startx[itr], starty[itr], startz[itr]);
           tracks[ntracks]->SetPoint(1,endx[itr], endy[itr], endz[itr]);
           // cout << hit_tpc[i] << endl;
           tracks[ntracks]->SetLineWidth(linewidth);
           
-          // if(selected_phi[l][itr]){
+          if(selected_phi[l][itr]){
             tracks[ntracks]->SetLineColor(kBlue);
-            Bool_t checker = false;
-            for(Int_t j2 = 0; j2<3; j2++){
-              for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
-                if(itr==8 && event == 32){
-                  cout << event << " " << itr << " " << j2 << " " << k2 << " " << endz[itr] << " " << startz[itr] << " " << trkxyz_pandoraTrack[itr][j2][k2][0] << endl;
-                  if(trkxyz_pandoraTrack[itr][j2][k2][0]==endz[itr] && checker==false){
-                    // cout << event << " " << j2 << " " << k2 << " " << endz[itr] << " " << startz[itr] << " " << trkxyz_pandoraTrack[itr][j2][k2][0] << endl;
-                    // cout << "........................... found... " << endl;
-                    checker = true;
-                  }
-                }
-                hxy->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],trkxyz_pandoraTrack[itr][j2][k2][2]);
-                hxz->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],trkxyz_pandoraTrack[itr][j2][k2][0]);
-              }
-            }
-            if(checker==false){
-              cout << event << " " << itr << " " << endz[itr] << " " << startz[itr] << endl;
-              cout << "Somethings is wrong!!! \n\n" << endl;
-              // return;
-            }
-          // }
-          // else{
-            // tracks[ntracks]->SetLineColor(kRed);      
-          // }
+          }
+          else{
+            tracks[ntracks]->SetLineColor(kRed);      
+          }
           ntracks++;
           
           
