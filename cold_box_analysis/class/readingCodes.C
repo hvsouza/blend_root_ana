@@ -153,10 +153,10 @@ public:
 
   // Created by Henrique Souza, June 2020
   
-  
+
   
   Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
-  Int_t nbits = 12;
+  Int_t nbits = 14;
   Bool_t isBinary = false;
   
   Double_t startCharge = 3300;
@@ -185,7 +185,11 @@ public:
   vector<Int_t> channels = {1,2};
   Int_t nfiles = 1;
 //   TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),-0.005,0.005);
+
+  TH1D *htests = new TH1D("htests","htests",1000,0,0);
   TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,TMath::Power(2,nbits));
+  TF1* fbase = new TF1("fbase","gaus(0)",0,TMath::Power(2,nbits));
+
 
   vector<Int_t> navg;
   vector<vector<Double_t>> avg;
@@ -351,7 +355,7 @@ public:
     }
 //     f1->Close();
 
-    
+    // htests->Draw();
     
   }
   
@@ -549,8 +553,8 @@ public:
             ch[i].wvf[l] = raw[l];
           }
         }
-        bl = baseline(ch[i].wvf,ch[i].selection);
-      
+        bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
+        // if(bl==-9999) cout << i << " " << tEvent << endl;
         getvalues(i,ch[i],bl);
         ch[i].event = tEvent;
         
@@ -615,14 +619,37 @@ public:
   }
   
   
-  Double_t baseline(Double_t v[],Int_t &selection){
+  Double_t baseline(Double_t v[],Int_t &selection, Int_t idx, Int_t mevent){
     Double_t result = 0;
     hbase->Reset();
     for(Int_t i=0; i<baselineTime/dtime; i++) hbase->Fill(v[i]);
-    Double_t res0 = hbase->GetBinCenter(hbase->GetMaximumBin());  
+    Double_t res0 = hbase->GetBinCenter(hbase->GetMaximumBin());
+    Double_t hmean = hbase->GetMean();
+    Double_t hstd = hbase->GetStdDev();
+    
+    // fbase->SetParameters(1000,res0,hstd);
+    // hbase->Print();
+    
+    // // to debug 
+
+    if(hstd/hmean>0.1) hstd = 0.05*hmean; // in the case the standard deviation is bigger then X%, we correct it
+    if(res0>hmean+hstd || res0<hmean-hstd){ // res0 is way too out of the mean, so:
+      TFitResultPtr r = hbase->Fit("fbase","WQ0");
+      Int_t fitStatus = r;
+      // if(fitStatus==0){
+        hmean = fbase->GetParameter(1);
+        hstd = fbase->GetParameter(2);
+        res0 = hmean;
+      // }
+    }
+    
+    // if(idx == 0 && mevent == 3294){
+    //   cout << hmean << " " << hstd << " " << res0 << endl;
+    // }
+    
     Int_t bins=0;
     for(Int_t i=0; i<baselineTime/dtime;){
-      if(v[i] > res0 + exclusion_baseline) {
+      if(v[i] > res0 + exclusion_baseline || v[i]<res0 - exclusion_baseline) {
         i+=exclusion_window/dtime;
       }
       else{
@@ -632,12 +659,28 @@ public:
       }
     }
     // return 0;
-    result/=bins;
+    if(bins>0)result/=bins;
     if(bins > (baselineTime/dtime)/3.){
       selection = 0;
+      // // You can use this to debug. If selection == 0, there should not have events here.
+      // // this means that res0 should be pretty much the average for a good baseline. 
+      // if(res0>hmean+hstd || res0<hmean-hstd){
+      //   cout << "PROBLEEEMMM " << endl;
+      //   cout << result << endl;
+      //     cout << res0 << endl;
+      //     cout << hmean << endl;
+      //     cout << hstd << endl;
+      //     // cout << fitStatus << endl;
+      //     result = -9999;
+      // }
+
+
       return result;
     }
     else{
+      // cout << result << " " << res0 << endl;
+      // htests->Fill(hstd/hmean);
+      // if(hstd/hmean<0.4) cout << idx << " " << mevent << endl;
       selection = 1;
       return res0;
     }
