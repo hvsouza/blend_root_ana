@@ -1,4 +1,4 @@
-#define memorydepth 938
+#define memorydepth 2500
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 
@@ -14,18 +14,18 @@ void giveMeSphe_darkCount(){
     
     dark.tolerance = 7; // n sigmas (smoothed)
     dark.baseLimit = 0.003; // higher then this wont contribute to the baseline abs(baseLimit)
-    dark.baselineTime = 2400;
-    dark.start = 2730;// 2760 good // start the search for peaks or start the integration (led)
-    dark.finish = 2860; // fisish the search or finish the integration (led)
+    dark.baselineTime = 4*600;
+    dark.start = 4120; // start the search for peaks or start the integration (led)
+    dark.finish = 4150; // fisish the search or finish the integration (led)
     
     dark.timeLimit = 0; // time after LED signal
     dark.timeLow = 8; // integration time before peak
     dark.timeHigh = 240; // integration time after peak
     
-    dark.lowerThreshold = -99999;//-0.0021  // threshold to detect noise (normal waveform)
+    dark.lowerThreshold = -9999; // threshold to detect noise (normal waveform)
     dark.maxHits = 1; // maximum hit before discarding  
     
-    dark.too_big = 1; //0.01 // if there is a peak > "too_big" .. wait "waiting" ns
+    dark.too_big = 400; // if there is a peak > "too_big" .. wait "waiting" ns
     dark.waiting = 1000;
     
     dark.interactions = 25; // for moving avarage
@@ -36,12 +36,12 @@ void giveMeSphe_darkCount(){
     dark.get_wave_form = true;
     dark.mean_before = 120; // time recorded before and after the peak found 
     dark.mean_after = 1000;
-    dark.sphe_charge_ch0 = 0.129378; // wave0
-    dark.sphe_charge2_ch0 = 0.287825; // wave0
-    dark.deltaminus = 2.1;
-    dark.deltaplus = 1.3;
+    dark.sphe_charge_ch0 = 1191.69; // wave0
+    dark.sphe_charge2_ch0 = 2700.2; // wave0
+    dark.deltaplus = 1.1;
+    dark.deltaminus = 2;
     
-    dark.sphe_charge_ch1 = 1798.8; // wave0
+    dark.sphe_charge_ch1 = 1561.81; // wave0
     dark.sphe_charge2_ch1 = 3546.52; // wave0
     
     dark.channel = 1;

@@ -1,0 +1,15 @@
+Data taken on 16/03/2022 with Oscilloscope.
+Setup: Henrique
+Description:
+Data was taken trying to study the low oscillation present in the data.
+The screenshot shows the ~1kHz noise measured with the scope
+
+(Light blue fiber = xArapuca - A1ch1)
+Waveforms and spectrum (C1...XX.txt and SpecAn...XX.txt):
+
+00: waveform recorded in the screenshot
+C01: data collected with everything on (SpecAn 00)
+C02: data collected with SiPMs off, analog converters on (SpecAn 01)
+C03: data collected with SiPMs and analog converters off, warm on (SpecAn 02 and 03)
+C04: data collected with everything off (SpecAn 04)
+C05: everything on again, but oscilloscope over the coldbox
