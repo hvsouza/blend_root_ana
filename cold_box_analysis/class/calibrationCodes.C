@@ -93,6 +93,9 @@ public:
   
   Double_t xmin = -10000;
   Double_t xmax = 40000;
+
+  Double_t deltaplus=1.4;
+  Double_t deltaminus=1.2;
   
   Int_t rebin = 4;
   
@@ -166,7 +169,7 @@ void makeSphe(string histogram){
     
     
     TCanvas *c1 = new TCanvas("c1","Carga");
-    c1->SetLogy();
+    // c1->SetLogy();
     gPad->SetGrid(1,1);
     gPad->SetTicks(1,1);
     gStyle->SetOptFit();
@@ -335,6 +338,7 @@ void makeSphe(string histogram){
     cout << "1th peak = " << lastOne->GetParameter(4) << endl;
     cout << "2th peak = " << lastOne->GetParameter(7) << endl;
     cout << "sphe charge = " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
+    cout << " SNR = " << lastOne->GetParameter(4)/sqrt(pow(lastOne->GetParameter(2),2)+pow(lastOne->GetParameter(5),2)) << endl;
     out <<  lastOne->GetParameter(4) << " " << lastOne->GetParameter(7) << " " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
     
     // ____________________________ Finish of sphe fit ____________________________ //
@@ -345,8 +349,8 @@ void makeSphe(string histogram){
     sphe_charge = lastOne->GetParameter(4);
     sphe_charge2 = lastOne->GetParameter(7);
     
-    Double_t delta1 = (sphe_charge2 - sphe_charge)/1.2;
-    Double_t delta2 = 1.4*(sphe_charge2 - sphe_charge);
+    Double_t delta1 = (sphe_charge2 - sphe_charge)/deltaminus;
+    Double_t delta2 = deltaplus*(sphe_charge2 - sphe_charge);
 //     Double_t delta2 = sphe_charge+(sphe_charge2 - sphe_charge)/2;
     
     Double_t ymax = hcharge->GetMaximum();
@@ -633,6 +637,7 @@ Int_t channel = 1;
 TH1D *hbase = new TH1D("hbase","histogram for baseline",5*800,-400,400);
 TH1D *hbase_smooth = new TH1D("hbase_smooth","histogram for baseline smoothed",5*800,-400,400);
 TH1D *hcharge = new TH1D("hcharge","",100000,-50000,50000);
+  // TH1D *hcharge = new TH1D("hcharge","",100000,-10,10);
 TH1D *hzero = new TH1D("hzero","",120000,-200000,2*1300000);
 TH1D *hnobase = new TH1D("hnobase","",120000,-200000,2*1300000);
 
@@ -756,7 +761,7 @@ vector<Double_t> xmean;
 // variables to find mean waveform 
 Bool_t get_wave_form = false;
 vector<Double_t> mean_waveforms;
-Double_t wvf[5000];
+Double_t wvf[memorydepth];
 Double_t wvfcharge;
 Bool_t valid;
 Int_t naverages;
@@ -773,6 +778,8 @@ Double_t shifter = 12;
 Double_t sphe_charge;
 Double_t sphe_charge2;
 Double_t delta;
+Double_t deltaplus = 1.4;
+Double_t deltaminus = 1.2;
 Double_t sphe_std;
 
 Double_t sphe_charge_ch0;
@@ -1033,7 +1040,7 @@ void integrateSignal(){
             if(get_wave_form){
               Double_t newbase = 0;
               if(notAGoodWaveform[i]==false){
-                if(statcharge[i]>=delta/1.2 && statcharge[i]<=delta*1.4){
+                if(statcharge[i]>=delta/deltaminus && statcharge[i]<=delta*deltaplus){
                   naverages++;
                   valid = true;
                   for(Int_t j = low_cut/4; j<high_cut/4; j++){
@@ -1206,7 +1213,7 @@ void makeHistogram(string filename){
 //         creation = false;
         
         twvf->Branch("charge",&wvfcharge,"charge/D");
-        twvf->Branch("wvf",&wvf,"wvf[5000]/D");
+        twvf->Branch("wvf",&wvf,Form("wvf[%i]/D",memorydepth));
         twvf->Branch("valid",&valid,"valid/O");
     }
     
@@ -1524,15 +1531,15 @@ Bool_t checkAreas(Double_t totalmany){ //return true if the points did not touch
 
 void makeSimpleHistogram(string filename){
 
-  if(channel==1){
+
     sphe_charge = sphe_charge_ch0; // wave0
     sphe_charge2 = sphe_charge2_ch0; // wave0
     delta = sphe_charge2 - sphe_charge;
     sphe_std = sphe_std_ch0;
-  }
+  
   if(creation){
     twvf->Branch("charge",&wvfcharge,"charge/D");
-    twvf->Branch("wvf",&wvf,"wvf[5000]/D");
+    twvf->Branch("wvf",&wvf,Form("wvf[%i]/D",memorydepth));
     twvf->Branch("valid",&valid,"valid/O");
   }
   cout << "reading: " << filename << endl;
@@ -1548,6 +1555,10 @@ void makeSimpleHistogram(string filename){
   Bool_t noise = false;
   Int_t noise_hits = 0;
   Double_t max = -1e12;
+  mean_waveforms.clear();
+  mean_waveforms.resize(memorydepth,0);
+  naverages = 0;
+    
   ofstream ftmp;
   ftmp.open("valid_events.log",ios::out);
   for(Int_t i = 0; i<nentries; i++){
@@ -1555,7 +1566,7 @@ void makeSimpleHistogram(string filename){
     noise = false;
     max = -1e12;
     for(Int_t j = start/dtime; j<finish/dtime; j++){
-      charge += dtime*ch.wvf[j];
+      charge += ch.wvf[j];
       if(ch.wvf[j]>=max){
         max = ch.wvf[j];
       }
@@ -1568,7 +1579,7 @@ void makeSimpleHistogram(string filename){
         }
       }
     }
-    for(Int_t j = 0; j<600; j++){
+    for(Int_t j = 0; j<start/dtime-800/4; j++){
       if(ch.wvf[j]<lowerThreshold){
         noise_hits++;
         if(noise_hits>=maxHits){
@@ -1577,7 +1588,7 @@ void makeSimpleHistogram(string filename){
         }
       }
     }
-    for(Int_t j = 750; j<memorydepth; j++){
+    for(Int_t j = finish/dtime+800/4; j<memorydepth; j++){
       if(ch.wvf[j]<lowerThreshold){
         noise_hits++;
         if(noise_hits>=maxHits){
@@ -1589,15 +1600,19 @@ void makeSimpleHistogram(string filename){
 
     
     
-    if(noise==false){
+    if(noise==false && ch.selection==0){
       valid = false;
-      for(Int_t j = 500; j<memorydepth; j++){
+      for(Int_t j = 0; j<memorydepth; j++){
         wvf[j] = ch.wvf[j];
       }
-      if(charge*dtime>=delta/1.2 && charge*dtime<=delta*1.4){
-
+      if(charge*dtime>=delta/deltaminus  && charge*dtime<=delta*deltaplus){
         valid = true;
+        for(Int_t j = 0; j<memorydepth; j++){
+          mean_waveforms[j]+=ch.wvf[j];
+        }
+        naverages++;
       }
+
       wvfcharge = charge*dtime;
       twvf->Fill();
       hcharge->Fill(charge*dtime);
@@ -1606,11 +1621,21 @@ void makeSimpleHistogram(string filename){
     charge=0;
   }
   ftmp.close();
+
+  if(get_wave_form){
+    for(Int_t i = 0; i<memorydepth; i++){
+      timeg.push_back(dtime*i);
+      mean_waveforms[i] = mean_waveforms[i]/(naverages == 0 ? 1 : naverages);
+    }
+    cout << "A total of " << naverages << " waveforms where found "<< endl;
+        
+  }
+
   
-    
+  TGraph *gmean = new TGraph(timeg.size(),&timeg[0],&mean_waveforms[0]);
     if(get_wave_form){
 //         fwvf->WriteObject(cwvf,Form("all valid waveforms of ch%i",channel),"TObject::kOverwrite");
-        // fwvf->WriteObject(gmean,Form("mean_ch%i",channel),"TObject::kOverwrite");
+        fwvf->WriteObject(gmean,Form("mean_ch%i",channel),"TObject::kOverwrite");
     }
     fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),channel),"TObject::kOverwrite");
 
