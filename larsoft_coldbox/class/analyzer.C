@@ -79,8 +79,8 @@ public:
 
 
   TH1D *hphi = new TH1D("hphi","hphi",180,0,2*pi);
-  TH1D *htheta_t = new TH1D("htheta_t","htheta_t",90,0,pi/2);
-  TH1D *htheta = new TH1D("htheta","htheta",90,0,pi/2);
+  TH1D *htheta_t = new TH1D("htheta_t","htheta_t",18,0,pi/2);
+  TH1D *htheta = new TH1D("htheta","htheta",18,0,pi/2);
   TH2D *hrange_theta = new TH2D("hrange_theta","hrange_theta",180,90,180,200,-10,190);
   
   void plot_tracks(Int_t mevent=-99){
@@ -311,9 +311,11 @@ public:
 
     TCanvas *cphi = new TCanvas("cphi","cphi");
     TAxis* aphi= hphi->GetXaxis();
-    aphi->SetNdivisions(-502);
+    aphi->SetNdivisions(-504);
     aphi->ChangeLabel(1,-1,-1,-1,-1,-1,"0");
-    aphi->ChangeLabel(2,-1,-1,-1,-1,-1,"#pi");
+    aphi->ChangeLabel(2,-1,-1,-1,-1,-1,"#pi/2");
+    aphi->ChangeLabel(3,-1,-1,-1,-1,-1,"#pi");
+    aphi->ChangeLabel(4,-1,-1,-1,-1,-1,"3#pi/2");
     aphi->ChangeLabel(-1,-1,-1,-1,-1,-1,"2#pi");
        
     hphi->Draw();
@@ -330,8 +332,8 @@ public:
     a->ChangeLabel(1,-1,-1,-1,-1,-1,"0");
     a->ChangeLabel(2,-1,-1,-1,-1,-1,"#pi/4");
     a->ChangeLabel(-1,-1,-1,-1,-1,-1,"#pi/2");
-    htheta->Draw("hist");
-    htheta_t->Draw("SAME hist");
+    htheta->Draw("HIST");
+    htheta_t->Draw("HIST SAME");
 
     // delete h;
     // delete ht[0];
@@ -425,20 +427,25 @@ public:
     
   }
   
-  void selection_phi(){
+  void selection_phi(Int_t cut = 1){
+    
     for(Int_t l = 0; l<t1->GetEntries(); l++){
       t1->GetEntry(l);
       for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
-        if((in_angle(phi[l][i2])<=90) || (in_angle(phi[l][i2])>=270)){
-          // cout << in_angle(trkphi_pandoraTrack[i2]) << endl;
-          selected_phi[l][i2] = true;
+        selected_phi[l][i2] = false;
+        Double_t mphi = in_angle(phi[l][i2]);
+        switch(cut){
+        case 1:
+          if(mphi<=45 || mphi>=315) selected_phi[l][i2] = true;
+          break;
+        case 2:
+          if(mphi>55 && mphi<125) selected_phi[l][i2] = true;
+          break;
         }
-        else{
-          selected_phi[l][i2] = false;
-        }
-      }
+      }   
     }
   }
+  
 
   void change_pos(Float_t  &a,Float_t &b){
     Float_t tmp = a;
@@ -528,6 +535,7 @@ DATA::DATA(string fname){
 void DATA::FillHistoWithData(DATA &data){
 
   Double_t safe_distance = 20; // 20 cm away from the walls
+  // data.selection_phi();
   for(Int_t l = 0; l<data.t1->GetEntries(); l++){
     data.t1->GetEntry(l);
     for(Int_t i2 = 0; i2<data.ntracks_pandoraTrack; i2++){
@@ -537,9 +545,9 @@ void DATA::FillHistoWithData(DATA &data){
       if(data.total_range[i2]>5)
         {
           // if(data.startx[i2]>(wallx[0]+safe_distance) && data.startx[i2]<(wallx[1]-safe_distance)){
-          if(in_angle(data.phi[l][i2])<=90 || in_angle(data.phi[l][i2])>=270){
-          hphi->Fill(data.phi[l][i2]);
-          htheta->Fill(pi-(data.theta[l][i2]));
+          if(data.selected_phi[l][i2]){
+            hphi->Fill(data.phi[l][i2]);
+            htheta->Fill(pi-(data.theta[l][i2]));
             }
           // }
         }

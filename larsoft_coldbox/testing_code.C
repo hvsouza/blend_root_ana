@@ -7,20 +7,22 @@ void testing_code(){
   DATA data("ana_hist_429_1.root");
   DATA data2("ana_hist_429_2.root");
   DATA data3("ana_hist_429_3.root");
-  // DATA data4("ana_hist_455_1.root");
+  DATA data4("ana_hist_429_4.root");
+  DATA dataextra("ana_hist_455_1.root");
   // data.read_tree(); // dont need this anymore
 
 
-  data.selection_phi();
+  // data.selection_phi();
   data.FillHistoWithData(data);
   data.FillHistoWithData(data2);
   data.FillHistoWithData(data3);
-  // data.FillHistoWithData(data4);
+  data.FillHistoWithData(data4);
+  data.FillHistoWithData(dataextra);
   data.plot_tracks();
   
   data.test_some_events();
 
-  TF1 *fmu = new TF1("fmu","[0]*pow(cos(x),[1])*sin(x)+[2]",90,180);
+  TF1 *fmu = new TF1("fmu","[0]*pow(cos(x),[1])*sin(x)+[2]",0,data.pi/2);
   fmu->SetParameters(1,2,0.1);
   fmu->SetParName(0,"A");
   fmu->SetParName(1,"n");
