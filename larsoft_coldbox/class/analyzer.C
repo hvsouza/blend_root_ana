@@ -3,6 +3,41 @@
    analysistree->cd();anatree->GetMaximum("no_hits_stored");anatree->GetMaximum("ntracks_pandoraTrack")
 */
 
+
+#include <fstream>
+#include <iostream>
+#include "Riostream.h"
+#include <time.h>       // time_t, struct tm, difftime, time, mktime
+#include <cmath>
+#include <numeric>
+
+
+
+#include "TROOT.h"
+#include "TLatex.h"
+#include <TMinuit.h>
+#include <TStyle.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TGraphErrors.h>
+#include <TMultiGraph.h>
+#include <TCanvas.h>
+#include <TPaveText.h>
+#include <TFile.h>
+#include <TF1.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <THStack.h>
+#include <TMath.h>
+#include <TTree.h>
+#include <TRandom3.h>
+#include <vector>
+#include <TGraph2D.h>
+#include <TPolyLine3D.h>
+#include <TLine.h>
+#include <TTimeStamp.h>
+
+
 class DATA{
 
 public:
@@ -71,17 +106,22 @@ public:
   TDirectoryFile *fd;
   TTree *t1;
 
+  Double_t phi_rotation_north_degree = 41.6; // north is at 41.6 degrees more or less 
+  Double_t phi_rotation_north_rad = 41.6*pi/180;  
 
 
   DATA(string fname);
   void read_tree();
   void FillHistoWithData(DATA &data);
+  Double_t convert_north(Double_t mphi);
 
 
-  TH1D *hphi = new TH1D("hphi","hphi",180,0,2*pi);
-  TH1D *htheta_t = new TH1D("htheta_t","htheta_t",18,0,pi/2);
-  TH1D *htheta = new TH1D("htheta","htheta",18,0,pi/2);
-  TH2D *hrange_theta = new TH2D("hrange_theta","hrange_theta",180,90,180,200,-10,190);
+  Int_t nbins_htheta = 9;
+  TH1D *hphi = new TH1D("hphi","hphi",36,0,2*pi);
+  TH1D *hphi_north = new TH1D("hphi_north","hphi_north",12,0,2*pi);
+  TH1D *htheta_t = new TH1D("htheta_t","htheta_t",nbins_htheta,0,90);
+  TH1D *htheta = new TH1D("htheta","htheta",nbins_htheta,0,90);
+  TH2D *hrange_theta = new TH2D("hrange_theta","hrange_theta",180,90,180,330,-10,320);
   
   void plot_tracks(Int_t mevent=-99){
     Bool_t not_selecting_event = false;
@@ -320,19 +360,32 @@ public:
        
     hphi->Draw();
 
+    TCanvas *cphi_north = new TCanvas("cphi_north","cphi_north");
+    TAxis* aphi_north= hphi_north->GetXaxis();
+    aphi_north->SetNdivisions(-504);
+    aphi_north->ChangeLabel(1,-1,-1,-1,-1,-1,"N");
+    aphi_north->ChangeLabel(2,-1,-1,-1,-1,-1,"W");
+    aphi_north->ChangeLabel(3,-1,-1,-1,-1,-1,"S");
+    aphi_north->ChangeLabel(4,-1,-1,-1,-1,-1,"E");
+    aphi_north->ChangeLabel(-1,-1,-1,-1,-1,-1,"N");
+       
+    hphi_north->Draw();
+
     TCanvas *ctheta = new TCanvas("ctheta","ctheta");
-    htheta_t->Scale(1/htheta->Integral("width"));
-    htheta->Scale(1/htheta->Integral("width"));
+    htheta_t->Scale(1./htheta->Integral("width"));
+    htheta->Scale(1./htheta->Integral("width"));
     htheta_t->SetLineColor(kBlack);
     htheta->SetLineColor(kBlue);
     htheta_t->SetLineWidth(2);
     htheta->SetLineWidth(2);
     TAxis* a = htheta->GetXaxis();
-    a->SetNdivisions(-502);
-    a->ChangeLabel(1,-1,-1,-1,-1,-1,"0");
-    a->ChangeLabel(2,-1,-1,-1,-1,-1,"#pi/4");
-    a->ChangeLabel(-1,-1,-1,-1,-1,-1,"#pi/2");
-    htheta->Draw("HIST");
+    // a->SetNdivisions(-502);
+    // a->ChangeLabel(1,-1,-1,-1,-1,-1,"0");
+    // a->ChangeLabel(2,-1,-1,-1,-1,-1,"#pi/4");
+    // a->ChangeLabel(-1,-1,-1,-1,-1,-1,"#pi/2");
+    htheta->GetYaxis()->SetTitle("dN/d#theta (degree^{-1})");
+    htheta->GetXaxis()->SetTitle("#theta (degree)");
+    htheta->Draw("");
     htheta_t->Draw("HIST SAME");
 
     // delete h;
@@ -439,7 +492,7 @@ public:
           if(mphi<=45 || mphi>=315) selected_phi[l][i2] = true;
           break;
         case 2:
-          if(mphi>55 && mphi<125) selected_phi[l][i2] = true;
+          if(mphi<=90 || mphi>=270) selected_phi[l][i2] = true;
           break;
         }
       }   
@@ -534,26 +587,47 @@ DATA::DATA(string fname){
 
 void DATA::FillHistoWithData(DATA &data){
 
-  Double_t safe_distance = 20; // 20 cm away from the walls
+  Double_t safe_distance = 5; // 20 cm away from the walls
   // data.selection_phi();
   for(Int_t l = 0; l<data.t1->GetEntries(); l++){
     data.t1->GetEntry(l);
     for(Int_t i2 = 0; i2<data.ntracks_pandoraTrack; i2++){
       data.getCoordinates(i2);
-      hrange_theta->Fill(in_angle(data.theta[l][i2]),data.total_range[i2]);
-      htheta_t->Fill(pi-(data.theta[l][i2]));
-      if(data.total_range[i2]>5)
-        {
-          // if(data.startx[i2]>(wallx[0]+safe_distance) && data.startx[i2]<(wallx[1]-safe_distance)){
-          if(data.selected_phi[l][i2]){
-            hphi->Fill(data.phi[l][i2]);
-            htheta->Fill(pi-(data.theta[l][i2]));
-            }
+      Double_t mtheta = data.theta[l][i2];
+      Double_t mphi = data.phi[l][i2];
+      hrange_theta->Fill(in_angle(mtheta),data.total_range[i2]);
+      htheta_t->Fill(in_angle(pi-(mtheta)));
+      Bool_t hist_filled = false;
+      if(data.total_range[i2]>15){
+        // if(data.startx[i2]>(wallx[0]+safe_distance) && data.startx[i2]<(wallx[1]-safe_distance)){
+        // if(data.starty[i2]>(wally[0]+safe_distance) && data.starty[i2]<(wally[1]-safe_distance)){
+        // if(in_angle(mtheta)<120){
+          hphi->Fill(mphi);
+          hphi_north->Fill(convert_north(mphi));
+        // }
+        if(data.selected_phi[l][i2]){
+          htheta->Fill(in_angle(pi-(mtheta)));
+          hist_filled=true;
+          // }
           // }
         }
+      }
+      
+                
+      if(hist_filled==false){
+        data.selected_phi[l][i2] = false;
+      }
     }
   }
   
+}
+
+Double_t DATA::convert_north(Double_t mphi){
+  mphi = mphi-phi_rotation_north_rad;
+  if(mphi<0){
+    mphi = 2*pi+mphi;
+  }
+  return mphi;
 }
 
 void DATA::read_tree(){
@@ -597,6 +671,7 @@ void DATA::read_tree(){
   t1->SetBranchAddress("trkendz_pandoraTrack",&trkendz_pandoraTrack);
   t1->SetBranchAddress("trktheta_pandoraTrack",&trktheta_pandoraTrack);
   t1->SetBranchAddress("trkphi_pandoraTrack",&trkphi_pandoraTrack);
+
 
  }
 
