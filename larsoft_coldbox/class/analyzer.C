@@ -42,6 +42,8 @@ class DATA{
 
 public:
 
+  Int_t n_events;
+  
   string file_name = "ana_hist_something.root";
   Int_t subrun;
   Int_t event;
@@ -110,7 +112,7 @@ public:
   Double_t phi_rotation_north_rad = 41.6*pi/180;  
 
 
-  DATA(string fname);
+  DATA(string fname, Int_t nlimit);
   void read_tree();
   void FillHistoWithData(DATA &data);
   Double_t convert_north(Double_t mphi);
@@ -118,11 +120,12 @@ public:
 
   Int_t nbins_htheta = 9;
   TH1D *hphi = new TH1D("hphi","hphi",36,0,2*pi);
-  TH1D *hphi_north = new TH1D("hphi_north","hphi_north",12,0,2*pi);
+  TH1D *hphi_north = new TH1D("hphi_north","hphi_north",32,0,2*pi);
   TH1D *htheta_t = new TH1D("htheta_t","htheta_t",nbins_htheta,0,90);
   TH1D *htheta = new TH1D("htheta","htheta",nbins_htheta,0,90);
   TH2D *hrange_theta = new TH2D("hrange_theta","hrange_theta",180,90,180,330,-10,320);
-  
+
+  Int_t maxPlotEvents = 500;
   void plot_tracks(Int_t mevent=-99){
     Bool_t not_selecting_event = false;
     Bool_t not_selecting_tpc = false;
@@ -137,9 +140,9 @@ public:
     TCanvas *ccb = new TCanvas("ccb","ccb",1920,0,1920,640);
     TGraph2D *gphantom = new TGraph2D(2,&blankx[0],&blanky[0],&blankz[0]);
     gphantom->SetNameTitle("TDE","TDE");
-    gphantom->GetXaxis()->SetTitle("x (cm)");
-    gphantom->GetYaxis()->SetTitle("y (cm)");
-    gphantom->GetZaxis()->SetTitle("z (cm)");
+    gphantom->GetXaxis()->SetTitle("y (cm)");
+    gphantom->GetYaxis()->SetTitle("z (cm)");
+    gphantom->GetZaxis()->SetTitle("x (cm)");
     gphantom->Draw("P");
 
     Int_t nbinsx = abs(blankx[1]-blankx[0])*10;
@@ -154,7 +157,8 @@ public:
     
     vector<TPolyLine3D*> tracks;
     Int_t ntracks=0;
-    for(Int_t l = 0; l<t1->GetEntries(); l++){
+    if(maxPlotEvents==0) maxPlotEvents = t1->GetEntries(); 
+    for(Int_t l = 0; l<maxPlotEvents; l++){
       t1->GetEntry(l);
 
       if(event==mevent || not_selecting_event){
@@ -162,7 +166,7 @@ public:
         for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
           getCoordinates(itr);
           Float_t tracklength = startz[itr] - endz[itr];//the values are negative, so watchout.
-          if(abs(tracklength)>26.5) cout << event << " " << trkId_pandoraTrack[itr] << " " <<  tracklength << " " << startz[itr] << " " << endz[itr] <<  endl;
+          // if(abs(tracklength)>26.5) cout << event << " " << trkId_pandoraTrack[itr] << " " <<  tracklength << " " << startz[itr] << " " << endz[itr] <<  endl;
           // cout << event << " " << trkId_pandoraTrack[itr] << " " << total_range[itr] << endl;
           
           if(selected_phi[l][itr]){
@@ -209,14 +213,14 @@ public:
 
     TCanvas *cxy = new TCanvas("cxy","cxy",1920,650,960,386);
     cxy->cd();
-    hxy->GetXaxis()->SetTitle("x (cm)");
-    hxy->GetYaxis()->SetTitle("y (cm)");
+    hxy->GetXaxis()->SetTitle("y (cm)");
+    hxy->GetYaxis()->SetTitle("z (cm)");
     hxy->Draw("colz");
 
     TCanvas *cxz = new TCanvas("cxz","cxz",2880,650,960,386);
     cxz->cd();
-    hxz->GetXaxis()->SetTitle("x (cm)");
-    hxz->GetYaxis()->SetTitle("z (cm)");
+    hxz->GetXaxis()->SetTitle("y (cm)");
+    hxz->GetYaxis()->SetTitle("x (cm)");
     hxz->Draw("colz");
        
 
@@ -259,7 +263,7 @@ public:
 
     // cout << "hit_trkid hit_plane hit_wire hit_peakT" << endl;
     Int_t starting_event = 0;
-    Int_t finish_event = t1->GetEntries();
+    Int_t finish_event = n_events;
     if(not_selecting_event==false)
       {
         starting_event = mevent; 
@@ -398,7 +402,7 @@ public:
 
   void selection_dqdx(){
 
-    for(Int_t l = 0; l<t1->GetEntries(); l++){
+    for(Int_t l = 0; l<n_events; l++){
       t1->GetEntry(l);
       vector<Double_t> planes_threshold= {120,120,120};
       vector<Bool_t> selected = {false,false,false};
@@ -482,7 +486,7 @@ public:
   
   void selection_phi(Int_t cut = 1){
     
-    for(Int_t l = 0; l<t1->GetEntries(); l++){
+    for(Int_t l = 0; l<n_events; l++){
       t1->GetEntry(l);
       for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
         selected_phi[l][i2] = false;
@@ -564,16 +568,22 @@ public:
 };
 
 
-DATA::DATA(string fname){
+DATA::DATA(string fname, Int_t nlimit = 0){
+  
   file_name = fname;
   read_tree();
-  selected_phi.resize(t1->GetEntries());
-  selected_dqdx.resize(t1->GetEntries());
+  if(nlimit==0) n_events = t1->GetEntries();
+  else{
+    n_events = nlimit;
+    n_events = maxPlotEvents;
+  }
+  selected_phi.resize(n_events);
+  selected_dqdx.resize(n_events);
   //getting phi and theta here is faster, I can do it only once
-  phi.resize(t1->GetEntries());
-  theta.resize(t1->GetEntries());
+  phi.resize(n_events);
+  theta.resize(n_events);
   
-  for(Int_t l = 0; l<t1->GetEntries(); l++){
+  for(Int_t l = 0; l<n_events; l++){
     t1->GetEntry(l);
     selected_phi[l].resize(ntracks_pandoraTrack,true);
     selected_dqdx[l].resize(ntracks_pandoraTrack,true);
@@ -589,7 +599,7 @@ void DATA::FillHistoWithData(DATA &data){
 
   Double_t safe_distance = 5; // 20 cm away from the walls
   // data.selection_phi();
-  for(Int_t l = 0; l<data.t1->GetEntries(); l++){
+  for(Int_t l = 0; l<data.n_events; l++){
     data.t1->GetEntry(l);
     for(Int_t i2 = 0; i2<data.ntracks_pandoraTrack; i2++){
       data.getCoordinates(i2);
