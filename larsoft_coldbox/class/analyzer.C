@@ -108,19 +108,20 @@ public:
   TDirectoryFile *fd;
   TTree *t1;
 
-  Double_t phi_rotation_north_degree = 41.6; // north is at 41.6 degrees more or less 
-  Double_t phi_rotation_north_rad = 41.6*pi/180;  
+  Double_t phi_rotation_north_degree = 41.67; // north is at 41.6 degrees more or less 
+  Double_t phi_rotation_north_rad = 41.67*pi/180;  
 
 
   DATA(string fname, Int_t nlimit);
   void read_tree();
   void FillHistoWithData(DATA &data);
   Double_t convert_north(Double_t mphi);
+  void createMyPolarGraph();
 
-
-  Int_t nbins_htheta = 9;
-  TH1D *hphi = new TH1D("hphi","hphi",36,0,2*pi);
-  TH1D *hphi_north = new TH1D("hphi_north","hphi_north",32,0,2*pi);
+  const Int_t nbins_htheta = 9;
+  const Int_t nbins_hphi = 36;
+  TH1D *hphi = new TH1D("hphi","hphi",nbins_hphi,0,2*pi);
+  TH1D *hphi_north = new TH1D("hphi_north","hphi_north",nbins_hphi,0,2*pi);
   TH1D *htheta_t = new TH1D("htheta_t","htheta_t",nbins_htheta,0,90);
   TH1D *htheta = new TH1D("htheta","htheta",nbins_htheta,0,90);
   TH2D *hrange_theta = new TH2D("hrange_theta","hrange_theta",180,90,180,330,-10,320);
@@ -157,7 +158,7 @@ public:
     
     vector<TPolyLine3D*> tracks;
     Int_t ntracks=0;
-    if(maxPlotEvents==0) maxPlotEvents = t1->GetEntries(); 
+    if(maxPlotEvents==0 || maxPlotEvents>n_events) maxPlotEvents = n_events; 
     for(Int_t l = 0; l<maxPlotEvents; l++){
       t1->GetEntry(l);
 
@@ -170,6 +171,7 @@ public:
           // cout << event << " " << trkId_pandoraTrack[itr] << " " << total_range[itr] << endl;
           
           if(selected_phi[l][itr]){
+            
             for(Int_t j2 = 0; j2<3; j2++){
               for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
                 Float_t zpoint = 23 - abs(trkxyz_pandoraTrack[itr][j2][k2][0]-startz[itr]);
@@ -310,19 +312,19 @@ public:
 
 
 
-      for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
+      for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
         // for(Int_t i = 0; i<1; i++){
 
         Double_t trackTotaldqdx = 0;
         vector<Double_t> total_dqdx = {0,0,0};
         for(Int_t j2 = 0; j2<3; j2++){          
-          for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[i2][j2]; k2++){
-            total_dqdx[j2]+=trkdqdx_pandoraTrack[i2][j2][k2];
-            ht[j2]->Fill(trkdqdx_pandoraTrack[i2][j2][k2]);
-            // cout << trkId_pandoraTrack[i2] << " " << j2 << " " << k2 << " " << trkdqdx_pandoraTrack[i2][j2][k2] << " " << ntrkhits_pandoraTrack[i2][j2] << endl;
-            // trackTotaldqdx += trkdqdx_pandoraTrack[i2][j2][k2];
+          for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
+            total_dqdx[j2]+=trkdqdx_pandoraTrack[itr][j2][k2];
+            ht[j2]->Fill(trkdqdx_pandoraTrack[itr][j2][k2]);
+            // cout << trkId_pandoraTrack[itr] << " " << j2 << " " << k2 << " " << trkdqdx_pandoraTrack[itr][j2][k2] << " " << ntrkhits_pandoraTrack[itr][j2] << endl;
+            // trackTotaldqdx += trkdqdx_pandoraTrack[itr][j2][k2];
           }
-          // ht[j2]->Fill(total_dqdx[j2]/ntrkhits_pandoraTrack[i2][j2]);
+          // ht[j2]->Fill(total_dqdx[j2]/ntrkhits_pandoraTrack[itr][j2]);
         }
 
       }
@@ -375,6 +377,8 @@ public:
        
     hphi_north->Draw();
 
+    createMyPolarGraph();
+
     TCanvas *ctheta = new TCanvas("ctheta","ctheta");
     htheta_t->Scale(1./htheta->Integral("width"));
     htheta->Scale(1./htheta->Integral("width"));
@@ -407,10 +411,10 @@ public:
       vector<Double_t> planes_threshold= {120,120,120};
       vector<Bool_t> selected = {false,false,false};
       Int_t ntrues=0;
-      for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
+      for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
         for(Int_t j2 = 0; j2<3; j2++){
-          for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[i2][j2]; k2++){
-            if(trkdqdx_pandoraTrack[i2][j2][k2]>planes_threshold[j2]){
+          for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
+            if(trkdqdx_pandoraTrack[itr][j2][k2]>planes_threshold[j2]){
               if(selected[j2]==false){
                 selected[j2] = true;
                 ntrues++;
@@ -419,10 +423,10 @@ public:
           }
         }
         if(ntrues>=2){
-          selected_dqdx[l][i2] = true;
+          selected_dqdx[l][itr] = true;
         }
         else{
-          selected_dqdx[l][i2] = false;
+          selected_dqdx[l][itr] = false;
         }
       }
 
@@ -430,15 +434,28 @@ public:
   }
 
 
-  void getNewPhiTheta(Int_t l,Int_t i2){
-    Double_t old_phi = trkphi_pandoraTrack[i2];
-    if(old_phi<0) old_phi = 2*pi+old_phi;
-    Double_t old_theta = trktheta_pandoraTrack[i2];
+  void getNewPhiTheta(Int_t l,Int_t itr){
+    // after taking a look at Laura's presentation (https://indico.fnal.gov/event/54070/contributions/238932/attachments/153929/199865/larsoft_first_look_8422.pdf)
+    // She noticed that theta and phi are not what we think...
+    // So I am not using what is theta and phi at all
+    // Double_t old_phi = trkphi_pandoraTrack[itr];
+    // if(old_phi<0) old_phi = 2*pi+old_phi;
+    // Double_t old_theta = trktheta_pandoraTrack[itr];
 
+    // getting direction of the particle, much easier like this. The change for upward particles was already done
+    Double_t xp = endx[itr]-startx[itr]; 
+    Double_t yp = endy[itr]-starty[itr]; 
+    Double_t zp = endz[itr]-startz[itr];
+
+    // Phi here points to the particle direction, I want it to point to the direction from with it came
+    // si I need to:
+    xp = -xp;
+    yp = -yp;
+    // I don't need anymore to get the old angles, I just need to reset xp, yp and zp with deltax,etc...
+    // Double_t xp = sin(old_phi)*sin(old_theta); //x' = y
+    // Double_t yp = cos(old_theta); // y' = z
+    // Double_t zp = cos(old_phi)*sin(old_theta); // z' = x
     
-    Double_t xp = sin(old_phi)*sin(old_theta); //x' = y
-    Double_t yp = cos(old_theta); // y' = z
-    Double_t zp = cos(old_phi)*sin(old_theta); // z' = x
     Double_t nphi;
     Double_t ntheta;
     
@@ -446,16 +463,13 @@ public:
     else ntheta = pi/2;
     if(xp!=0)nphi = atan(yp/xp);
     else nphi = pi/2;
-    if(ntheta<0){
-      ntheta = pi+ntheta; // remember theta is negative here
-      // nphi = nphi+pi;
-    }
-    
-    // if(xp>=0 && yp>=0){ // this is not needed
+
+ 
+    if(xp>=0 && yp>=0){ // this is not needed
       // cout << "good.... " << endl;
-    // }
+    }
     // just to keep separate quadrants:
-    if(xp<0 && yp>=0){ // second quadrant which gives negative phi
+    else if(xp<0 && yp>=0){ // second quadrant which gives negative phi
       nphi = nphi+pi;
     }
     else if(xp<0 && yp<=0){ // third quadrant which gives positive phi
@@ -464,40 +478,49 @@ public:
     else if(xp>0 && yp<0){
       nphi = 2*pi+nphi;
     }
-    if(ntheta<pi/2){
-      ntheta = pi-ntheta;
-      if(nphi<=pi) nphi = nphi + pi;
-      else if(nphi>pi) nphi = nphi - pi;
-      else{
-        cout << "Something is very wrong... " << endl;
-        return;
-      }
-
+    else if(xp==0 && yp<0){
+      nphi = 3*pi/2;
+    }
+    else{
+      cout << "THERE IS SOME OPTION MISSING \n\n\n\n\n" << endl;
+      cout << xp << " " << yp << endl;
+    }
+    if(ntheta<0){
+      ntheta = pi+ntheta;
       
     }
 
  
     // hphi->Fill(in_angle(nphi));
     // htheta->Fill(in_angle(ntheta));
-    phi[l][i2] = nphi;
-    theta[l][i2] = ntheta;
+    phi[l][itr] = nphi;
+    theta[l][itr] = ntheta;
     
   }
   
-  void selection_phi(Int_t cut = 1){
-    
+  void selection_phi(Int_t cut = 4){
+    Double_t central_angle = 135;
+    Double_t dev_angle = 10;
     for(Int_t l = 0; l<n_events; l++){
       t1->GetEntry(l);
-      for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++){
-        selected_phi[l][i2] = false;
-        Double_t mphi = in_angle(phi[l][i2]);
+      for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
+        selected_phi[l][itr] = false;
+        Double_t mphi = in_angle(phi[l][itr]);
+        Double_t mtheta = in_angle(theta[l][itr]);
         switch(cut){
         case 1:
-          if(mphi<=45 || mphi>=315) selected_phi[l][i2] = true;
+          if(mphi<=45 || mphi>=315) selected_phi[l][itr] = true;
           break;
         case 2:
-          if(mphi<=90 || mphi>=270) selected_phi[l][i2] = true;
+          if(mphi<=90 || mphi>=270) selected_phi[l][itr] = true;
           break;
+        case 3:
+          if(mphi<=central_angle+dev_angle && mphi>=central_angle-dev_angle) selected_phi[l][itr] = true;
+          break;
+        case 4:
+          if(mtheta<135) selected_phi[l][itr] = true;
+          break;
+        
         }
       }   
     }
@@ -518,7 +541,7 @@ public:
     endz[itr] = trkendx_pandoraTrack[itr];
     endx[itr] = trkendy_pandoraTrack[itr];
     endy[itr] = trkendz_pandoraTrack[itr];
-    if(startz[itr]>endz[itr]){
+    if(startz[itr]<endz[itr]){// startz needs to be higher than endz because the particles are going down
       change_pos(startz[itr],endz[itr]);
       change_pos(starty[itr],endy[itr]);
       change_pos(startx[itr],endx[itr]);
@@ -575,7 +598,7 @@ DATA::DATA(string fname, Int_t nlimit = 0){
   if(nlimit==0) n_events = t1->GetEntries();
   else{
     n_events = nlimit;
-    n_events = maxPlotEvents;
+    if(maxPlotEvents>nlimit) maxPlotEvents = nlimit;
   }
   selected_phi.resize(n_events);
   selected_dqdx.resize(n_events);
@@ -589,7 +612,10 @@ DATA::DATA(string fname, Int_t nlimit = 0){
     selected_dqdx[l].resize(ntracks_pandoraTrack,true);
     phi[l].resize(ntracks_pandoraTrack,0.);
     theta[l].resize(ntracks_pandoraTrack,0.);
-    for(Int_t i2 = 0; i2<ntracks_pandoraTrack; i2++) getNewPhiTheta(l,i2);
+    for(Int_t itr = 0; itr<ntracks_pandoraTrack; itr++){
+      getCoordinates(itr);
+      getNewPhiTheta(l,itr);
+    }
   }
   
 }
@@ -598,24 +624,25 @@ DATA::DATA(string fname, Int_t nlimit = 0){
 void DATA::FillHistoWithData(DATA &data){
 
   Double_t safe_distance = 5; // 20 cm away from the walls
-  // data.selection_phi();
+  data.selection_phi();
   for(Int_t l = 0; l<data.n_events; l++){
     data.t1->GetEntry(l);
-    for(Int_t i2 = 0; i2<data.ntracks_pandoraTrack; i2++){
-      data.getCoordinates(i2);
-      Double_t mtheta = data.theta[l][i2];
-      Double_t mphi = data.phi[l][i2];
-      hrange_theta->Fill(in_angle(mtheta),data.total_range[i2]);
+    for(Int_t itr = 0; itr<data.ntracks_pandoraTrack; itr++){
+      data.getCoordinates(itr);
+      Double_t mtheta = data.theta[l][itr];
+      Double_t mphi = data.phi[l][itr];
+      hrange_theta->Fill(in_angle(mtheta),data.total_range[itr]);
       htheta_t->Fill(in_angle(pi-(mtheta)));
       Bool_t hist_filled = false;
-      if(data.total_range[i2]>15){
-        // if(data.startx[i2]>(wallx[0]+safe_distance) && data.startx[i2]<(wallx[1]-safe_distance)){
-        // if(data.starty[i2]>(wally[0]+safe_distance) && data.starty[i2]<(wally[1]-safe_distance)){
+      if(data.total_range[itr]>5){
+        // if(data.startx[itr]>(wallx[0]+safe_distance) && data.startx[itr]<(wallx[1]-safe_distance)){
+        // if(data.starty[itr]>(wally[0]+safe_distance) && data.starty[itr]<(wally[1]-safe_distance)){
         // if(in_angle(mtheta)<120){
-          hphi->Fill(mphi);
-          hphi_north->Fill(convert_north(mphi));
         // }
-        if(data.selected_phi[l][i2]){
+        if(data.selected_phi[l][itr]){
+           hphi->Fill((mphi));
+           hphi_north->Fill(convert_north(mphi));
+     
           htheta->Fill(in_angle(pi-(mtheta)));
           hist_filled=true;
           // }
@@ -623,9 +650,10 @@ void DATA::FillHistoWithData(DATA &data){
         }
       }
       
+      
                 
       if(hist_filled==false){
-        data.selected_phi[l][i2] = false;
+        data.selected_phi[l][itr] = false;
       }
     }
   }
@@ -686,5 +714,107 @@ void DATA::read_tree(){
  }
 
 
+void DATA::createMyPolarGraph(){
+  
+    TCanvas *cphi_polar = new TCanvas("cphi_polar","cphi_polar",0,0,1000,1000);
+    Double_t gtheta[nbins_hphi];
+    Double_t gradius[nbins_hphi];
+    Double_t egtheta[nbins_hphi];
+    Double_t egradius[nbins_hphi];
+    Double_t maxRadius = hphi->GetMaximum();
+    
+    vector<vector<Double_t>> xpl(nbins_hphi,vector<Double_t>(5));
+    vector<vector<Double_t>> ypl(nbins_hphi,vector<Double_t>(5));
+    vector<Double_t> xplf;
+    vector<Double_t> yplf;
+    vector<TPolyLine *> pline(nbins_hphi);
 
+
+    for(Int_t aux = 0; aux < nbins_hphi; aux++){
+      Double_t central_angle = hphi->GetBinCenter(aux+1);
+      Double_t dev_angle = hphi->GetBinWidth(aux+1)/2;
+      Double_t radius = hphi->GetBinContent(aux+1)/maxRadius;
+      Double_t dev_radius = hphi->GetBinError(aux+1)/maxRadius;
+      gtheta[aux] = central_angle*180/pi;
+      egtheta[aux] = dev_angle*180/pi;
+      gradius[aux] = radius;
+      egradius[aux] = dev_radius;
+      xpl[aux] = {0,0.8*radius*cos((central_angle-dev_angle)),0.8*radius*cos((central_angle-0.5*dev_angle)),0.8*radius*cos((central_angle+0.5*dev_angle)),0.8*radius*cos((central_angle+dev_angle))};
+      ypl[aux] = {0,0.8*radius*sin((central_angle-dev_angle)),0.8*radius*sin((central_angle-0.5*dev_angle)),0.8*radius*sin((central_angle+0.5*dev_angle)),0.8*radius*sin((central_angle+dev_angle))};
+      for(Int_t j = 1; j<5; j++){
+        xplf.push_back(xpl[aux][j]);
+        yplf.push_back(ypl[aux][j]);
+      }      
+      // cout << xpl[aux][2] << " " << ypl[aux][2] << endl;
+      pline[aux] = new TPolyLine(xpl[aux].size(),&xpl[aux][0],&ypl[aux][0]);
+    }
+
+     xplf.push_back(xpl[0][1]);
+     yplf.push_back(ypl[0][1]);
+     
+    TGraph * plinef = new TGraph(xplf.size(),&xplf[0], &yplf[0]);
+    
+    
+    TGraphPolar *gphi_polar = new TGraphPolar(nbins_hphi,gtheta,gradius,egtheta,egradius);
+    gphi_polar->SetTitle("");
+    gphi_polar->SetLineWidth(2);
+
+    gphi_polar->Draw("P");
+    cphi_polar->Update();
+    
+    // gphi_polar->GetPolargram()->SetToRadian();
+    gphi_polar->GetPolargram()->SetToGrad();
+    gphi_polar->GetPolargram()->SetRangePolar(0,360);
+    gphi_polar->GetPolargram()->SetRangeRadial(0,1.25);
+    gphi_polar->GetPolargram()->SetRadialLabelSize(0);
+    gphi_polar->GetPolargram()->SetLineColor(kGray);
+    gphi_polar->GetPolargram()->SetNdivRadial(108);
+    
+
+
+    // for(Int_t aux = 0; aux < nbins_hphi; aux++){
+    //   pline[aux]->SetLineColor(kBlack);
+    //   pline[aux]->SetFillStyle(1001);
+    //   pline[aux]->SetFillColorAlpha(kGray,0.35);
+    //   pline[aux]->SetLineWidth(1);
+    //   // pline[aux]->Draw("f");
+    //   // pline[aux]->Draw();
+
+    // }
+    plinef->SetFillColorAlpha(kGray,0.35);
+    plinef->SetLineWidth(2);
+    plinef->Draw("l f SAME");
+    // plinef->Draw();
+    
+    Double_t scaling = 1.;
+    TLine *ly = new TLine(-scaling,0,scaling,0);
+    TLine *lz = new TLine(0,-scaling,0,scaling);
+    TLine *lu = new TLine(-scaling*cos(phi_rotation_north_rad+pi/2),-scaling*sin(phi_rotation_north_rad+pi/2),scaling*cos(phi_rotation_north_rad+pi/2),scaling*sin(phi_rotation_north_rad+pi/2));
+    TArrow *lnorth = new TArrow(1.15*cos(phi_rotation_north_rad),1.15*sin(phi_rotation_north_rad),1.4*cos(phi_rotation_north_rad),1.4*sin(phi_rotation_north_rad),0.02,"<|");
+    TLatex *tnorth = new TLatex(1.4*cos(phi_rotation_north_rad)-0.13,1.4*sin(phi_rotation_north_rad)-0.23,"#splitline{Coming}{from North}");
+    ly->SetLineColor(kRed);
+    ly->SetLineWidth(2);
+    ly->SetLineStyle(10);
+    lz->SetLineColor(kRed);
+    lz->SetLineWidth(2);
+    lz->SetLineStyle(10);
+    lu->SetLineColor(kRed);
+    lu->SetLineWidth(2);
+    lu->SetLineStyle(10);
+    lnorth->SetLineColor(kRed);
+    lnorth->SetLineWidth(2);
+    lnorth->SetLineStyle(1);
+    lnorth->SetFillColor(kRed);
+    tnorth->SetTextFont(42);
+    tnorth->SetTextColor(kRed);
+    tnorth->SetTextSizePixels(30);
+    ly->Draw();
+    lz->Draw();
+    lu->Draw();
+    lnorth->Draw();
+    tnorth->Draw();
+    cphi_polar->Print("graphs/phi_angle.pdf");
+    cphi_polar->SetEditable(kFALSE);
+        
+}
 
