@@ -1,5 +1,10 @@
-const Int_t maxHits = 1328;
-const Int_t maxTracks = 9;
+/* 
+   To this values, do:
+   analysistree->cd();anatree->GetMaximum("no_hits_stored");anatree->GetMaximum("ntracks_pandoraTrack")
+*/
+
+const Int_t maxHits = 1617;
+const Int_t maxTracks = 10;
 
 class DATA{
 
@@ -7,15 +12,16 @@ public:
   Int_t subrun;
   Int_t event;
   Double_t evttime; //epoch time in seconds
-  Bool_t isdata;
+  Char_t isdata;
   Double_t taulife;
   UInt_t triggernumber;
   Double_t triggertime;
-  
+
   Int_t no_hits;
   Int_t no_hits_stored;
   Short_t hit_wire[maxHits];
   Short_t hit_channel[maxHits];
+  Float_t hit_peakT[maxHits];
   Short_t hit_plane[maxHits];
   Short_t hit_tpc[maxHits];
   Float_t hit_charge[maxHits];
@@ -25,7 +31,10 @@ public:
 
   Short_t ntracks_pandoraTrack;
   Short_t trkId_pandoraTrack[maxTracks];
+  Short_t ntrkhits_pandoraTrack[maxTracks][3];
+  Short_t trkmomrange_pandoraTrack[maxTracks];
   Float_t trkdqdx_pandoraTrack[maxTracks][3][2000];
+  Float_t trkxyz_pandoraTrack[maxTracks][3][2000][3];
   Float_t trkstartx_pandoraTrack[maxTracks];
   Float_t trkstarty_pandoraTrack[maxTracks];
   Float_t trkstartz_pandoraTrack[maxTracks];
@@ -35,124 +44,103 @@ public:
   Float_t trktheta_pandoraTrack[maxTracks];
   Float_t trkphi_pandoraTrack[maxTracks];
 
+  TFile *f;
+  TDirectoryFile *fd;
+  TTree *t1;
 
 
-};
-
-void read_tree(){
-
-  TFile *f = new TFile("ana_hist.root","READ");
-  TDirectoryFile *fd = (TDirectoryFile*)f->Get("analysistree");
-  fd->cd();
-  TTree *t1 = (TTree*)fd->Get("anatree");
-
-  DATA data;
-
-  TBranch *b_subrun = t1->GetBranch("subrun");
-  TBranch *b_event = t1->GetBranch("event");
-  TBranch *b_evttime = t1->GetBranch("evttime");
-  TBranch *b_isdata = t1->GetBranch("isdata");
-  TBranch *b_taulife = t1->GetBranch("taulife");
-  TBranch *b_triggernumber = t1->GetBranch("triggernumber");
-  TBranch *b_triggertime = t1->GetBranch("triggertime");
-  TBranch *b_no_hits = t1->GetBranch("no_hits");
-  TBranch *b_no_hits_stored = t1->GetBranch("no_hits_stored");
-  TBranch *b_hit_plane = t1->GetBranch("hit_plane");
-  TBranch *b_hit_wire = t1->GetBranch("hit_wire");
-  TBranch *b_hit_channel = t1->GetBranch("hit_channel");
-  TBranch *b_hit_tpc = t1->GetBranch("hit_tpc");
-  TBranch *b_hit_charge = t1->GetBranch("hit_charge");
-  TBranch *b_hit_ph = t1->GetBranch("hit_ph");
-  TBranch *b_hit_goodnessOfFit = t1->GetBranch("hit_goodnessOfFit");
-  TBranch *b_hit_trkid  = t1->GetBranch("hit_trkid");
-
-  TBranch *b_ntracks_pandoraTrack = t1->GetBranch("ntracks_pandoraTrack");
-  TBranch *b_trkId_pandoraTrack = t1->GetBranch("trkId_pandoraTrack");
-  TBranch *b_trkdqdx_pandoraTrack = t1->GetBranch("trkdqdx_pandoraTrack");
-  TBranch *b_trkstartx_pandoraTrack = t1->GetBranch("trkstartx_pandoraTrack");
-  TBranch *b_trkstarty_pandoraTrack = t1->GetBranch("trkstarty_pandoraTrack");
-  TBranch *b_trkstartz_pandoraTrack = t1->GetBranch("trkstartz_pandoraTrack");
-  TBranch *b_trkendx_pandoraTrack = t1->GetBranch("trkendx_pandoraTrack");
-  TBranch *b_trkendy_pandoraTrack = t1->GetBranch("trkendy_pandoraTrack");
-  TBranch *b_trkendz_pandoraTrack = t1->GetBranch("trkendz_pandoraTrack");
-  TBranch *b_trktheta_pandoraTrack = t1->GetBranch("trktheta_pandoraTrack");
-  TBranch *b_trkphi_pandoraTrack = t1->GetBranch("trkphi_pandoraTrack");
-
-  b_subrun->SetAddress(&data.subrun);
-  b_event->SetAddress(&data.event);
-  b_evttime->SetAddress(&data.evttime);
-  b_isdata->SetAddress(&data.isdata);
-  b_taulife->SetAddress(&data.taulife);
-  b_triggernumber->SetAddress(&data.triggernumber);
-  b_triggertime->SetAddress(&data.triggertime);
-  b_no_hits->SetAddress(&data.no_hits);
-  b_no_hits_stored->SetAddress(&data.no_hits_stored);
-  b_hit_wire->SetAddress(&data.hit_wire);
-  b_hit_channel->SetAddress(&data.hit_channel);
-  b_hit_plane->SetAddress(&data.hit_plane);
-  b_hit_tpc->SetAddress(&data.hit_tpc);
-  b_hit_charge->SetAddress(&data.hit_charge);
-  b_hit_ph->SetAddress(&data.hit_ph);
-  b_hit_goodnessOfFit->SetAddress(&data.hit_goodnessOfFit);
-  b_hit_trkid->SetAddress(&data.hit_trkid);
-
-  b_ntracks_pandoraTrack->SetAddress(&data.ntracks_pandoraTrack);
-  b_trkId_pandoraTrack->SetAddress(&data.trkId_pandoraTrack);
-  b_trkdqdx_pandoraTrack->SetAddress(&data.trkdqdx_pandoraTrack);
-  b_trkstartx_pandoraTrack->SetAddress(&data.trkstartx_pandoraTrack);
-  b_trkstarty_pandoraTrack->SetAddress(&data.trkstarty_pandoraTrack);
-  b_trkstartz_pandoraTrack->SetAddress(&data.trkstartz_pandoraTrack);
-  b_trkendx_pandoraTrack->SetAddress(&data.trkendx_pandoraTrack);
-  b_trkendy_pandoraTrack->SetAddress(&data.trkendy_pandoraTrack);
-  b_trkendz_pandoraTrack->SetAddress(&data.trkendz_pandoraTrack);
-  b_trktheta_pandoraTrack->SetAddress(&data.trktheta_pandoraTrack);
-  b_trkphi_pandoraTrack->SetAddress(&data.trkphi_pandoraTrack);
+  void read_tree(){
+    f = new TFile("ana_hist_429_1.root","READ");
+    fd = (TDirectoryFile*)f->Get("analysistree");
+    fd->cd();
+    t1 = (TTree*)fd->Get("anatree");
 
 
-  TH1D *h = new TH1D("h","h",200,0,0);
-  vector<TH1D*> ht(3);
-  for(Int_t i = 0; i<3; i++){
-    ht[i] = new TH1D(Form("ht%d",i),Form("ht%d",i),200,0,0);
-  }
+    t1->SetBranchAddress("subrun",&subrun);
+    t1->SetBranchAddress("event",&event);
+    t1->SetBranchAddress("evttime",&evttime);
+    t1->SetBranchAddress("isdata",&isdata);
+    t1->SetBranchAddress("taulife",&taulife);
+    t1->SetBranchAddress("triggernumber",&triggernumber);
+    t1->SetBranchAddress("triggertime",&triggertime);
+    t1->SetBranchAddress("no_hits",&no_hits);
+    t1->SetBranchAddress("no_hits_stored",&no_hits_stored);
+    t1->SetBranchAddress("hit_plane",&hit_plane);
+    t1->SetBranchAddress("hit_wire",&hit_wire);
+    t1->SetBranchAddress("hit_channel",&hit_channel);
+    t1->SetBranchAddress("hit_peakT",&hit_peakT);
+    t1->SetBranchAddress("hit_tpc",&hit_tpc);
+    t1->SetBranchAddress("hit_charge",&hit_charge);
+    t1->SetBranchAddress("hit_ph",&hit_ph);
+    t1->SetBranchAddress("hit_goodnessOfFit",&hit_goodnessOfFit);
+    t1->SetBranchAddress("hit_trkid",&hit_trkid);
+
+    t1->SetBranchAddress("ntracks_pandoraTrack",&ntracks_pandoraTrack);
+    t1->SetBranchAddress("trkId_pandoraTrack",&trkId_pandoraTrack);
+    t1->SetBranchAddress("ntrkhits_pandoraTrack",&ntrkhits_pandoraTrack);
+    t1->SetBranchAddress("trkmomrange_pandoraTrack",&trkmomrange_pandoraTrack);
+    t1->SetBranchAddress("trkdqdx_pandoraTrack",&trkdqdx_pandoraTrack);
+    t1->SetBranchAddress("trkxyz_pandoraTrack",&trkxyz_pandoraTrack);
+    t1->SetBranchAddress("trkstartx_pandoraTrack",&trkstartx_pandoraTrack);
+    t1->SetBranchAddress("trkstarty_pandoraTrack",&trkstarty_pandoraTrack);
+    t1->SetBranchAddress("trkstartz_pandoraTrack",&trkstartz_pandoraTrack);
+    t1->SetBranchAddress("trkendx_pandoraTrack",&trkendx_pandoraTrack);
+    t1->SetBranchAddress("trkendy_pandoraTrack",&trkendy_pandoraTrack);
+    t1->SetBranchAddress("trkendz_pandoraTrack",&trkendz_pandoraTrack);
+    t1->SetBranchAddress("trktheta_pandoraTrack",&trktheta_pandoraTrack);
+    t1->SetBranchAddress("trkphi_pandoraTrack",&trkphi_pandoraTrack);
+
+
+
+    TH1D *h = new TH1D("h","h",200,0,0);
+    vector<TH1D*> ht(3);
   
-  for(Int_t l = 0; l<t1->GetEntries(); l++){
-    t1->GetEntry(l);
+    for(Int_t i = 0; i<3; i++){
+      ht[i] = new TH1D(Form("ht%d",i),Form("ht%d",i),200,0,0);
+    }
+  
+    for(Int_t l = 0; l<t1->GetEntries(); l++){
+      t1->GetEntry(l);    
+      for(Int_t i = 0; i<no_hits_stored; i++){
 
-    if(l==2){
-      
-      for(Int_t i = 0; i<data.no_hits_stored; i++){
-        // printf("%.0f\n",data.evttime);
-        if(data.hit_tpc[i]==2){
-          for(Int_t g = 0; g<data.ntracks_pandoraTrack; g++){
-            cout << data.trkId_pandoraTrack[g] << " ";
+        if(hit_tpc[i]==2){
+          for(Int_t g = 0; g<ntracks_pandoraTrack; g++){
+            cout << trkId_pandoraTrack[g] << " ";
           }
-          cout << data.ntracks_pandoraTrack << " " << data.hit_trkid[i] << " " << data.hit_plane[i] << " " << data.hit_wire[i] <<  " " << data.hit_channel[i] << " " << data.hit_charge[i]  << endl;
-          h->Fill(data.hit_charge[i]);
+          cout << ntracks_pandoraTrack << " " << hit_trkid[i] << " " << hit_plane[i] << " " << hit_wire[i] <<  " " << hit_channel[i] << " " << hit_charge[i]  << endl;
+          h->Fill(hit_charge[i]);
         }
         
       }
       cout << "\n\n" << endl;
-    }
-    for(Int_t i = 0; i<data.ntracks_pandoraTrack; i++){
-    // for(Int_t i = 0; i<1; i++){
-      for(Int_t j = 0; j<3; j++){
-        for(Int_t k = 0; k<2000; k++){
-          // cout << data.trkId_pandoraTrack[i] << " " << j << " " << k << " " << data.trkdqdx_pandoraTrack[i][j][k] << endl;
-          if(data.trkdqdx_pandoraTrack[i][j][k]!=0) ht[j]->Fill(data.trkdqdx_pandoraTrack[i][j][k]);
+    
+      for(Int_t i = 0; i<ntracks_pandoraTrack; i++){
+        for(Int_t j = 0; j<3; j++){
+          for(Int_t k = 0; k<ntrkhits_pandoraTrack[i][j]; k++){
+            // cout << trkId_pandoraTrack[i] << " " << j << " " << k << " " << trkdqdx_pandoraTrack[i][j][k] << endl;
+            if(trkdqdx_pandoraTrack[i][j][k]!=0) ht[j]->Fill(trkdqdx_pandoraTrack[i][j][k]);
+          }
         }
       }
     }
+    // cout << event << endl;
+    h->Draw();
+
+    TCanvas *c2 = new TCanvas();
+    THStack *hs = new THStack("hs","hs");
+    hs->Add(ht[0]);
+    hs->Add(ht[1]);
+    hs->Add(ht[2]);
+
+    hs->Draw("nostack");
   }
-  // cout << data.event << endl;
-  h->Draw();
 
-  TCanvas *c2 = new TCanvas();
-  THStack *hs = new THStack("hs","hs");
-  hs->Add(ht[0]);
-  hs->Add(ht[1]);
-  hs->Add(ht[2]);
+};
 
-  hs->Draw("nostack");
+void first_reading_code(){
+  DATA data;
+
+  data.read_tree();
 }
 
 
