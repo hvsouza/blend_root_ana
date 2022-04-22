@@ -37,8 +37,8 @@
 *  Default config file is "WaveDumpConfig.txt"
 ******************************************************************************/
 
-#define WaveDump_Release        "3.9.0"
-#define WaveDump_Release_Date   "October 2018"
+#define WaveDump_Release        "3.10.3"
+#define WaveDump_Release_Date   "June 2021"
 #define DBG_TIME
 
 #include <CAENDigitizer.h>
@@ -52,6 +52,7 @@
 extern int dc_file[MAX_CH];
 extern int thr_file[MAX_CH];
 int cal_ok[MAX_CH] = { 0 };
+char path[128];
 
 /* Error messages */
 typedef enum  {
@@ -70,6 +71,7 @@ typedef enum  {
     ERR_UNHANDLED_BOARD,
     ERR_OUTFILE_WRITE,
 	ERR_OVERTEMP,
+	ERR_BOARD_FAILURE,
 
     ERR_DUMMY_LAST,
 } ERROR_CODES;
@@ -89,6 +91,7 @@ static char ErrMsg[ERR_DUMMY_LAST][100] = {
     "Unhandled board type",                             /* ERR_UNHANDLED_BOARD */
     "Output file write error",                          /* ERR_OUTFILE_WRITE */
 	"Over Temperature",									/* ERR_OVERTEMP */
+	"Board Failure",									/* ERR_BOARD_FAILURE */
 
 };
 
@@ -139,6 +142,7 @@ int GetMoreBoardInfo(int handle, CAEN_DGTZ_BoardInfo_t BoardInfo, WaveDumpConfig
 
     case CAEN_DGTZ_XX724_FAMILY_CODE:
     case CAEN_DGTZ_XX781_FAMILY_CODE:
+    case CAEN_DGTZ_XX782_FAMILY_CODE:
     case CAEN_DGTZ_XX780_FAMILY_CODE:
         WDcfg->Nbit = 14; WDcfg->Ts = 10.0; break;
     case CAEN_DGTZ_XX720_FAMILY_CODE: WDcfg->Nbit = 12; WDcfg->Ts = 4.0;  break;
@@ -187,6 +191,7 @@ int GetMoreBoardInfo(int handle, CAEN_DGTZ_BoardInfo_t BoardInfo, WaveDumpConfig
     switch(BoardInfo.FamilyCode) {
     case CAEN_DGTZ_XX724_FAMILY_CODE:
     case CAEN_DGTZ_XX781_FAMILY_CODE:
+    case CAEN_DGTZ_XX782_FAMILY_CODE:
     case CAEN_DGTZ_XX780_FAMILY_CODE:
     case CAEN_DGTZ_XX720_FAMILY_CODE:
     case CAEN_DGTZ_XX721_FAMILY_CODE:
@@ -270,6 +275,36 @@ int WriteRegisterBitmask(int32_t handle, uint32_t address, uint32_t data, uint32
     ret = CAEN_DGTZ_WriteRegister(handle, address, d32);
     return ret;
 }
+
+static int CheckBoardFailureStatus(int handle, CAEN_DGTZ_BoardInfo_t BoardInfo) {
+
+	int ret = 0;
+	uint32_t status = 0;
+	ret = CAEN_DGTZ_ReadRegister(handle, 0x8104, &status);
+	if (ret != 0) {
+		printf("Error: Unable to read board failure status.\n");
+		return -1;
+	}
+#ifdef _WIN32
+	Sleep(200);
+#else
+	usleep(200000);
+#endif
+	//read twice (first read clears the previous status)
+	ret = CAEN_DGTZ_ReadRegister(handle, 0x8104, &status);
+	if (ret != 0) {
+		printf("Error: Unable to read board failure status.\n");
+		return -1;
+	}
+
+	if(!(status & (1 << 7))) {
+		printf("Board error detected: PLL not locked.\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 
 /*! \fn      int ProgramDigitizer(int handle, WaveDumpConfig_t WDcfg)
 *   \brief   configure the digitizer according to the parameters read from
@@ -475,7 +510,7 @@ void calibrate(int handle, WaveDumpRun_t *WDrun, CAEN_DGTZ_BoardInfo_t BoardInfo
         if (WDrun->AcqRun == 0) {
             int32_t ret = CAEN_DGTZ_Calibrate(handle);
             if (ret == CAEN_DGTZ_Success) {
-                printf("ADC Calibration successfully executed.\n");
+                printf("ADC Calibration check: the board is calibrated.\n");
             }
             else {
                 printf("ADC Calibration failed. CAENDigitizer ERR %d\n", ret);
@@ -1344,14 +1379,13 @@ void CheckKeyboardCommands(int handle, WaveDumpRun_t *WDrun, WaveDumpConfig_t *W
                 printf("Acquisition started\n");
 
                 CAEN_DGTZ_SWStartAcquisition(handle);
-
                 WDrun->AcqRun = 1;
 
             } else {
                 printf("Acquisition stopped\n");
                 CAEN_DGTZ_SWStopAcquisition(handle);
                 WDrun->AcqRun = 0;
-				WDrun->Restart = 1;
+				//WDrun->Restart = 1;
             }
             break;
         case 'm' :
@@ -1480,7 +1514,7 @@ int WriteOutputFiles(WaveDumpConfig_t *WDcfg, WaveDumpRun_t *WDrun, CAEN_DGTZ_Ev
             BinHeader[5] = EventInfo->TriggerTimeTag;
             if (!WDrun->fout[ch]) {
                 char fname[100];
-                sprintf(fname, "wave%d.dat", ch);
+                sprintf(fname, "%swave%d.dat", path,ch);
                 if ((WDrun->fout[ch] = fopen(fname, "wb")) == NULL)
                     return -1;
             }
@@ -1507,7 +1541,7 @@ int WriteOutputFiles(WaveDumpConfig_t *WDcfg, WaveDumpRun_t *WDrun, CAEN_DGTZ_Ev
             // Ascii file format
             if (!WDrun->fout[ch]) {
                 char fname[100];
-                sprintf(fname, "wave%d.txt", ch);
+                sprintf(fname, "%swave%d.txt", path, ch);
                 if ((WDrun->fout[ch] = fopen(fname, "w")) == NULL)
                     return -1;
             }
@@ -1703,7 +1737,12 @@ int main(int argc, char *argv[])
     WDPlot_t                    *PlotVar=NULL;
     FILE *f_ini;
     CAEN_DGTZ_DRS4Correction_t X742Tables[MAX_X742_GROUP_SIZE];
-
+#ifdef  WIN32
+    sprintf(path, "%s\\WaveDump\\", getenv("USERPROFILE"));
+    _mkdir(path);
+#else
+    sprintf(path, "");
+#endif
     int ReloadCfgStatus = 0x7FFFFFFF; // Init to the bigger positive number
 
     printf("\n");
@@ -1736,7 +1775,7 @@ int main(int argc, char *argv[])
     /* *************************************************************************************** */
     isVMEDevice = WDcfg.BaseAddress ? 1 : 0;
 
-    ret = CAEN_DGTZ_OpenDigitizer(WDcfg.LinkType, WDcfg.LinkNum, WDcfg.ConetNode, WDcfg.BaseAddress, &handle);
+    ret = CAEN_DGTZ_OpenDigitizer2(WDcfg.LinkType, (WDcfg.LinkType == CAEN_DGTZ_ETH_V4718) ? WDcfg.ipAddress:(void *)&(WDcfg.LinkNum), WDcfg.ConetNode, WDcfg.BaseAddress, &handle);
     if (ret) {
         ErrCode = ERR_DGZ_OPEN;
         goto QuitProgram;
@@ -1808,6 +1847,14 @@ int main(int argc, char *argv[])
         goto QuitProgram;
     }
 
+
+	//Check for possible board internal errors
+	ret = CheckBoardFailureStatus(handle, BoardInfo);
+	if (ret) {
+		ErrCode = ERR_BOARD_FAILURE;
+		goto QuitProgram;
+	}
+
 	//set default DAC calibration coefficients
 	for (i = 0; i < MAX_SET; i++) {
 		WDcfg.DAC_Calib.cal[i] = 1;
@@ -1851,6 +1898,17 @@ Restart:
         ErrCode = ERR_DGZ_PROGRAM;
         goto QuitProgram;
     }
+#ifdef _WIN32
+	Sleep(300);
+#else
+	usleep(300000);
+#endif
+	//check for possible failures after programming the digitizer
+	ret = CheckBoardFailureStatus(handle, BoardInfo);
+	if (ret) {
+		ErrCode = ERR_BOARD_FAILURE;
+		goto QuitProgram;
+	}
 
     // Select the next enabled group for plotting
     if ((WDcfg.EnableMask) && (BoardInfo.FamilyCode == CAEN_DGTZ_XX742_FAMILY_CODE || BoardInfo.FamilyCode == CAEN_DGTZ_XX740_FAMILY_CODE))
@@ -1886,12 +1944,15 @@ Restart:
 
                 if(WDcfg.UseManualTables != -1) { // The user wants to use some custom tables
                     uint32_t gr;
+					int32_t clret;
+					
                     GroupMask = WDcfg.UseManualTables;
 
                     for(gr = 0; gr < WDcfg.MaxGroupNumber; gr++) {
                         if (((GroupMask>>gr)&0x1) == 0)
                             continue;
-                        LoadCorrectionTable(WDcfg.TablesFilenames[gr], &(X742Tables[gr]));
+                        if ((clret = LoadCorrectionTable(WDcfg.TablesFilenames[gr], &(X742Tables[gr]))) != 0)
+                            printf("Error [%d] loading custom table from file '%s' for group [%u].\n", clret, WDcfg.TablesFilenames[gr], gr);
                     }
                 }
                 // Save to file the Tables read from flash
@@ -2010,7 +2071,7 @@ Restart:
         }
 
         /* Read data from the board */
-        ret = CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
+         ret = CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
         if (ret) {
 
             ErrCode = ERR_READOUT;
@@ -2135,9 +2196,7 @@ InterruptTimeout:
                 }
 
                 /* Write Event data to file */
-
-                if ((WDrun.ContinuousWrite || WDrun.SingleWrite)) {
-                  
+                if (WDrun.ContinuousWrite || WDrun.SingleWrite) {
                     // Note: use a thread here to allow parallel readout and file writing
                     if (BoardInfo.FamilyCode == CAEN_DGTZ_XX742_FAMILY_CODE) {	
                         ret = WriteOutputFilesx742(&WDcfg, &WDrun, &EventInfo, Event742); 
