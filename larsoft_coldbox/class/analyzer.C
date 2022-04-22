@@ -96,8 +96,8 @@ public:
   vector<Color_t> planesColor = {kRed,kBlue,kMagenta+2};
   vector<string> planesName{"U Induction","Y Induction","Z Collection"};
 
-  vector<Double_t> wallx = {-170,0}; //in cm // folling Laura Z. standard
-  vector<Double_t> wally = {0,300}; //in cm
+  vector<Double_t> wallx = {-180,5}; //in cm // folling Laura Z. standard
+  vector<Double_t> wally = {-5,305}; //in cm
   vector<Double_t> wallz = {-5,25}; //in cm
   Double_t pi = TMath::Pi();
 
@@ -624,7 +624,7 @@ DATA::DATA(string fname, Int_t nlimit = 0){
 void DATA::FillHistoWithData(DATA &data){
 
   Double_t safe_distance = 5; // 20 cm away from the walls
-  data.selection_phi();
+  // data.selection_phi();
   for(Int_t l = 0; l<data.n_events; l++){
     data.t1->GetEntry(l);
     for(Int_t itr = 0; itr<data.ntracks_pandoraTrack; itr++){
@@ -634,7 +634,7 @@ void DATA::FillHistoWithData(DATA &data){
       hrange_theta->Fill(in_angle(mtheta),data.total_range[itr]);
       htheta_t->Fill(in_angle(pi-(mtheta)));
       Bool_t hist_filled = false;
-      if(data.total_range[itr]>5){
+      if(data.total_range[itr]>20){
         // if(data.startx[itr]>(wallx[0]+safe_distance) && data.startx[itr]<(wallx[1]-safe_distance)){
         // if(data.starty[itr]>(wally[0]+safe_distance) && data.starty[itr]<(wally[1]-safe_distance)){
         // if(in_angle(mtheta)<120){
