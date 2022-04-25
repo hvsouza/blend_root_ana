@@ -4,6 +4,7 @@
 #include <QLocale>
 #include <locale.h>
 #include <math.h>       /* round, floor, ceil, trunc */
+#include <iostream>
 MainWindow::MainWindow(QWidget *parent) :
 
     QMainWindow(parent),
@@ -38,6 +39,7 @@ void MainWindow::on_pushButton_2_clicked()
 
         ui->run->setText(QString::fromStdString(newRun));
         ui->subrun->setText("0");
+        ui->subrun_2->setText("0");
 
         ui->calibration_check->setChecked(false);
     }
@@ -78,24 +80,21 @@ std::string MainWindow::folder_name(int run, int subrun, double voltage, double 
 bool MainWindow::move_data_file(int run, int subrun, double voltage, double threshold, std::string triggerCh, std::string extra, std::string primary)
 {
     int out = 0;
-    std::string mkdir = "mkdir -p ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
+    std::string mkdir = "mkdir -p ~/Documents/ADC_data/coldbox_data/" + primary + "/";
     out = system(mkdir.c_str());
     std::string folder = folder_name(run,subrun,voltage,threshold,triggerCh);
 
-    std::string mv0 = "mv -n ~/Desktop/WaveDumpData/wave0.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-    std::string mv1 = "mv -n ~/Desktop/WaveDumpData/wave1.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-    std::string mv2 = "mv -n ~/Desktop/WaveDumpData/wave2.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-    std::string mv3 = "mv -n ~/Desktop/WaveDumpData/wave3.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-
+    std::vector<std::string> mvi(channels);
+    for(int i = 0; i<channels; i++){
+        mvi[i] = "mv -n ~/Desktop/WaveDumpData/wave" + std::to_string(i) + ".dat ~/Documents/ADC_data/coldbox_data/" + primary + "/";
+    }
     std::string voltageS = changeVoltage(voltage);
 
     //QMessageBox::about(this,"",QString::fromStdString(folder0));
     mkdir = mkdir+folder;
-    mv0 = mv0 + folder;
-    mv1 = mv1 + folder;
-    mv2 = mv2 + folder;
-    mv3 = mv3 + folder;
-
+    for(int i = 0; i<channels; i++){
+        mvi[i] = mvi[i] + folder;
+    }
     // checking if there is no space in the extra
     char extraChar[extra.size()+1];
     strcpy(extraChar,extra.c_str());
@@ -112,34 +111,34 @@ bool MainWindow::move_data_file(int run, int subrun, double voltage, double thre
 
     // checked
 
-    mv0 = mv0 + std::to_string(subrun) + "_wave0_" + voltageS + "_" + std::to_string(static_cast<int>(threshold)) + "ADC_" + triggerCh;
-    mv1 = mv1 + std::to_string(subrun) + "_wave1_" + voltageS + "_" + std::to_string(static_cast<int>(threshold)) + "ADC_" + triggerCh;
-    mv2 = mv2 + std::to_string(subrun) + "_wave2_" + voltageS + "_" + std::to_string(static_cast<int>(threshold)) + "ADC_" + triggerCh;
-    mv3 = mv3 + std::to_string(subrun) + "_wave3_" + voltageS + "_" + std::to_string(static_cast<int>(threshold)) + "ADC_" + triggerCh;
+    for(int i = 0; i<channels; i++){
+         mvi[i] = mvi[i] + std::to_string(subrun) + "_wave"+ std::to_string(i) + "_" + voltageS + "_" + std::to_string(static_cast<int>(threshold)) + "ADC_" + triggerCh;
+    }
     if(extra!=""){
         if(noSpace){
-            mv0 = mv0 + "_" + extra;
-            mv1 = mv1 + "_" + extra;
-            mv2 = mv2 + "_" + extra;
-            mv3 = mv3 + "_" + extra;
+            for(int i = 0; i<channels; i++){
+                 mvi[i] = mvi[i] + "_" + extra;
+            }
         }
         else{
             QMessageBox::about(this,"","Warning: extra has space");
             return false;
         }
     }
-    mv0 = mv0+".dat";
-    mv1 = mv1+".dat";
-    mv2 = mv2+".dat";
-    mv3 = mv3+".dat";
+    for(int i = 0; i<channels; i++){
+        mvi[i] = mvi[i]+".dat";
+    }
+
 
     out = system(mkdir.c_str());
 
     //QMessageBox::about(this,"",QString::fromStdString(mv0));
-    out = system(mv0.c_str());
-    out = system(mv1.c_str());
-    out = system(mv2.c_str());
-    out = system(mv3.c_str());
+    for(int i = 0; i<channels; i++){
+        //std::cout << mvi[i] << std::endl;
+        out = system(mvi[i].c_str());
+    }
+
+
 
 
     return true;
@@ -166,7 +165,7 @@ void MainWindow::on_button_movefile_2_clicked()
     ui->calibration_check->setChecked(true);
     // Take info from the data tab, so it is possible to go to the right folder
     int runNo = std::stoi(ui->run->text().toStdString());
-    int subRunNo = std::stoi(ui->subrun->text().toStdString());
+    int subRunNo = std::stoi(ui->subrun_2->text().toStdString());
     double voltage = std::stod(ui->voltage->text().toStdString());
     double threshold = std::stod(ui->threshold->text().toStdString());
     std::string triggerCh = ui->trigger_channel->text().toStdString();
@@ -175,20 +174,26 @@ void MainWindow::on_button_movefile_2_clicked()
 
     move_calibration_file(runNo,subRunNo,voltage,threshold,triggerCh,extra,primary);
 
+    // update subrun number
+    subRunNo++;
+    std::string newSubRun = std::to_string(subRunNo);
+
+    ui->subrun_2->setText(QString::fromStdString(newSubRun));
+
 }
 
 bool MainWindow::move_calibration_file(int run, int subrun, double voltage, double threshold, std::string triggerCh, std::string extra, std::string primary)
 {
     int out = 0;
-    std::string mkdir = "mkdir -p ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
+    std::string mkdir = "mkdir -p ~/Documents/ADC_data/coldbox_data/" + primary + "/";
     out = system(mkdir.c_str());
     std::string folder = folder_name(run,subrun,voltage,threshold,triggerCh);
     folder = folder + "Calibration/";
 
-    std::string mv0 = "mv -n ~/Desktop/WaveDumpData/wave0.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-    std::string mv1 = "mv -n ~/Desktop/WaveDumpData/wave1.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-    std::string mv2 = "mv -n ~/Desktop/WaveDumpData/wave2.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
-    std::string mv3 = "mv -n ~/Desktop/WaveDumpData/wave3.dat ~/Documents/ADC_data/x_arapuca_argon_test/" + primary + "/";
+    std::vector<std::string> mvi(channels);
+    for(int i = 0; i<channels; i++){
+        mvi[i] = "mv -n ~/Desktop/WaveDumpData/wave"+std::to_string(i)+".dat ~/Documents/ADC_data/coldbox_data/" + primary + "/";
+    }
 
     std::string voltageS = changeVoltage(voltage);
 
@@ -198,28 +203,25 @@ bool MainWindow::move_calibration_file(int run, int subrun, double voltage, doub
 
     //QMessageBox::about(this,"",QString::fromStdString(folder0));
     mkdir = mkdir+folder;
-    mv0 = mv0 + folder;
-    mv1 = mv1 + folder;
-    mv2 = mv2 + folder;
-    mv3 = mv3 + folder;
 
-    mv0 = mv0 + "wave0_" + voltageS + "_" + led_voltageS + "_" + std::to_string(width) + "ns";
-    mv1 = mv1 + "wave1_" + voltageS + "_" + led_voltageS + "_" + std::to_string(width) + "ns";
-    mv2 = mv2 + "wave2_" + voltageS + "_" + led_voltageS + "_" + std::to_string(width) + "ns";
-    mv3 = mv3 + "wave3_" + voltageS + "_" + led_voltageS + "_" + std::to_string(width) + "ns";
+    for(int i = 0; i<channels; i++){
+       mvi[i] = mvi[i] + folder;
+       mvi[i]= mvi[i] + std::to_string(subrun) + "_wave"+std::to_string(i) + "_" + voltageS + "_" + led_voltageS + "_" + std::to_string(width) + "ns";
+       mvi[i] = mvi[i]+".dat";
 
-    mv0 = mv0+".dat";
-    mv1 = mv1+".dat";
-    mv2 = mv2+".dat";
-    mv3 = mv3+".dat";
+
+    }
+
+
 
     out = system(mkdir.c_str());
 
     //QMessageBox::about(this,"",QString::fromStdString(mv0));
-    out = system(mv0.c_str());
-    out = system(mv1.c_str());
-    out = system(mv2.c_str());
-    out = system(mv3.c_str());
+    for(int i = 0; i<channels; i++){
+        // std::cout << mvi[i] << std::endl;
+        out = system(mvi[i] .c_str());
+    }
+
 
     return true;
 }
@@ -234,3 +236,4 @@ void MainWindow::on_lock_folder_clicked(bool checked)
         ui->primary_name->setEnabled(true);
     }
 }
+

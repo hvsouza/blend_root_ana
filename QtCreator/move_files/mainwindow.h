@@ -2,11 +2,13 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-
+#include <string>
+#include <vector>
 namespace Ui {
 class MainWindow;
 }
 
+const int channels = 8;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
