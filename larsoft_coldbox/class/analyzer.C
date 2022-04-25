@@ -42,6 +42,8 @@ class DATA{
 
 public:
 
+  string dettype="TDE";
+  // string dettype="BDE";
   Int_t n_events;
   
   string file_name = "ana_hist_something.root";
@@ -617,6 +619,12 @@ DATA::DATA(string fname, Int_t nlimit = 0){
       getNewPhiTheta(l,itr);
     }
   }
+
+  if(dettype=="BDE"){
+    wallx = {-5,180}; //in cm // folling Laura Z. standard
+    wally = {-5,305}; //in cm
+    wallz = {-5,25}; //in cm
+  }
   
 }
 
@@ -634,7 +642,7 @@ void DATA::FillHistoWithData(DATA &data){
       hrange_theta->Fill(in_angle(mtheta),data.total_range[itr]);
       htheta_t->Fill(in_angle(pi-(mtheta)));
       Bool_t hist_filled = false;
-      if(data.total_range[itr]>20){
+      // if(data.total_range[itr]>20){
         // if(data.startx[itr]>(wallx[0]+safe_distance) && data.startx[itr]<(wallx[1]-safe_distance)){
         // if(data.starty[itr]>(wally[0]+safe_distance) && data.starty[itr]<(wally[1]-safe_distance)){
         // if(in_angle(mtheta)<120){
@@ -648,7 +656,7 @@ void DATA::FillHistoWithData(DATA &data){
           // }
           // }
         }
-      }
+      // }
       
       
                 
