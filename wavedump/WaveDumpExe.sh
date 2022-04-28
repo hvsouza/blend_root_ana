@@ -5,13 +5,7 @@
 
 # WARNING: the WaveDump program will always overwrite data files. Try to change your file name before running one acquisition
 
-cd ~/home/lableptons/Desktop/WaveDumpData/
-
-#now=$(date '+%Y%m%d %k:%M:%S')
-
-#mkdir "$now"
-
-#cd "$now"
+cd ~/Desktop/WaveDumpData/
 
 gedit /etc/wavedump/WaveDumpConfig.txt &
 
