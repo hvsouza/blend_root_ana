@@ -2,13 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <string>
-#include <vector>
+
 namespace Ui {
 class MainWindow;
 }
 
-const int channels = 8;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -30,9 +28,7 @@ private slots:
 
     void on_button_movefile_2_clicked();
 
-    //void on_radioButton_2_clicked(bool checked);
-
-    void on_lock_folder_clicked(bool checked);
+    void on_radioButton_clicked(bool checked);
 
 private:
     Ui::MainWindow *ui;
