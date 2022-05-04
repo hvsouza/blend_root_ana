@@ -30,7 +30,7 @@ void create_histograms(){
     t1[i] = (TTree*)f[i]->Get("t1");
     bch[i] = t1[i]->GetBranch("Ch1");
     bch[i]->SetAddress(&ch[i]);
-    h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200,-2/sphe,3/sphe);
+    h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200,-2/sphe,12/sphe);
     // h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200,-0.01,0.01);
     
     for(Int_t j = 0; j<t1[i]->GetEntries(); j++){
@@ -41,7 +41,7 @@ void create_histograms(){
       //  h[i]->Fill(charge);
       // }
       for(Int_t k = 1730/4; k<2000/4.; k++){
-       charge += ch[i].wvf[k];
+       charge += ch[i].wvf[k]*4;
       }
       h[i]->Fill(charge/sphe);
     }
