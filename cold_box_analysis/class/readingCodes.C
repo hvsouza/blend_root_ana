@@ -180,8 +180,9 @@ public:
   Int_t maxEvents = 100000;
     
   Double_t baselineTime = 10000; // time limit to start looking for baseline
-  Double_t chargeTime = 18000; // last time to integrate 
-  
+  Double_t chargeTime = 18000; // last time to integrate
+  Bool_t noBaseline=false;
+  // Bool_t noBaseline=true;
   vector<Int_t> channels = {1,2};
   Int_t nfiles = 1;
 //   TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),-0.005,0.005);
@@ -632,6 +633,7 @@ public:
     
     // // to debug 
 
+    Bool_t changed_mean = false;
     if(hstd/hmean>0.1) hstd = 0.05*hmean; // in the case the standard deviation is bigger then X%, we correct it
     if(res0>hmean+hstd || res0<hmean-hstd){ // res0 is way too out of the mean, so:
       TFitResultPtr r = hbase->Fit("fbase","WQ0");
@@ -640,6 +642,7 @@ public:
         hmean = fbase->GetParameter(1);
         hstd = fbase->GetParameter(2);
         res0 = hmean;
+        changed_mean = true;
       // }
     }
     
@@ -658,7 +661,7 @@ public:
         i++;
       }
     }
-    // return 0;
+    if(noBaseline) return 0;
     if(bins>0)result/=bins;
     if(bins > (baselineTime/dtime)/3.){
       selection = 0;
@@ -681,7 +684,8 @@ public:
       // cout << result << " " << res0 << endl;
       // htests->Fill(hstd/hmean);
       // if(hstd/hmean<0.4) cout << idx << " " << mevent << endl;
-      selection = 1;
+      if(changed_mean==false)selection = 1;
+      else selection = 2;
       return res0;
     }
   }
