@@ -42,8 +42,8 @@ class DATA{
 
 public:
 
-  string dettype="TDE";
-  // string dettype="BDE";
+  // string dettype="TDE";
+  string dettype="BDE";
   Int_t n_events;
   
   string file_name = "ana_hist_something.root";
@@ -142,7 +142,7 @@ public:
     vector<Double_t> blankz = {wallz[0],wallz[1]};
     TCanvas *ccb = new TCanvas("ccb","ccb",1920,0,1920,640);
     TGraph2D *gphantom = new TGraph2D(2,&blankx[0],&blanky[0],&blankz[0]);
-    gphantom->SetNameTitle("TDE","TDE");
+    gphantom->SetNameTitle(dettype.c_str(),dettype.c_str());
     gphantom->GetXaxis()->SetTitle("y (cm)");
     gphantom->GetYaxis()->SetTitle("z (cm)");
     gphantom->GetZaxis()->SetTitle("x (cm)");
@@ -173,11 +173,10 @@ public:
           // cout << event << " " << trkId_pandoraTrack[itr] << " " << total_range[itr] << endl;
           
           if(selected_phi[l][itr]){
-            
             for(Int_t j2 = 0; j2<3; j2++){
               for(Int_t k2 = 0; k2<ntrkhits_pandoraTrack[itr][j2]; k2++){
                 Float_t zpoint = 23 - abs(trkxyz_pandoraTrack[itr][j2][k2][0]-startz[itr]);
-                // cout << zpoint << endl;
+                cout << zpoint << endl;
                 hxy->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],trkxyz_pandoraTrack[itr][j2][k2][2]);
                 hxz->Fill(trkxyz_pandoraTrack[itr][j2][k2][1],zpoint);
               }
