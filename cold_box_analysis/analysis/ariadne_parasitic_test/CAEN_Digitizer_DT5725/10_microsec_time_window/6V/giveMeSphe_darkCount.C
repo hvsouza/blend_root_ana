@@ -36,8 +36,8 @@ void giveMeSphe_darkCount(){
     dark.get_wave_form = true;
     dark.mean_before = 120; // time recorded before and after the peak found 
     dark.mean_after = 1000;
-    dark.sphe_charge_ch0 = 1191.69; // wave0
-    dark.sphe_charge2_ch0 = 2700.2; // wave0
+    dark.sphe_charge_ch0 = 1201.78; // wave0
+    dark.sphe_charge2_ch0 = 2606.81; // wave0
     dark.deltaplus = 1.1;
     dark.deltaminus = 2;
     

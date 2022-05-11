@@ -22,8 +22,8 @@ void fit_sphe_wave1(){
     Cal.xmin = -1000; // range for graph display (not fit)
     Cal.xmax = 20000;
 
-    Cal.deltaplus = 1.7;
-    Cal.deltaminus = 1.1;
+    Cal.deltaplus = 0.6;
+    Cal.deltaminus = 1000;
     
     Cal.rootFile = "sphe_histograms_darkCount_Ch3.root";
     Cal.fit_sphe_wave("analyzed_3");  

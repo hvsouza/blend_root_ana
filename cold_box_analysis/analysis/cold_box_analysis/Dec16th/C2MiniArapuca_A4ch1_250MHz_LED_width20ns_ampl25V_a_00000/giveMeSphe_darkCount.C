@@ -16,7 +16,7 @@ void giveMeSphe_darkCount(){
     dark.baseLimit = 0.003; // higher then this wont contribute to the baseline abs(baseLimit)
     dark.baselineTime = 2400;
     dark.start = 2730;// 2760 good // start the search for peaks or start the integration (led)
-    dark.finish = 2860; // fisish the search or finish the integration (led)
+    dark.finish = 2870; // fisish the search or finish the integration (led)
     
     dark.timeLimit = 0; // time after LED signal
     dark.timeLow = 8; // integration time before peak

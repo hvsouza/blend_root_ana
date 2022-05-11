@@ -4,7 +4,8 @@
 #include "/home/henrique/Dropbox/APC_Paris/Root/larsoft_coldbox/class/analyzer.C"
 void testing_code(){
   
-  DATA data("429/429_cb_reco.root");
+  // DATA data("429/429_cb_reco.root");
+  DATA data("BDE/343_cb_reco.root");
   // data.maxPlotEvents = 500;
   // data.selection_phi();
   data.FillHistoWithData(data);

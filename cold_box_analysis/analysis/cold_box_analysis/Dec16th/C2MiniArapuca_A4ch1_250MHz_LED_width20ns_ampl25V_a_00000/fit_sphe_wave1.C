@@ -6,7 +6,7 @@ void fit_sphe_wave1(){
     
     Cal.dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     
-    Cal.rebin = 40;
+    Cal.rebin = 200;
     Cal.fixZero = false;
     Cal.n_peaks = 7; // n peaks after baseline and 1 p.e.. Total = 2 + n_peaks
     Cal.peak0 =  0.014; // amplitude baseline

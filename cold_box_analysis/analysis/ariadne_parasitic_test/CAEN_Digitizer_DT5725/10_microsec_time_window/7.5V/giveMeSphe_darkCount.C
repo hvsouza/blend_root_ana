@@ -25,7 +25,7 @@ void giveMeSphe_darkCount(){
     dark.lowerThreshold = -9999; // threshold to detect noise (normal waveform)
     dark.maxHits = 1; // maximum hit before discarding  
     
-    dark.too_big = 400; // if there is a peak > "too_big" .. wait "waiting" ns
+    dark.too_big = 1000; // if there is a peak > "too_big" .. wait "waiting" ns
     dark.waiting = 1000;
     
     dark.interactions = 25; // for moving avarage
@@ -38,8 +38,8 @@ void giveMeSphe_darkCount(){
     dark.mean_after = 1000;
     dark.sphe_charge_ch0 = 1967.83; // wave0
     dark.sphe_charge2_ch0 = 3575.63; // wave0
-    dark.deltaplus = 1.7;
-    dark.deltaminus = 1.1;
+    dark.deltaplus = 0.6;
+    dark.deltaminus = 10000;
     
     dark.sphe_charge_ch1 = 1561.81; // wave0
     dark.sphe_charge2_ch1 = 3546.52; // wave0
