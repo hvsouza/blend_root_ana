@@ -636,8 +636,8 @@ Int_t channel = 1;
 
 TH1D *hbase = new TH1D("hbase","histogram for baseline",5*800,-400,400);
 TH1D *hbase_smooth = new TH1D("hbase_smooth","histogram for baseline smoothed",5*800,-400,400);
-TH1D *hcharge = new TH1D("hcharge","",100000,-50000,50000);
-  // TH1D *hcharge = new TH1D("hcharge","",100000,-10,10);
+// TH1D *hcharge = new TH1D("hcharge","",100000,-50000,50000);
+  TH1D *hcharge = new TH1D("hcharge","",50000,0,0);
 TH1D *hzero = new TH1D("hzero","",120000,-200000,2*1300000);
 TH1D *hnobase = new TH1D("hnobase","",120000,-200000,2*1300000);
 
