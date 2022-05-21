@@ -270,7 +270,7 @@ void makeSphe(string histogram){
     aux = 0;
     for(Int_t i = 1; i<n_peaks; i++){
         lastOne->SetParameter((i+8-1),func->GetParameter(i+8+aux));
-        lastOne->SetParName((i+8-1),Form("A_{%d}",i+1));
+        lastOne->SetParName((i+8-1),Form("A_{%d}",i+2));
         aux=aux+2;
     }
 
@@ -283,7 +283,7 @@ void makeSphe(string histogram){
     lastOne->SetParName(5,"#sigma_{1}");
     lastOne->SetParName(6,"A_{2}");
     lastOne->SetParName(7,"#mu_{2}");
-    lastOne->SetParName(8,"#sigma_{2}");
+    // lastOne->SetParName(8,"#sigma_{2}");
     
     if(darknoise){
         lastOne->FixParameter(4,sphe_charge);
