@@ -84,8 +84,8 @@ void evaluate_undershoot_amplitude(){
   vector<OUTPUT> out(n);
   vector<TBranch*> br(n);
   for (Int_t i = 0; i<n; i++) br[i] = tout->Branch(Form("E%.0f",volts[i]),&out[i],out[0].tobranch);
-  // vector<string> filesC2 = {"C1XArapuca_Efield_0kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_10kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_5kV_A4ch2_250MHz_cosmic00000"};
-  vector<string> filesC2 = {"C2XArapuca_Efield_0kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_10kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_5kV_A1ch1_250MHz_cosmic00000"};
+  vector<string> filesC2 = {"C1XArapuca_Efield_0kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_10kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_5kV_A4ch2_250MHz_cosmic00000"};
+  // vector<string> filesC2 = {"C2XArapuca_Efield_0kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_10kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_5kV_A1ch1_250MHz_cosmic00000"};
   string conc = "/analyzed.root";
 
   vector<TFile*> f(n);

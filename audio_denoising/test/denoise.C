@@ -17,7 +17,7 @@ void denoise()
   // rand_val(1);
 
   // Set parameters for simulation  
-  int      N 		= 2000;         
+  int      N 		= 2500;         
   double   stdv 	= 10;     
   double   stdu 	= 1;
   double   alpha 	= 0.99;
@@ -69,7 +69,12 @@ void denoise()
   for (int k=0; k<M; k++)
   {
   	// Compute autocorrelation of s(n)
-  	rss[k] = pow(alpha,k)/(1-pow(alpha,2))*pow(stdu,2);
+  	// rss[k] = pow(alpha,k)/(1-pow(alpha,2))*pow(stdu,2);
+    rss[k]=0;
+    for(Int_t j = 0; j<N-k; j++){
+          rss[k] += s[j]*s[j+k]/(N-k);
+        }
+        // cout << pow(alpha,k)/(1-pow(alpha,2))*pow(stdu,2) << " " << rss[k] << endl;
 
   	// Cross-correlation of x(n) and s(n)
   	rxs[k] = rss[k];
@@ -103,10 +108,13 @@ void denoise()
 	  	temp = temp + Rxx[i][j]*w[j];
 	  }
 	  w[i] = w[i] - beta*(-rxs[i] + temp);
+          // or this:
+          // jaboc iterative method
+          // w[i] = w[i] - (-rxs[i] + temp)/Rxx[i][i];
 	  temp = 0;
-	  //printf("%0.4f\t",w[i]);
+	  // printf("%0.4f\t",w[i]);
 	}
-	//printf("\n");
+	// printf("\n");
   }
 
 

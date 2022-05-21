@@ -8,7 +8,7 @@ void fit_sphe_wave1(){
     
     Cal.rebin = 200;
     Cal.fixZero = false;
-    Cal.n_peaks = 7; // n peaks after baseline and 1 p.e.. Total = 2 + n_peaks
+    Cal.n_peaks = 7; // n peaks after baseline Total = 1 + n_peaks
     Cal.peak0 =  0.014; // amplitude baseline
     Cal.mean0 = -0.006; // average baseline
     Cal.sigma0 = 0.03; // sigma baseline
