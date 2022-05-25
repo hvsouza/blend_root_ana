@@ -2,7 +2,7 @@
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 void fourier_tests(){
-  WIENER wf("wn");
+  WIENER wf("wn",4,250,1e-9,1e6);
   WIENER wled("led");
   WIENER wpe("pe");
   WIENER wres("res");
@@ -31,29 +31,30 @@ void fourier_tests(){
   TCanvas *cwn = new TCanvas();
   wf.hfft->Draw();
   
-  // TFile *f = new TFile("led_response.root","READ");
-  // TH1D *hled = (TH1D*)f->Get("averaged_led");
+  TFile *f = new TFile("led_response.root","READ");
+  TH1D *hled = (TH1D*)f->Get("averaged_led");
 
-  // TFile *f2 = new TFile("few_pe_response.root","READ");
-  // TH1D *hpe = (TH1D*)f2->Get("averaged_few_pe");
+  TFile *f2 = new TFile("few_pe_response.root","READ");
+  TH1D *hpe = (TH1D*)f2->Get("averaged_few_pe");
 
   
-  // wled.fft(hled);
-  // wpe.fft(hpe);
+  wled.fft(hled);
+  wpe.fft(hpe);
 
-  // TCanvas *cfft = new TCanvas();
-  // wled.hfft->Draw();
-  // wpe.hfft->Draw("SAME");
+  TCanvas *cfft = new TCanvas();
+  wled.hfft->Draw();
+  wpe.hfft->Draw("SAME");
 
 
-  // wres.deconvolve(wled,wpe,90);
-  // // wres.shift_waveform(wres.hwvf,1200/4);
+  wres.deconvolve(wled,wpe,22.5);
+  wres.shift_waveform(wres.hwvf,1200/4);
 
-  // TCanvas *cres = new TCanvas();
-  // wres.hwvf->Draw("");
+  TCanvas *cres = new TCanvas();
+  wres.hwvf->Draw("");
 
-  // cfft->cd();
-  // wres.hfft->Draw("SAME");
+  cfft->cd();
+  wres.hPSD->Draw("");
+  wres.gaus_filter->Draw("");
 
 
   
