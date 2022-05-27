@@ -33,56 +33,64 @@ public:
 
   void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50){ // y is the signal, h is the device response (a.k.a single photo-electron)
     // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
-   gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
+    gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
 
-   // the cutoff frequency is when x is equal to sqrt(0.7)*sigma, so to use 50 MHz as cutoff, sigma must be 50/sqrt
-   cutoff_frequency = cutoff_frequency/sqrt(0.7);
-   gaus_filter->SetParameters(0,cutoff_frequency);
+    // the cutoff frequency is when x is equal to sqrt(0.7)*sigma, so to use 50 MHz as cutoff, sigma must be 50/sqrt
+    cutoff_frequency = cutoff_frequency/sqrt(0.7);
+    gaus_filter->SetParameters(0,cutoff_frequency);
    
-   // the for is performed in k, need to convert back to frequency
-   Double_t convert_freq = frequency/npts;
+    // the for is performed in k, need to convert back to frequency
+    Double_t convert_freq = frequency/npts;
 
 
    
-   for(Int_t k=0; k<npts/2+1; k++){
-     spec[k] = y.spec[k]*gaus_filter->Eval(convert_freq*k)/h.spec[k];
+    for(Int_t k=0; k<npts/2+1; k++){
+      spec[k] = y.spec[k]*gaus_filter->Eval(convert_freq*k)/h.spec[k];
       
-     spec_re[k] = spec[k].Re();
-     spec_im[k] = spec[k].Im();
+      spec_re[k] = spec[k].Re();
+      spec_im[k] = spec[k].Im();
 
-     // or you can do something like this...
-     // spec_re[k] = gaus_filter->Eval(k)*(y.re_comp[k]*h.re_comp[k] + y.im_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
-     // spec_im[k] = gaus_filter->Eval(k)*(h.re_comp[k]*y.im_comp[k] - y.re_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
+      // or you can do something like this...
+      // spec_re[k] = gaus_filter->Eval(k)*(y.re_comp[k]*h.re_comp[k] + y.im_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
+      // spec_im[k] = gaus_filter->Eval(k)*(h.re_comp[k]*y.im_comp[k] - y.re_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
 
-   }
-   //Now let's make a backward transform:
-   Int_t n = npts;
-   TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &n, "C2R M K");
-   fft_final->SetPointsComplex(spec_re,spec_im);
-   fft_final->Transform();
-   TH1 *hfinal = 0;
-   //Let's look at the output
-   hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
-   hfinal->Scale(factor);
+    }
+    //Now let's make a backward transform:
+    
+    TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &npts, "C2R M K");
+    fft_final->SetPointsComplex(spec_re,spec_im);
+    fft_final->Transform();
+    TH1 *hfinal = 0;
+    //Let's look at the output
+    hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
+    hfinal->Scale(factor);
 
-   hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
-   hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
-   hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
-   for(Int_t i = 0; i<n; i++){
-     res[i] = hfinal->GetBinContent(i+1);
-     hwvf->SetBinContent(i+1,res[i]);
-   }
+    hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
+    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
+    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
+    for(Int_t i = 0; i<npts; i++){
+      res[i] = hfinal->GetBinContent(i+1);
+      hwvf->SetBinContent(i+1,res[i]);
+    }
 
-   shift_waveform(hwvf,y.maxBin);
-   fft(hwvf);
+    shift_waveform(hwvf,y.maxBin);
+    fft(hwvf);
    
-   flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
-   flar->SetParameters(0.3,10,0.3,1000);
+    flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
+    flar->SetParameters(0.3,10,0.3,1000);
    
 
-   delete hfinal;
+    delete hfinal;
    
   }
+
+
+
+
+
+
+
+  
   void shift_waveform(TH1D *h, Int_t new_max){
     Int_t old_max = h->GetMaximumBin();
     Int_t old_ref = old_max - new_max;
@@ -104,6 +112,12 @@ public:
     }
     delete htemp;
   }
+
+
+
+
+
+
   
   TVirtualFFT * fft(TH1D *hsignal){
 
@@ -118,72 +132,110 @@ public:
     TH1 *hm = 0;
     TVirtualFFT::SetTransform(0);
     hm = hsignal->FFT(hm, "MAG R2C measure");
-   //NOTE: for "real" frequencies you have to divide the x-axes range with the range of your function
-   //(in this case 4*Pi); y-axes has to be rescaled by a factor of 1/SQRT(n) to be right: this is not done automatically!
+    //NOTE: for "real" frequencies you have to divide the x-axes range with the range of your function
+    //(in this case 4*Pi); y-axes has to be rescaled by a factor of 1/SQRT(n) to be right: this is not done automatically!
 
     //Look at the DC component and the Nyquist harmonic:
     //That's the way to get the current transform object:
     TVirtualFFT *fft = TVirtualFFT::GetCurrentTransform();
     
-   //Use the following method to get the full output:
-   fft->GetPointsComplex(re_comp,im_comp);
+    //Use the following method to get the full output:
+    fft->GetPointsComplex(re_comp,im_comp);
    
-   for(Int_t k = 0; k<npts/2+1; k++){
-     spec[k] = TComplex(re_comp[k],im_comp[k])*factor;
-     hfft->SetBinContent(k+1,spec[k].Rho2());
-     // the same as:
-     // hfft->SetBinContent(k+1,hm->GetBinContent(k+1)*factor);
+    for(Int_t k = 0; k<npts/2+1; k++){
+      spec[k] = TComplex(re_comp[k],im_comp[k])*factor;
+      hfft->SetBinContent(k+1,spec[k].Rho());
+      // the same as:
+      // hfft->SetBinContent(k+1,hm->GetBinContent(k+1)*factor);
 
-     //for spectrum density
-     hPSD->SetBinContent(k+1,spec[k].Rho2());
-     powerSpectrum = hPSD->Integral()*2; // *2 because it is only half of the spectrum
+      //for spectrum density
+      hPSD->SetBinContent(k+1,spec[k].Rho2());
+      powerSpectrum = hPSD->Integral()*2; // *2 because it is only half of the spectrum
      
-     // cout << k << " " << re_comp[k] << " " << im_comp[k] << " " << spec[k].Rho2() << endl;
-   }
-   delete hm;
+      // cout << k << " " << re_comp[k] << " " << im_comp[k] << " " << spec[k].Rho2() << endl;
+    }
+    delete hm;
 
-   return fft;
+    return fft;
   }
+
+
+
+
+
+
 
 
   void backfft(WIENER y){
 
-   for(Int_t k=0; k<npts/2+1; k++){
-     spec[k] = y.spec[k];
+    for(Int_t k=0; k<npts/2+1; k++){
+      spec[k] = y.spec[k];
       
-     spec_re[k] = spec[k].Re();
-     spec_im[k] = spec[k].Im();
+      spec_re[k] = spec[k].Re();
+      spec_im[k] = spec[k].Im();
 
-   }
-   //Now let's make a backward transform:
-   Int_t n = npts;
-   TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &n, "C2R M K");
-   fft_final->SetPointsComplex(spec_re,spec_im);
-   fft_final->Transform();
-   TH1 *hfinal = 0;
-   //Let's look at the output
-   hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
-   // hfinal->Scale(factor); // you dont scale to get back ...
+    }
+    //Now let's make a backward transform:
+    TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &npts, "C2R M K");
+    fft_final->SetPointsComplex(spec_re,spec_im);
+    fft_final->Transform();
+    TH1 *hfinal = 0;
+    //Let's look at the output
+    hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
+    // hfinal->Scale(factor); // you dont scale to get back ...
 
-   hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
-   hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
-   hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
-   for(Int_t i = 0; i<n; i++){
-     res[i] = hfinal->GetBinContent(i+1);
-     hwvf->SetBinContent(i+1,res[i]);
-   }
+    hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
+    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
+    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
+    for(Int_t i = 0; i<npts; i++){
+      res[i] = hfinal->GetBinContent(i+1);
+      hwvf->SetBinContent(i+1,res[i]);
+    }
 
-   fft(hwvf);
+    fft(hwvf);
    
-   flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
-   flar->SetParameters(0.3,10,0.3,1000);
+    flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
+    flar->SetParameters(0.3,10,0.3,1000);
    
 
-   delete hfinal;
+    delete hfinal;
    
   }
 
-  void rescale_histogram(Int_t newpts);
+
+  
+  // the histogram stuff works... deconvolution tested only on LED pulses. Need to check for LAr signal.
+  // I need to with LAr signals...  
+  void rescale_histogram(Int_t newpts){
+    npts = newpts;
+    TComplex *tmpspec = new TComplex[npts];
+    tmpspec = spec;
+
+    Double_t oldfactor = factor;
+    startup();
+    TH1D *htemp = (TH1D*)hfft->Clone("htemp");
+    hfft->SetBins(newpts/2,0,frequency/2);
+
+    Double_t centerHisto = htemp->GetBinCenter(1);
+    Double_t widthHisto = htemp->GetBinWidth(1);
+    Double_t zeroHisto = centerHisto-widthHisto/2;
+    Int_t auxHisto = 1;
+    for(Int_t i = 1; i<=npts; i++){
+      Double_t refNewHisto = hfft->GetBinCenter(i);
+      // cout << refNewHisto << " " << zeroHisto << " " << widthHisto << endl;
+      if(refNewHisto <= (zeroHisto+widthHisto)){
+        spec[i-1]=tmpspec[auxHisto-1]*factor/oldfactor; 
+        hfft->SetBinContent(i,htemp->GetBinContent(auxHisto)*factor/oldfactor);
+      }
+      else{
+        auxHisto++;
+        zeroHisto = zeroHisto+widthHisto;
+        spec[i-1]=tmpspec[auxHisto-1]*factor/oldfactor; 
+        hfft->SetBinContent(i,htemp->GetBinContent(auxHisto)*factor/oldfactor);
+      }
+    }
+    delete htemp;
+  }
 
   
 
@@ -212,31 +264,32 @@ public:
   
     
     if(units_step == 1e-9)
-        unit_time = "ns";
+      unit_time = "ns";
     else if(units_step == 1e-6)
-        unit_time = "#mus";
+      unit_time = "#mus";
         
     else if(units_step == 1e-3)
-        unit_time = "ms";
+      unit_time = "ms";
         
     else if(units_step == 1)
-        unit_time = "s";
+      unit_time = "s";
 
     if(units_freq == 1e9)
-        unit_freq = "GHz";
+      unit_freq = "GHz";
     else if(units_freq == 1e6)
-        unit_freq = "MHz";
+      unit_freq = "MHz";
         
     else if(units_freq == 1e3)
-        unit_freq = "kHz";
+      unit_freq = "kHz";
         
     else if(units_freq == 1)
-        unit_freq = "Hz";
+      unit_freq = "Hz";
 
     
     
   }
   
+
   // based https://dspcookbook.github.io/optimal-filtering/wiener-filter-2/#3-solution
   // creates filter from source s and reference d (such as noise)
   vector<Double_t> create_filter_from_reference(vector<Double_t> signal, vector<Double_t> reference,Int_t filter_size){
@@ -300,5 +353,9 @@ public:
     }
     return res;
   }
+
+
+
+ 
   
 };
