@@ -2,7 +2,7 @@
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 void fourier_tests(){
-  WIENER wf("wn",4,250,1e-9,1e6);
+  WIENER wf("wn",4,250,1e-9,1e6,2500);
   WIENER wled("led");
   WIENER wpe("pe");
   WIENER wres("res");
