@@ -114,7 +114,7 @@ TGraph* build_noise_spectral_density(double rms, int nwindow, int nsample, doubl
   return g_noise_spectral_density;
 }
 
-int example_deconvolution()
+int example_deconvolution_edited()
 {
   gStyle->SetPalette(kSunset);
   //- - - - - - - - - - - - - - - - - - - - - - Retrieve spe template waveform
@@ -169,9 +169,10 @@ int example_deconvolution()
       if (tt>1 && tt<9) { // avoid evaluating the template outside its domain 
         double v = spe_template->Eval(tt, 0, "S");
         xv[i] += v;
+        xs[i] += TMath::Gaus(t, tph_true[j], 0.04, false); // true signal shape
+    
       }
     }
-    xs[i] = TMath::Gaus(t, 1.1, 0.01, true)/dt; // true signal shape
     xt[i] = t;
     xn[i] = gRandom->Gaus(0, 0.25); // white noise
     xv[i] += xn[i]; // waveform = signal + noise
@@ -202,7 +203,7 @@ int example_deconvolution()
   gv->GetXaxis()->SetTitleSize(0.06);
   gv->GetXaxis()->SetLabelSize(0.06);
   //gn->Draw("l");
-  //gs->Draw("l");
+  gs->Draw("l");
   gPad->SetTopMargin(0.14);
   gPad->SetRightMargin(0.05);
   gPad->SetBottomMargin(0.01);
@@ -221,7 +222,10 @@ int example_deconvolution()
   TComplex xS[nsample]; double xS_re[nsample]; double xS_im[nsample];
   // xY: FFT of the filtered signal
   TComplex xY[nsample]; double xY_re[nsample]; double xY_im[nsample];
+// xN: FFT of the noise
+  TComplex xN[nsample]; double xN_re[nsample]; double xN_im[nsample];
 
+  
   // Instance the FFT engine
   TVirtualFFT* fft = TVirtualFFT::FFT(1, &nsample_, "M R2C");
   // wavaform FFT
@@ -239,6 +243,11 @@ int example_deconvolution()
   fft->Transform();
   fft->GetPointsComplex(xS_re, xS_im);
 
+// Noise FFT
+  fft->SetPoints(xn);
+  fft->Transform();
+  fft->GetPointsComplex(xN_re, xN_im);
+  
   // Fill FFT arrays and perform Wiener deconvolution 
   double c_scale = 1./nsample;
   double H2[nsample] = {1}; // spe response spectral density
@@ -246,38 +255,48 @@ int example_deconvolution()
   double S2[nsample] = {0}; // original signal spectral density
   double xf[nsample] = {0}; // frequency array
   TComplex G[nsample];
+
+  double gN2_int =0;
   for (int i=0; i<nsample*0.5+1; i++) {
     // fill FFT arrays
     xH[i] = TComplex(xH_re[i], xH_im[i]) * c_scale;
     xV[i] = TComplex(xV_re[i], xV_im[i]) * c_scale;
     xS[i] = TComplex(xS_re[i], xS_im[i]) * c_scale;
+    xN[i] = TComplex(xN_re[i], xN_im[i]) * c_scale;
     // Compute spectral sensity
-    H2[i] = xH[i].Rho2();
-    N2[i] = gNoise_spectral_density->GetY()[i];
-    S2[i] = xS[i].Rho2();
+    H2[i] = xH[i].Rho2()*2;
+    N2[i] = xN[i].Rho2()*2;
+    gN2_int+=N2[i]; // times 2 because we are only computing half of the fft
+    S2[i] = xS[i].Rho2()*2;
     // Compute Wiener filter
     G[i]  = TComplex::Conjugate(xH[i])*S2[i] / (H2[i]*S2[i] + N2[i]);
     xf[i] = i*0.25*TMath::InvPi()/(t1-t0);
 
     // Compute filtered signal
-    xY[i] = G[i]*xV[i];
+    xY[i] = G[i]*xV[i]*c_scale;
     xY_re[i] = xY[i].Re(); xY_im[i] = xY[i].Im();
   }
+  // xY_re[0] = 0;
+  // xY_im[0] = 0;
     
   // Display (normalized) spectral densities
-  TGraph* gN2 = new TGraph(nsample*0.5+1, xf, N2);
+  TGraph* gN2 = new TGraph(nsample*0.5+1, xf, N2); 
   TGraph* gH2 = new TGraph(nsample*0.5+1, xf, H2);
   TGraph* gS2 = new TGraph(nsample*0.5+1, xf, S2);
+  
+  gN2->SetNameTitle("gN2","gN2");
+  gH2->SetNameTitle("gH2","gH2");
+  gS2->SetNameTitle("gS2","gS2");
 
-  double gN2_int = g_integral(gN2, 0., xf[(int)(nsample*0.5)]);
+  // double gN2_int = g_integral(gN2, 0., xf[(int)(nsample*0.5)]);
   double gH2_int = g_integral(gH2, 0., xf[(int)(nsample*0.5)]);
   double gS2_int = g_integral(gS2, 0., xf[(int)(nsample*0.5)]);
 
-  printf("N2 integral = %g\n", gN2_int);
+  printf("N2 integral = %g\n", gN2_int); // now the Power spectrum results in sigma^2
   printf("H2 integral = %g\n", gH2_int);
   printf("S2 integral = %g\n", gS2_int);
 
-  g_scale(gN2, 1./gN2_int);
+  // g_scale(gN2, 1./gN2_int);
   g_scale(gH2, 1./gH2_int);
   g_scale(gS2, 1./gS2_int);
 
@@ -296,7 +315,13 @@ int example_deconvolution()
   fft->SetPointsComplex(xY_re, xY_im);
   fft->Transform();
   xy = fft->GetPointsReal();
-  for (int i=0; i<nsample; i++) xy[i] *= nsample;
+  Double_t newbaseline = 0;
+  Double_t auxcount = 0;
+  for (int i=0; i<4/dt; i++){
+    newbaseline+=xy[i];
+    auxcount+=1;
+  }
+  for (int i=0; i<nsample; i++) xy[i] -= newbaseline/auxcount;
 
   cTime->cd(2);
   TGraph* gy = new TGraph(nsample, xt, xy);
