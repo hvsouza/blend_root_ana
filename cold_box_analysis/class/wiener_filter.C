@@ -150,10 +150,11 @@ public:
 
       //for spectrum density
       hPSD->SetBinContent(k+1,spec[k].Rho2());
-      powerSpectrum = hPSD->Integral()*2; // *2 because it is only half of the spectrum
      
       // cout << k << " " << re_comp[k] << " " << im_comp[k] << " " << spec[k].Rho2() << endl;
     }
+    powerSpectrum = hPSD->Integral()*2; // *2 because it is only half of the spectrum
+     
     delete hm;
 
     return fft;
