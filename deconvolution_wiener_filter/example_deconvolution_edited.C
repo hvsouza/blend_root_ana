@@ -138,7 +138,7 @@ int example_deconvolution_edited()
 
   // Sample true p.e. time from and exp with τ=1.6 μs and shift 5 μs
   for (int i=0; i<nph_true; i++) {
-    tph_true[i] = gRandom->Exp(2.6)+5;    //1.6
+    tph_true[i] = gRandom->Exp(2.6)+2;    //1.6
     lph_true[i] = new TLine(tph_true[i], 0., tph_true[i], 4.);
     lph_true[i]->SetLineColor(kBlack);
     lph_true[i]->SetLineWidth(2);
@@ -151,6 +151,7 @@ int example_deconvolution_edited()
   double xn[nsample] = {0}; // noise array
   double xh[nsample] = {0}; // impulse response function array (spe template)
   double xs[nsample] = {0}; // original signal (δ-like function)
+  double xr[nsample] = {0}; // mult (δ-like function)
   double* xy;               // deconvoluted signal
 
   // fill impulse response function array
@@ -169,10 +170,12 @@ int example_deconvolution_edited()
       if (tt>1 && tt<9) { // avoid evaluating the template outside its domain 
         double v = spe_template->Eval(tt, 0, "S");
         xv[i] += v;
-        xs[i] += TMath::Gaus(t, tph_true[j], 0.04, false); // true signal shape
+        xr[i] += TMath::Gaus(t, tph_true[j], 0.04, false); // true signal shape
     
       }
     }
+    // xs[i] = TMath::Gaus(t, 4, 0.01, true)/dt; // true signal shape
+    xs[i] = (i==250) ? 10 : 0;
     xt[i] = t;
     xn[i] = gRandom->Gaus(0, 0.25); // white noise
     xv[i] += xn[i]; // waveform = signal + noise
@@ -182,7 +185,7 @@ int example_deconvolution_edited()
   // display waveform and noise
   TGraph* gv = new TGraph(nsample, xt, xv);
   TGraph* gn = new TGraph(nsample, xt, xn);
-  TGraph* gs = new TGraph(nsample, xt, xs);
+  TGraph* gs = new TGraph(nsample, xt, xr);
 
   gv->SetLineColor(kRed+1);
   gn->SetLineColor(kGray+1);
@@ -264,16 +267,16 @@ int example_deconvolution_edited()
     xS[i] = TComplex(xS_re[i], xS_im[i]) * c_scale;
     xN[i] = TComplex(xN_re[i], xN_im[i]) * c_scale;
     // Compute spectral sensity
-    H2[i] = xH[i].Rho2()*2;
-    N2[i] = xN[i].Rho2()*2;
-    gN2_int+=N2[i]; // times 2 because we are only computing half of the fft
-    S2[i] = xS[i].Rho2()*2;
+    H2[i] = xH[i].Rho2();
+    N2[i] = xN[i].Rho2();
+    gN2_int+=N2[i]*2; // times 2 because we are only computing half of the fft
+    S2[i] = 1;
     // Compute Wiener filter
     G[i]  = TComplex::Conjugate(xH[i])*S2[i] / (H2[i]*S2[i] + N2[i]);
     xf[i] = i*0.25*TMath::InvPi()/(t1-t0);
 
     // Compute filtered signal
-    xY[i] = G[i]*xV[i]*c_scale;
+    xY[i] = G[i]*xV[i];
     xY_re[i] = xY[i].Re(); xY_im[i] = xY[i].Im();
   }
   // xY_re[0] = 0;
@@ -296,7 +299,7 @@ int example_deconvolution_edited()
   printf("H2 integral = %g\n", gH2_int);
   printf("S2 integral = %g\n", gS2_int);
 
-  // g_scale(gN2, 1./gN2_int);
+  g_scale(gN2, 1./gN2_int);
   g_scale(gH2, 1./gH2_int);
   g_scale(gS2, 1./gS2_int);
 
@@ -317,7 +320,7 @@ int example_deconvolution_edited()
   xy = fft->GetPointsReal();
   Double_t newbaseline = 0;
   Double_t auxcount = 0;
-  for (int i=0; i<4/dt; i++){
+  for (int i=0; i<2/dt; i++){
     newbaseline+=xy[i];
     auxcount+=1;
   }

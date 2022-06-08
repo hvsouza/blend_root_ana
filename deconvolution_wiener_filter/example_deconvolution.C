@@ -132,7 +132,7 @@ int example_deconvolution()
   const int tmpl_prepulse_tick =  68; // template pre-pulse ticks:w
 
   gRandom->SetSeed(1);
-  const int nph_true = gRandom->Poisson(1000);   // true number of p.e. 
+  const int nph_true = gRandom->Poisson(200);   // true number of p.e. 
   std::vector<double> tph_true(nph_true, 0.); // true time of p.e. 
   std::vector<TLine*> lph_true(nph_true, 0);  // lines for p.e. display
 
@@ -151,6 +151,7 @@ int example_deconvolution()
   double xn[nsample] = {0}; // noise array
   double xh[nsample] = {0}; // impulse response function array (spe template)
   double xs[nsample] = {0}; // original signal (δ-like function)
+  double xr[nsample] = {0}; // mult (δ-like function)
   double* xy;               // deconvoluted signal
 
   // fill impulse response function array
@@ -169,6 +170,8 @@ int example_deconvolution()
       if (tt>1 && tt<9) { // avoid evaluating the template outside its domain 
         double v = spe_template->Eval(tt, 0, "S");
         xv[i] += v;
+        xr[i] += TMath::Gaus(t, tph_true[j], 0.04, false); // true signal shape
+    
       }
     }
     xs[i] = TMath::Gaus(t, 1.1, 0.01, true)/dt; // true signal shape
@@ -181,7 +184,7 @@ int example_deconvolution()
   // display waveform and noise
   TGraph* gv = new TGraph(nsample, xt, xv);
   TGraph* gn = new TGraph(nsample, xt, xn);
-  TGraph* gs = new TGraph(nsample, xt, xs);
+  TGraph* gs = new TGraph(nsample, xt, xr);
 
   gv->SetLineColor(kRed+1);
   gn->SetLineColor(kGray+1);
@@ -202,7 +205,7 @@ int example_deconvolution()
   gv->GetXaxis()->SetTitleSize(0.06);
   gv->GetXaxis()->SetLabelSize(0.06);
   //gn->Draw("l");
-  //gs->Draw("l");
+  gs->Draw("l");
   gPad->SetTopMargin(0.14);
   gPad->SetRightMargin(0.05);
   gPad->SetBottomMargin(0.01);
@@ -320,4 +323,3 @@ int example_deconvolution()
 
   return 0;
 }
-
