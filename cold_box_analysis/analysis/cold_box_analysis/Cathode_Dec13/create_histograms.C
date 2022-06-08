@@ -4,8 +4,8 @@
 void create_histograms(){
   Int_t n = 3;
   vector<Double_t> volts = {0,5,10};
-//   vector<string> filesC2 = {"C1XArapuca_Efield_0kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_5kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_10kV_b_A4ch2_250MHz_cosmic00000"};
-  vector<string> filesC2 = {"C2XArapuca_Efield_0kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_5kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_10kV_b_A1ch1_250MHz_cosmic00000"};
+//   vector<string> filesC2 = {"C1XArapuca_Efield_0kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_5kV_A4ch2_250MHz_cosmic00000","C1XArapuca_Efield_10kV_A4ch2_250MHz_cosmic00000"};
+  vector<string> filesC2 = {"C2XArapuca_Efield_0kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_5kV_A1ch1_250MHz_cosmic00000","C2XArapuca_Efield_10kV_A1ch1_250MHz_cosmic00000"};
   string conc = "/analyzed.root";
   vector<TFile*> f(n);
   vector<TTree*> t1(n);
@@ -22,7 +22,7 @@ void create_histograms(){
     t1[i] = (TTree*)f[i]->Get("t1");
     bch[i] = t1[i]->GetBranch("Ch1");
     bch[i]->SetAddress(&ch[i]);
-    h[i] = new TH1D(Form("h%d",i),Form("h%d",i),200000,-2,2);
+    h[i] = new TH1D(Form("h%d",i),Form("h%d",i),100,-0.1,0.1);
     
     for(Int_t j = 0; j<t1[i]->GetEntries(); j++){
       bch[i]->GetEvent(j);

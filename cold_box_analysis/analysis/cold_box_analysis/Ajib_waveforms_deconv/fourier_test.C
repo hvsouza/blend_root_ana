@@ -21,7 +21,7 @@ void fourier_test(){
   wpe.hfft->Draw("SAME");
 
 
-  wres.deconvolve(wmu,wpe,50);
+  wres.deconvolve(wmu,wpe,12);
   // wres.shift_waveform(0,1200)
 
   TCanvas *cres = new TCanvas();

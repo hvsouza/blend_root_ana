@@ -23,7 +23,7 @@ void fft(){
   wpe.hfft->Draw("SAME");
 
 
-  wres.deconvolve(wmu,wpe,50);
+  wres.deconvolve(wmu,wpe,12.5);
   // wres.shift_waveform(wres.hwvf,1200/4);
 
   TCanvas *cres = new TCanvas();
