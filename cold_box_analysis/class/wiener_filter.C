@@ -31,6 +31,97 @@ public:
   string unit_time;
   string unit_freq;
 
+  // h is the s.p.e. response
+  // n is the noise
+  // s is the expetect signal (delta-like)
+  void wienerGenFilter(WIENER h , WIENER n, WIENER s, Int_t method = 1){
+    for(Int_t k=0; k<npts/2+1; k++){
+      Double_t S2 = 1;                  // expected signal power spectra (for delta function S2 = 1)
+      Double_t H2 = h.spec[k].Rho2();   // single photo-electron power spectra (|H(f)|^2)
+      Double_t N2 = n.spec[k].Rho2();   // noise power spectra 
+      TComplex xH = h.spec[k];          // single photo-electron fourier transformation
+      if(method!=1){
+        S2 = s.spec[k].Rho2(); 
+      }
+      spec[k] = TComplex::Conjugate(xH)*S2/(H2*S2+N2);
+      spec_re[k] = spec[k].Re();
+      spec_im[k] = spec[k].Im();
+    }
+
+    //Now let's make a backward transform:
+    
+    TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &npts, "C2R M K");
+    fft_final->SetPointsComplex(spec_re,spec_im);
+    fft_final->Transform();
+    TH1 *hfinal = 0;
+    //Let's look at the output
+    hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
+    // hfinal->Scale(factor);
+
+    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
+    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
+    for(Int_t i = 0; i<npts; i++){
+      res[i] = hfinal->GetBinContent(i+1);
+      hwvf->SetBinContent(i+1,res[i]);
+    }
+
+    fft(hwvf);
+    delete hfinal;
+   
+  }
+
+  void build_noise(Double_t sigma = 3.5, Int_t filter = 25,Int_t myseed = 1){
+    gRandom->SetSeed(myseed);
+    vector<Double_t> mynoise(npts);
+    vector<Double_t> mynoise_filtered(npts);
+    for(Int_t i = 0; i<npts; i++){
+      mynoise[i] = gRandom->Gaus(0,sigma);
+    }
+    DENOISE dn;
+    if(filter > 0) dn.TV1D_denoise<Double_t>(&mynoise[0],&mynoise_filtered[0],npts,filter);
+    else mynoise_filtered = mynoise;
+    for(Int_t i = 0; i<npts; i++){
+       hwvf->SetBinContent(i+1,mynoise_filtered[i]);
+    }
+    fft(hwvf);
+  }
+
+  void frequency_deconv(WIENER y, WIENER G){
+    for(Int_t k=0; k<npts/2+1; k++){
+      spec[k] = y.spec[k]*G.spec[k];
+      
+      spec_re[k] = spec[k].Re();
+      spec_im[k] = spec[k].Im();
+    }
+
+    //Now let's make a backward transform:
+    TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &npts, "C2R M K");
+    fft_final->SetPointsComplex(spec_re,spec_im);
+    fft_final->Transform();
+    TH1 *hfinal = 0;
+    //Let's look at the output
+    hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
+    // hfinal->Scale(factor);
+
+
+    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
+    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
+    for(Int_t i = 0; i<npts; i++){
+      res[i] = hfinal->GetBinContent(i+1);
+      hwvf->SetBinContent(i+1,res[i]);
+    }
+
+    shift_waveform(hwvf,y.maxBin);
+    fft(hwvf);
+   
+    flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
+    flar->SetParameters(0.3,10,0.3,1000);
+   
+
+    delete hfinal;
+   
+    
+  }
   void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50){ // y is the signal, h is the device response (a.k.a single photo-electron)
     // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
     gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
@@ -43,9 +134,10 @@ public:
     Double_t convert_freq = frequency/npts;
 
 
-   
+    Double_t gaus_blur = 1;
     for(Int_t k=0; k<npts/2+1; k++){
-      spec[k] = y.spec[k]*gaus_filter->Eval(convert_freq*k)/h.spec[k];
+      if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
+      spec[k] = y.spec[k]*gaus_blur/h.spec[k];
       
       spec_re[k] = spec[k].Re();
       spec_im[k] = spec[k].Im();
@@ -56,7 +148,6 @@ public:
 
     }
     //Now let's make a backward transform:
-    
     TVirtualFFT *fft_final = TVirtualFFT::FFT(1, &npts, "C2R M K");
     fft_final->SetPointsComplex(spec_re,spec_im);
     fft_final->Transform();
@@ -65,7 +156,7 @@ public:
     hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
     hfinal->Scale(factor);
 
-    hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
+
     hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
     hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
     for(Int_t i = 0; i<npts; i++){
@@ -122,8 +213,6 @@ public:
   TVirtualFFT * fft(TH1D *hsignal){
 
     maxBin = hsignal->GetMaximumBin(); //get maximum to realign waveforms later
-    hfft = new TH1D(Form("fft_%s",obj_name.c_str()),Form("FFT %s",obj_name.c_str()),npts/2,0,frequency/2);
-    hPSD = new TH1D(Form("PSD_%s",obj_name.c_str()),Form("Power Spectral Density %s",obj_name.c_str()),npts/2,0,frequency/2);
     hfft->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
     hPSD->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
     hfft->GetYaxis()->SetTitle("Magnitude");
@@ -185,7 +274,7 @@ public:
     hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
     // hfinal->Scale(factor); // you dont scale to get back ...
 
-    hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
+
     hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
     hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
     for(Int_t i = 0; i<npts; i++){
@@ -254,6 +343,10 @@ public:
   
 
   void startup(){
+
+    hfft = new TH1D(Form("fft_%s",obj_name.c_str()),Form("FFT %s",obj_name.c_str()),npts/2,0,frequency/2);
+    hPSD = new TH1D(Form("PSD_%s",obj_name.c_str()),Form("Power Spectral Density %s",obj_name.c_str()),npts/2,0,frequency/2);
+    hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
 
     spec = new TComplex[npts];
     spec_re = new Double_t[npts];

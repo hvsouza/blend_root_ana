@@ -168,6 +168,7 @@ public:
   Double_t exclusion_window = 500;
   Double_t currentTime = 0;
   Double_t timeCicle = TMath::Power(2,31)-1;
+  Double_t timeResolution = 8e-9; // 8 ns for 2 ns step, 16 ns for 4 ns step
   Double_t timestamp = 0;
   Double_t deltastamp = 0;
   Double_t temptime = 0;
@@ -523,29 +524,29 @@ public:
           // cout << "problems ??" << endl;
           break; // giving a 5 points relaxiation 
         }
-        // if(i==0){
-        //   if(timestamp<0){
-        //     timestamp = timeCicle+timestamp;
-        //   }
-        //   if(timestamp<temptime){
-        //     deltastamp = timestamp+timeCicle-temptime;
-        //   }
-        //   else{
-        //     deltastamp = timestamp - temptime;
-        //   }
+        if(i==0){
+          if(timestamp<0){
+            timestamp = timeCicle+timestamp;
+          }
+          if(timestamp<temptime){
+            deltastamp = timestamp+timeCicle-temptime;
+          }
+          else{
+            deltastamp = timestamp - temptime;
+          }
 
-        //   temptime = timestamp;
+          temptime = timestamp;
 
-        //   if(init_time!=0 && eventFile<maxEvents){
-        //     currentTime = currentTime+deltastamp*8*TMath::Power(10,-9);
-        //   }
-        //   else{
-        //     init_time = 1;
-        //   }
-        //   ch[i].time = currentTime;
-        // }
+          if(init_time!=0 && eventFile<maxEvents){
+            currentTime = currentTime+deltastamp*timeResolution;
+          }
+          else{
+            init_time = 1;
+          }
+          ch[i].time = currentTime;
+        }
 
-        ch[i].time = event_time[aux_time];
+        // if(!isBinary) ch[i].time = event_time[aux_time];
         // printf("time of event = %11f\n",event_time[aux_time]);
         aux_time++;
         if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
@@ -621,6 +622,7 @@ public:
   
   
   Double_t baseline(Double_t v[],Int_t &selection, Int_t idx, Int_t mevent){
+    if(noBaseline) return 0;
     Double_t result = 0;
     hbase->Reset();
     for(Int_t i=0; i<baselineTime/dtime; i++) hbase->Fill(v[i]);
@@ -631,20 +633,21 @@ public:
     // fbase->SetParameters(1000,res0,hstd);
     // hbase->Print();
     
-    // // to debug 
+    // // to debug ! Note, fitting the baseline makes its about 10 times slower..
 
     Bool_t changed_mean = false;
-    if(hstd/hmean>0.1) hstd = 0.05*hmean; // in the case the standard deviation is bigger then X%, we correct it
-    if(res0>hmean+hstd || res0<hmean-hstd){ // res0 is way too out of the mean, so:
-      TFitResultPtr r = hbase->Fit("fbase","WQ0");
-      Int_t fitStatus = r;
-      // if(fitStatus==0){
-        hmean = fbase->GetParameter(1);
-        hstd = fbase->GetParameter(2);
-        res0 = hmean;
-        changed_mean = true;
-      // }
-    }
+    // if(hstd/hmean>0.1) hstd = 0.05*hmean; // in the case the standard deviation is bigger then X%, we correct it
+    // if(res0>hmean+hstd || res0<hmean-hstd){ // res0 is way too out of the mean, so:
+
+    // TFitResultPtr r = hbase->Fit("fbase","WQ0");
+    //   Int_t fitStatus = r;
+    //   // if(fitStatus==0){
+    //     hmean = fbase->GetParameter(1);
+    //     hstd = fbase->GetParameter(2);
+    //     res0 = hmean;
+    //     changed_mean = true;
+    //   // }
+    // }
     
     // if(idx == 0 && mevent == 3294){
     //   cout << hmean << " " << hstd << " " << res0 << endl;
@@ -661,7 +664,6 @@ public:
         i++;
       }
     }
-    if(noBaseline) return 0;
     if(bins>0)result/=bins;
     if(bins > (baselineTime/dtime)/3.){
       selection = 0;

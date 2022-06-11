@@ -37,6 +37,9 @@
 #include <TPolyLine3D.h>
 #include <TLine.h>
 #include <TTimeStamp.h>
+#include <TComplex.h>
+#include <TVirtualFFT.h>
+#include <TMatrixD.h>
 
 
 
