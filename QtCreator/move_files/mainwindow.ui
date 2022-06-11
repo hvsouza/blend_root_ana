@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -641,9 +641,9 @@
      <widget class="QLabel" name="LED_voltage">
       <property name="geometry">
        <rect>
-        <x>136</x>
+        <x>126</x>
         <y>20</y>
-        <width>91</width>
+        <width>101</width>
         <height>20</height>
        </rect>
       </property>
@@ -753,8 +753,8 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>111</width>
-        <height>151</height>
+        <width>141</width>
+        <height>201</height>
        </rect>
       </property>
       <property name="autoFillBackground">
@@ -907,7 +907,7 @@
      <x>0</x>
      <y>0</y>
      <width>385</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuLAr_Test">

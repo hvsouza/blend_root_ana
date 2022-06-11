@@ -231,7 +231,7 @@ public:
         led_width->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
         LED_voltage = new QLabel(tab_2);
         LED_voltage->setObjectName(QString::fromUtf8("LED_voltage"));
-        LED_voltage->setGeometry(QRect(136, 20, 91, 20));
+        LED_voltage->setGeometry(QRect(126, 20, 101, 20));
         LED_voltage->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
         led_voltage = new QLineEdit(tab_2);
         led_voltage->setObjectName(QString::fromUtf8("led_voltage"));
@@ -262,7 +262,7 @@ public:
         tabWidget_2->addTab(tab_4, QString());
         Information = new QLabel(tab_2);
         Information->setObjectName(QString::fromUtf8("Information"));
-        Information->setGeometry(QRect(10, 20, 111, 151));
+        Information->setGeometry(QRect(10, 20, 141, 201));
         Information->setAutoFillBackground(false);
         Information->setTextFormat(Qt::AutoText);
         Information->setScaledContents(false);
@@ -309,7 +309,7 @@ public:
         MainWindow->setStatusBar(statusBar);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 385, 22));
+        menuBar->setGeometry(QRect(0, 0, 385, 24));
         menuLAr_Test = new QMenu(menuBar);
         menuLAr_Test->setObjectName(QString::fromUtf8("menuLAr_Test"));
         MainWindow->setMenuBar(menuBar);
@@ -318,7 +318,7 @@ public:
 
         retranslateUi(MainWindow);
 
-        tabWidget->setCurrentIndex(1);
+        tabWidget->setCurrentIndex(0);
         pushButton_2->setDefault(false);
 
 
