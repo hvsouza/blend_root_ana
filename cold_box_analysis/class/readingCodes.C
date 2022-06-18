@@ -380,7 +380,9 @@ public:
     
     DENOISE dn;
     
-    
+
+    if(dtime == 2)  timeResolution = 8e-9; // 8 ns for 2 ns step, 16 ns for 4 ns step
+    if(dtime == 4)  timeResolution = 16e-9; // 16 ns for 4 ns step
     
     Int_t numberoflines=0;
     Double_t temp;
