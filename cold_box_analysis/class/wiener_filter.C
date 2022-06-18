@@ -12,6 +12,8 @@ public:
   Double_t units_step = 1e-9; // 1e9 = ns,  
   Double_t factor = 1./(npts);
 
+  Double_t baseline = 0;
+
   TH1D *hfft;
   TH1D *hPSD;
   TH1D *hwvf;
@@ -87,9 +89,25 @@ public:
   }
 
   void frequency_deconv(WIENER y, WIENER G){
+    
+    // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
+    gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
+
+    // the cutoff frequency is when x is equal to sqrt(0.7)*sigma, so to use 50 MHz as cutoff, sigma must be 50/sqrt
+    cutoff_frequency = cutoff_frequency/sqrt(0.7);
+    gaus_filter->SetParameters(0,cutoff_frequency);
+   
+    // the for is performed in k, need to convert back to frequency
+    Double_t convert_freq = frequency/npts;
+
+
+    Double_t gaus_blur = 1;
+    for(Int_t k=0; k<npts/2+1; k++){
+      if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
+
     for(Int_t k=0; k<npts/2+1; k++){
       spec[k] = y.spec[k]*G.spec[k];
-      
+      // cout << spec[k] << endl;
       spec_re[k] = spec[k].Re();
       spec_im[k] = spec[k].Im();
     }
@@ -106,12 +124,21 @@ public:
 
     hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
     hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
+
+    shift_waveform(hfinal,y.maxBin);
+    Double_t bl = 0;
+    Double_t auxbaseline = 0;
+    for(Int_t i=0; i<baseline/step; i++){
+      bl+=hfinal->GetBinContent(i+1);
+      auxbaseline+=1;
+    }
+    bl=bl/auxbaseline;
+   
     for(Int_t i = 0; i<npts; i++){
       res[i] = hfinal->GetBinContent(i+1);
-      hwvf->SetBinContent(i+1,res[i]);
+      hwvf->SetBinContent(i+1,res[i]-bl);
     }
 
-    shift_waveform(hwvf,y.maxBin);
     fft(hwvf);
    
     flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
@@ -181,8 +208,8 @@ public:
 
 
 
-  
-  void shift_waveform(TH1D *h, Int_t new_max){
+  template <class T>
+  void shift_waveform(T *h, Int_t new_max){
     Int_t old_max = h->GetMaximumBin();
     Int_t old_ref = old_max - new_max;
     TH1D *htemp = (TH1D*)h->Clone("htemp");
@@ -212,7 +239,7 @@ public:
   
   TVirtualFFT * fft(TH1D *hsignal){
 
-    maxBin = hsignal->GetMaximumBin(); //get maximum to realign waveforms later
+    if(maxBin==0) maxBin = hsignal->GetMaximumBin(); //get maximum to realign waveforms later, only one time helps with several waveforms (not all max are the same)
     hfft->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
     hPSD->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
     hfft->GetYaxis()->SetTitle("Magnitude");

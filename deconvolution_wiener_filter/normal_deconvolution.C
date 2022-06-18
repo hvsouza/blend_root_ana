@@ -4,13 +4,13 @@
 
 void normal_deconvolution(){
 
-  TFile *fsphe = new TFile("sphe_waveforms_Ch1.root","READ");
+  TFile *fsphe = new TFile("sphe_waveforms_Ch1_no_filter.root","READ");
   TGraph *gsphe = (TGraph*)fsphe->Get("mean_ch1");
 
-  TFile *favg = new TFile("averaged_waveforms.root","READ");
+  TFile *favg = new TFile("averaged_waveforms_no_filter.root","READ");
   TGraph *gavg = (TGraph*)favg->Get("average_normalized_ch1");
 
-  TFile *f1 = new TFile("analyzed.root","READ");
+  TFile *f1 = new TFile("analyzed_no_filter.root","READ");
   TTree *t1 = (TTree*)f1->Get("t1");
 
   ADC_DATA ch1;
@@ -53,8 +53,8 @@ void normal_deconvolution(){
   wpe.fft(hsphe);
   wback.backfft(wpe);
 
-  // for(Int_t event = 0; event<t1->GetEntries(); event++){
-  for(Int_t event = 0; event<100; event++){
+  for(Int_t event = 0; event<t1->GetEntries(); event++){
+  // for(Int_t event = 0; event<100; event++){
      bch->GetEvent(event);
      if(ch1.selection==0){
        if(ch1.fprompt<0.5){
