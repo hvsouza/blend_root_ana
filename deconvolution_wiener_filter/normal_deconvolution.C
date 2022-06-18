@@ -56,7 +56,7 @@ void normal_deconvolution(){
   for(Int_t event = 0; event<t1->GetEntries(); event++){
   // for(Int_t event = 0; event<100; event++){
      bch->GetEvent(event);
-     if(ch1.selection==0){
+     // if(ch1.selection==0){
        if(ch1.fprompt<0.5){
          if(ch1.charge>2.2e6 && ch1.charge<12e6 && ch1.peak<5000){
            if(ch1.wvf[12000/4]<-1500) continue; // there is one event with saturated undershoot, I want to avoid it..
@@ -64,7 +64,7 @@ void normal_deconvolution(){
              hsignal->SetBinContent(i+1,ch1.wvf[i]);
            }
            wsignal.fft(hsignal);
-           wdec.deconvolve(wsignal,wpe,1.8);
+           wdec.deconvolve(wsignal,wpe,2);
            for(Int_t i=0; i<memorydepth; i++){
              hres->AddBinContent(i+1,wdec.hwvf->GetBinContent(i+1));
            }
@@ -72,7 +72,7 @@ void normal_deconvolution(){
            
          }
        }
-     }
+     // }
   }
 
   

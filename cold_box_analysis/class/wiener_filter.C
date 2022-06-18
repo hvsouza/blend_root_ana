@@ -88,13 +88,13 @@ public:
     fft(hwvf);
   }
 
-  void frequency_deconv(WIENER y, WIENER G){
+  void frequency_deconv(WIENER y, WIENER G, Double_t cutoff_frequency=0){
     
     // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
     gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
 
-    // the cutoff frequency is when x is equal to sqrt(0.7)*sigma, so to use 50 MHz as cutoff, sigma must be 50/sqrt
-    cutoff_frequency = cutoff_frequency/sqrt(0.7);
+    // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
+    cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
     gaus_filter->SetParameters(0,cutoff_frequency);
    
     // the for is performed in k, need to convert back to frequency
@@ -104,9 +104,7 @@ public:
     Double_t gaus_blur = 1;
     for(Int_t k=0; k<npts/2+1; k++){
       if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
-
-    for(Int_t k=0; k<npts/2+1; k++){
-      spec[k] = y.spec[k]*G.spec[k];
+      spec[k] = y.spec[k]*G.spec[k]*gaus_blur;
       // cout << spec[k] << endl;
       spec_re[k] = spec[k].Re();
       spec_im[k] = spec[k].Im();
@@ -125,7 +123,7 @@ public:
     hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
     hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
 
-    shift_waveform(hfinal,y.maxBin);
+    // shift_waveform(hfinal,y.maxBin);
     Double_t bl = 0;
     Double_t auxbaseline = 0;
     for(Int_t i=0; i<baseline/step; i++){
@@ -150,11 +148,11 @@ public:
     
   }
   void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50){ // y is the signal, h is the device response (a.k.a single photo-electron)
-    // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
+     // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
     gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
 
-    // the cutoff frequency is when x is equal to sqrt(0.7)*sigma, so to use 50 MHz as cutoff, sigma must be 50/sqrt
-    cutoff_frequency = cutoff_frequency/sqrt(0.7);
+    // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
+    cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
     gaus_filter->SetParameters(0,cutoff_frequency);
    
     // the for is performed in k, need to convert back to frequency
