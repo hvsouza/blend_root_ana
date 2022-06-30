@@ -190,7 +190,8 @@ void makeSphe(string histogram){
         fixZero = true;
     }
     
-    func->SetParameters(peak0,mean0,sigma0,peak1,mean1,sigma1); // this values can change    
+    func->SetParameters(peak0,mean0,sigma0,peak1,mean1,sigma1); // this values can change
+    // func->SetParLimits(2,0.9*sigma0,2*sigma0);
     
     Int_t aux = 0;
     for(Int_t i = 0; i<n_peaks; i++){
@@ -260,6 +261,7 @@ void makeSphe(string histogram){
     lastOne->SetParameter(0,func->GetParameter(0));
     lastOne->SetParameter(1,func->GetParameter(1));
     lastOne->SetParameter(2,func->GetParameter(2));
+    // lastOne->SetParLimits(2,0*func->GetParameter(2),0.5*func->GetParameter(2));
     
     lastOne->SetParameter(3,func->GetParameter(3));
     lastOne->SetParameter(4,func->GetParameter(4));
@@ -811,7 +813,7 @@ void giveMeSphe_darkCount(string name){
   if(led_calibration==false){
     makeHistogram(name);  
     fout->WriteObject(tout,"t1","TObject::kOverwrite");
-    fout->Close();
+    // fout->Close();
   }
   else{
     makeSimpleHistogram(name);
@@ -1424,59 +1426,60 @@ void smoothWithMovingAvarage(vector<Double_t> shifted){
 }
 // ____________________________________________________________________________________________________ //
 void drawMySamples(){
+
+  string sampleName = to_string(static_cast<Int_t>(my_events[aux_events]))+"_"+to_string(channel);
+  
+  // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
+  // this is not working when saving
+  TCanvas *c1 = new TCanvas();
+
+  c1->cd(1);
+  g_smooth->SetLineColor(kRed);
+  g_smooth->SetLineWidth(3);
     
-    TCanvas *c1 = new TCanvas();
-    c1->cd(1);
-    g_smooth->SetLineColor(kRed);
-    g_smooth->SetLineWidth(3);
+  g_normal->SetLineColor(kBlue);
+  g_normal->SetTitle(charge_status.c_str());
     
-    g_normal->SetLineColor(kBlue);
-    g_normal->SetTitle(charge_status.c_str());
+  g_normal->Draw("AL");
+  g_smooth->Draw("L SAME");
     
-    g_normal->Draw("AL");
-    g_smooth->Draw("L SAME");
+  TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
+  TLine *ldev = new TLine(timeLimit,mean+tolerance*stddev,memorydepth*dtime,mean+tolerance*stddev);
     
-    TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
-    TLine *ldev = new TLine(timeLimit,mean+tolerance*stddev,memorydepth*dtime,mean+tolerance*stddev);
+  lmean->SetLineColor(kGreen);
+  ldev->SetLineColor(kGreen);
     
-    lmean->SetLineColor(kGreen);
-    ldev->SetLineColor(kGreen);
+  lmean->SetLineWidth(2);
+  ldev->SetLineWidth(2);
     
-    lmean->SetLineWidth(2);
-    ldev->SetLineWidth(2);
+  lmean->Draw();
+  ldev->Draw();
+  Int_t n = selected_peaks.size();
+  if(n!=0){
+    g_points = new TGraph(n,&selected_time[0],&selected_peaks[0]);
+    g_points->SetMarkerColor(kBlack);
+    g_points->Draw("P* SAME");
+  }
     
-    lmean->Draw();
-    ldev->Draw();
-    Int_t n = selected_peaks.size();
-    if(n!=0){
-        g_points = new TGraph(n,&selected_time[0],&selected_peaks[0]);
-        g_points->SetMarkerColor(kBlack);
-        g_points->Draw("P* SAME");
+    
+    
+    
+  // Some fancy drawing now; 
+  if(matchingAreas.size()!=0){
+    Int_t nAreas = matchingAreas.size(); //always two points per area of course
+    TLine *larea;
+    Double_t max = g_normal->GetYaxis()->GetXmax();
+    for(Int_t i = 0; i<nAreas; i++){
+      larea = new TLine(matchingAreas[i],0,matchingAreas[i],max);
+      cout << "\t\t\t" << matchingAreas[i] << " ";
+      if((i+1)%2==0)cout << "\n" << endl;
+      larea->SetLineColor(kRed);
+      larea->SetLineWidth(2);
+      larea->Draw();
     }
+  }    
     
-    
-    
-    
-    // Some fancy drawing now; 
-    if(matchingAreas.size()!=0){
-        Int_t nAreas = matchingAreas.size(); //always two points per area of course
-        TLine *larea;
-        Double_t max = g_normal->GetYaxis()->GetXmax();
-        for(Int_t i = 0; i<nAreas; i++){
-            larea = new TLine(matchingAreas[i],0,matchingAreas[i],max);
-            cout << "\t\t\t" << matchingAreas[i] << " ";
-            if((i+1)%2==0)cout << "\n" << endl;
-            larea->SetLineColor(kRed);
-            larea->SetLineWidth(2);
-            larea->Draw();
-        }
-    }
-    
-    
-    
-    string sampleName = to_string(static_cast<Int_t>(my_events[aux_events]))+"_"+to_string(channel);
-    
-    fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
+  fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
 
     
 }
@@ -1561,6 +1564,7 @@ void makeSimpleHistogram(string filename){
     
   ofstream ftmp;
   ftmp.open("valid_events.log",ios::out);
+  if(just_a_test){nentries = just_this;}  
   for(Int_t i = 0; i<nentries; i++){
     bch->GetEvent(i);
     noise = false;
@@ -1616,6 +1620,7 @@ void makeSimpleHistogram(string filename){
       wvfcharge = charge*dtime;
       twvf->Fill();
       hcharge->Fill(charge*dtime);
+      // cout << charge*dtime << endl;
       ftmp << i << "\n";
     }
     charge=0;
