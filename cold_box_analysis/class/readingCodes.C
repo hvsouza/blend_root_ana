@@ -552,10 +552,10 @@ public:
         // printf("time of event = %11f\n",event_time[aux_time]);
         aux_time++;
         if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
-        else{
-          for(Int_t l = 0; l<memorydepth; l++){
-            ch[i].wvf[l] = raw[l];
-          }
+       
+        for(Int_t l = 0; l<memorydepth; l++){
+          if(filter==0) ch[i].wvf[l] = raw[l];
+          ch[i].raw[l] = raw[l];
         }
         bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
         // if(bl==-9999) cout << i << " " << tEvent << endl;
@@ -601,6 +601,7 @@ public:
     navg[nch]++;
     for(Int_t i = 0; i<memorydepth; i++){
       ch.wvf[i] = ch.wvf[i]-bl;
+      ch.raw[i] = ch.raw[i]-bl;
       avg[nch][i]+=ch.wvf[i];
 //       cout << i << " " << ch.wvf[i] << endl;
       if(i>=startCharge/dtime && i<chargeTime/dtime){
