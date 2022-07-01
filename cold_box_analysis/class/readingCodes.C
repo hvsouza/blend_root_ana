@@ -387,7 +387,7 @@ public:
     Int_t numberoflines=0;
     Double_t temp;
     vector<Double_t> raw(memorydepth);
-    vector<Double_t> filtered(memorydepth);
+    Double_t filtered[memorydepth];
     
     for(Int_t i = 0; i<channels.size(); i++){
       bch[i] = t1->GetBranch(Form("Ch%i",channels[i]));
@@ -520,6 +520,7 @@ public:
               }
               // cout << valbin << endl;
               raw[j] = valbin;
+              ch[i].wvf[j] = valbin;
             }
         }
 
@@ -552,12 +553,7 @@ public:
         // if(!isBinary) ch[i].time = event_time[aux_time];
         // printf("time of event = %11f\n",event_time[aux_time]);
         aux_time++;
-        if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&filtered[0],memorydepth,filter);
-        else{
-          for(Int_t l = 0; l<memorydepth; l++){
-            ch[i].wvf[l] = raw[l];
-          }
-        }
+        if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i].wvf[0],&filtered[0],memorydepth,filter);
         bl = baseline(filtered,ch[i].selection,i,tEvent);
         // if(bl==-9999) cout << i << " " << tEvent << endl;
         getvalues(i,ch[i],bl);
@@ -624,7 +620,7 @@ public:
   }
   
   
-  Double_t baseline(vector<Double_t> v,Int_t &selection, Int_t idx, Int_t mevent){
+  Double_t baseline(Double_t v[],Int_t &selection, Int_t idx, Int_t mevent){
     if(noBaseline) return 0;
     Double_t result = 0;
     hbase->Reset();
