@@ -66,7 +66,6 @@ public:
   Int_t linhasEvento = 9000;
   
   Int_t channel = 1;
-  Double_t filter = 16;
   
   // _______________ Parameters for giveMeSphe_MeanPulseVersion _______________/
   Double_t time_sample = 6000; // in ns
@@ -654,6 +653,8 @@ public:
   Double_t tolerance; // n sigmas
   Double_t baseLimit;
 
+  Double_t filter = 8;
+  
   Double_t timeLimit; // time after LED signal
   Double_t timeLow ; // integration time before peak
   Double_t timeHigh ; // integration time after peak
@@ -736,7 +737,7 @@ public:
   TGraph *g_normal;
   TGraph *g_points;
     
-  vector<Double_t> temp_peak(memorydepth);
+  vector<Double_t> temp_peak;
   vector<Double_t> peak_smooth;
   vector<Double_t> timeg;
 
@@ -804,6 +805,7 @@ public:
   // ____________________________________________________________________________________________________ //
 
   void giveMeSphe_darkCount(string name){
+    temp_peak.resize(memorydepth);
     gROOT->SetBatch(kTRUE);
     fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",channel),"RECREATE");
     tout = new TTree("t1","baseline info");

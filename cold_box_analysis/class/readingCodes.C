@@ -624,7 +624,7 @@ public:
   }
   
   
-  Double_t baseline(Double_t v[],Int_t &selection, Int_t idx, Int_t mevent){
+  Double_t baseline(vector<Double_t> v,Int_t &selection, Int_t idx, Int_t mevent){
     if(noBaseline) return 0;
     Double_t result = 0;
     hbase->Reset();
