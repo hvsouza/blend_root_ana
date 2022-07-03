@@ -802,6 +802,8 @@ public:
   Double_t baselineTime=2000;
   Double_t too_big = 1000;
   Double_t waiting = 0;
+  Double_t pre_filter = 0;
+  Int_t peakPerEvent = 0;
   // ____________________________________________________________________________________________________ //
 
   void giveMeSphe_darkCount(string name){
@@ -1023,7 +1025,8 @@ public:
     }
     for(Int_t i = 0; i<npeaks; i++){
       if(discard_this[i]==false){
-            
+
+        peakPerEvent++;
         statcharge[i] = dtime*statcharge[i];
         charge = dtime*charge;
         hcharge->Fill(statcharge[i]);
@@ -1164,9 +1167,9 @@ public:
     
   }
 
-  vector<double> delay_line(vector<double> v, double delay_time){
+  vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
     if(delay_time==0) return v;
-    vector<double> res(v.size());
+    vector<Double_t> res(v.size());
     for(int i=0; i<v.size(); i++){
       res[i]=v[i] - (i-delay_time>=0 ? v[i-delay_time] : 0);
     }
@@ -1176,7 +1179,10 @@ public:
   // ____________________________________________________________________________________________________ //
   void lookWaveform(){
 
-    vector<Double_t> shifted=delay_line(temp_peak, shifter);//cusp(MIN[i], h);
+    peakPerEvent = 0;
+    
+    vector<Double_t> ma_to_shift = movingAverage(temp_peak,pre_filter);
+    vector<Double_t> shifted=delay_line(ma_to_shift, shifter);//cusp(MIN[i], h);
     smoothWithMovingAvarage(shifted); // first calculate avarage
 
  
@@ -1186,10 +1192,14 @@ public:
       g_smooth = new TGraph(timeg.size(),&timeg[0],&peak_smooth[0]);
       g_normal = new TGraph(timeg.size(),&timeg[0],&temp_peak[0]);
       //         cout << mean << " " << stddev << endl;
+      
     }
     integrateSignal();
     
-    if(snap()){drawMySamples();} // draw sample graphs
+    if(snap()){
+      drawMySamples();
+      cout << "Event " << eventNow << " total of peaks: " << peakPerEvent << endl;
+    } // draw sample graphs
   }
 
   // ____________________________________________________________________________________________________ //
@@ -1237,10 +1247,10 @@ public:
     //_____________________________ Start creating random data to check _____________________________ //
     TRandom *rmd = new TRandom();
 
-    my_events[0] = 1;
+    my_events[0] = 0;
     for(Int_t i = 1; i<nshow; i++){
       //         my_events[i] = static_cast<Int_t>(rmd->Uniform(my_events[i-1]+1,my_events[i-1]+50));
-      my_events[i] = i+1;
+      my_events[i] = i;
     }
     sort(my_events,my_events+nshow);
     
@@ -1275,6 +1285,7 @@ public:
     Int_t j = 0;
     
     temp_peak.clear();
+    temp_peak.resize(memorydepth);
     timeg.clear();
     peak_smooth.clear();
     peakPosition.clear();
@@ -1315,8 +1326,12 @@ public:
     for(Int_t i = 0; i<nentries; i++){
       bch->GetEvent(i);
       DENOISE dn;
-      dn.TV1D_denoise<Double_t>(&ch.wvf[0],&temp_peak[0],memorydepth,filter);
-
+      if(filter>0)dn.TV1D_denoise<Double_t>(&ch.wvf[0],&temp_peak[0],memorydepth,filter);
+      else{
+        for(Int_t i = 0; i<memorydepth; i++){
+          temp_peak[i] = ch.wvf[i];
+        }
+      }
       // for(Int_t i = 0; i<memorydepth; i++){   
       //   if((i<=5000/dtime) && abs(temp_peak[i])<6){
       //     hbase->Fill(temp_peak[i]);
@@ -1341,6 +1356,7 @@ public:
       
       charge_status = "";
       temp_peak.clear();
+      temp_peak.resize(memorydepth);
       peak_smooth.clear();
       peakPosition.clear();
       peakMax.clear();
@@ -1399,7 +1415,7 @@ public:
     
     for(Int_t i = 0; i < n; i++){
 
-      if(i<midpoint || i>(n-midpoint)){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
+      if(i<midpoint || i>(n-midpoint) || interactions == 0){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
         peak_smooth.push_back(shifted.at(i));
       }
       else if(i>cut/dtime){
@@ -1655,6 +1671,47 @@ public:
     f1->Close();
     
   }
+
+
+  vector<Double_t> movingAverage(vector<Double_t> v, Int_t myinte){
+    
+    Int_t n = v.size();
+    if(myinte==0) return v;
+    if(myinte%2==0){ // if it is even, we insert the middle point, e.g. 8 interactions takes 4 before, mid, 4 later
+      midpoint = myinte/2+1;    //midpoint will be 5 here
+      width = myinte+1;
+    }
+    else{
+      midpoint = (myinte-1)/2 + 1; // e.g. 9 interactions the midpoint will be 5
+      width = myinte;
+    }
+    
+
+    vector<Double_t> res(n,0);
+    for(Int_t i = 0; i < n; i++){
+
+      if(i<midpoint || i>(n-midpoint)){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
+        res[i] = v[i];
+      }
+      else if(i>cut/dtime){
+        for(Int_t j = (i-midpoint); j < (i+midpoint); j++) { //first one: from j = (5-5); j<(5+5)
+          sum = sum+v[j];
+          //                 cout << sum << endl;
+        }
+        res[i] = (sum/width);
+            
+        
+      }
+      else{
+        v[i] = (0);
+      }       
+        
+      sum=0;
+    }
+    return res;
+    
+  }
+  
 
 
 };

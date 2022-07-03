@@ -186,10 +186,10 @@ public:
   // Bool_t noBaseline=true;
   vector<Int_t> channels = {1,2};
   Int_t nfiles = 1;
-//   TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),-0.005,0.005);
+  TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,0);
 
   TH1D *htests = new TH1D("htests","htests",1000,0,0);
-  TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,TMath::Power(2,nbits));
+  // TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,TMath::Power(2,nbits));
   TF1* fbase = new TF1("fbase","gaus(0)",0,TMath::Power(2,nbits));
 
 
@@ -421,7 +421,7 @@ public:
     int nbytes = 4;
     Int_t headers_npoints = 0;
     Int_t headers_nwvfs = 0;
-    Bool_t withTimestamp=false;
+    Bool_t withTimestamp=true;
 
     string date, time;
     Double_t stamp;
@@ -436,7 +436,7 @@ public:
         // Segment TrigTime TimeSinceSegment1
         // #1 01-Jan-2002 00:32:41 0                 
         // #2 01-Jan-2002 00:32:41 0.0001    
-        continue;
+        // continue;
         getline(fin[i],headers);
         // cout << headers << endl;
         fin[i] >> headers >> headers_nwvfs >> headers >> headers_npoints;
@@ -554,7 +554,9 @@ public:
         // printf("time of event = %11f\n",event_time[aux_time]);
         aux_time++;
         if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i].wvf[0],&filtered[0],memorydepth,filter);
+        // if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
         bl = baseline(filtered,ch[i].selection,i,tEvent);
+        // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
         // if(bl==-9999) cout << i << " " << tEvent << endl;
         getvalues(i,ch[i],bl);
         ch[i].event = tEvent;
