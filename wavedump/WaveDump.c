@@ -1528,8 +1528,18 @@ int WriteOutputFiles(WaveDumpConfig_t *WDcfg, WaveDumpRun_t *WDrun, CAEN_DGTZ_Ev
             }
             if (WDcfg->Nbit == 8)
                 ns = (int)fwrite(Event8->DataChannel[ch], 1, Size, WDrun->fout[ch]);
-            else
-                ns = (int)fwrite(Event16->DataChannel[ch] , 1 , Size*2, WDrun->fout[ch]) / 2;
+            else{
+                // ns = (int)fwrite(Event16->DataChannel[ch] , 1 , Size*2, WDrun->fout[ch]) / 2;
+              /* Added by Henrique Souza */
+              /* This allows to write at half of the rate*/  
+              ns = 0;
+              int aux = 0;
+              for(j=0; j<Size*2; j++) {
+                if(aux < 1) ns += (int)fwrite(Event16->DataChannel[ch] , 1 , 1, WDrun->fout[ch]);
+                else if (aux == 3) aux = -1; //when aux was going to be 4, it get back to -1 + 1 = 0
+                aux++;
+              }
+            }
             if (ns != Size) {
                 // error writing to file
                 fclose(WDrun->fout[ch]);
