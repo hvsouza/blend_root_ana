@@ -143,7 +143,17 @@ public:
 
 
 
+class Headers{
 
+public:
+
+  int EventSize;
+  int Board_id;
+  int Pattern;
+  int Channel;
+  int EventCounter;
+  int TriggerTimeTag;
+};
 
 class Read{
   
@@ -158,6 +168,7 @@ public:
   Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
   Int_t nbits = 14;
   Bool_t isBinary = false;
+  Bool_t saveFilter = false;
   
   Double_t startCharge = 3300;
   Double_t maxRange = 5000;
@@ -417,7 +428,7 @@ public:
     string headers;
     Double_t init_time = 0;
     uint32_t valbin = 0;
-    int headbin = 0;
+    Headers headbin;
     int nbytes = 4;
     Int_t headers_npoints = 0;
     Int_t headers_nwvfs = 0;
@@ -503,11 +514,11 @@ public:
         }
         
         else{
-          for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text) 
-            fin[i].read((char *) &headbin, nbytes);
+          // for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text) 
+            fin[i].read((char *) &headbin, nbytes*6);
             // printf("%d\n",headbin);
-          }
-          timestamp = headbin;
+          // }
+          timestamp = headbin.TriggerTimeTag;
 
           //           printf("%.0f\n",timestamp);
           for(int j = 0; j < memorydepth; j++)
@@ -555,6 +566,11 @@ public:
         aux_time++;
         if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i].wvf[0],&filtered[0],memorydepth,filter);
         // if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
+        if(saveFilter==true){
+          for(Int_t l = 0; l<memorydepth; l++){
+            ch[i].wvf[l] = filtered[l];
+          }
+        }
         bl = baseline(filtered,ch[i].selection,i,tEvent);
         // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
         // if(bl==-9999) cout << i << " " << tEvent << endl;
@@ -576,6 +592,9 @@ public:
       // }
       if(eventFile<maxEvents){t1->Fill();tEvent+=1;}
       if(OnlyOneEvent == true && eventFile==stopEvent-1){
+        if((headbin.EventSize-24)/2 != memorydepth){
+          cout << "WARNING !!!! INCORRECT LENGTH !!! Reading: " << memorydepth << ", folder: " << (headbin.EventSize-24)/2 << endl;
+        }
         closeMyWhile=true;
       }
       eventFile++;
