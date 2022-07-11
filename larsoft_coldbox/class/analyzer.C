@@ -42,8 +42,8 @@ class DATA{
 
 public:
 
-  // string dettype="TDE";
-  string dettype="BDE";
+  string dettype="TDE";
+  // string dettype="BDE";
   Int_t n_events;
   
   string file_name = "ana_hist_something.root";

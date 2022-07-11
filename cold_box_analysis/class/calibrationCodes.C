@@ -653,7 +653,7 @@ public:
   Double_t tolerance; // n sigmas
   Double_t baseLimit;
 
-  Double_t filter = 8;
+  Double_t filter = 0;
   
   Double_t timeLimit; // time after LED signal
   Double_t timeLow ; // integration time before peak
