@@ -11,7 +11,7 @@ public:
   Int_t selection;
     
   ADC_DATA();
-  const char *tobranch = Form("peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[%i]/D:selection/O",memorydepth);
+  const char *tobranch = Form("peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[%i]/D:selection/I",memorydepth);
 };
 
 

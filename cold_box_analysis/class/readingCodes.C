@@ -197,10 +197,12 @@ public:
   // Bool_t noBaseline=true;
   vector<Int_t> channels = {1,2};
   Int_t nfiles = 1;
-  TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,0);
+
+  // THIS did not work properly, sometimes it gets stuck in a bad region. 
+  // TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,0);
 
   TH1D *htests = new TH1D("htests","htests",1000,0,0);
-  // TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,TMath::Power(2,nbits));
+  TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,TMath::Power(2,nbits));
   TF1* fbase = new TF1("fbase","gaus(0)",0,TMath::Power(2,nbits));
 
 
@@ -532,6 +534,7 @@ public:
               // cout << valbin << endl;
               raw[j] = valbin;
               ch[i].wvf[j] = valbin;
+              filtered[j] = valbin;
             }
         }
 
@@ -574,7 +577,7 @@ public:
         bl = baseline(filtered,ch[i].selection,i,tEvent);
         // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
         // if(bl==-9999) cout << i << " " << tEvent << endl;
-        getvalues(i,ch[i],bl);
+        getvalues(i,ch[i],filtered,bl);
         ch[i].event = tEvent;
         
         numberoflines++;
@@ -610,7 +613,7 @@ public:
   
   
 
-  void getvalues(Int_t &nch,ADC_DATA &ch,Double_t bl){
+  void getvalues(Int_t &nch,ADC_DATA &ch,Double_t filtered[],Double_t bl){
     
     ch.peak =0;
     Double_t fastcomp = 0;
@@ -619,13 +622,14 @@ public:
     navg[nch]++;
     for(Int_t i = 0; i<memorydepth; i++){
       ch.wvf[i] = ch.wvf[i]-bl;
+      filtered[i] = filtered[i]-bl;
       avg[nch][i]+=ch.wvf[i];
 //       cout << i << " " << ch.wvf[i] << endl;
       if(i>=startCharge/dtime && i<chargeTime/dtime){
-        ch.charge+=ch.wvf[i]*dtime;
+        ch.charge+=filtered[i]*dtime;
         if(i <= maxRange/dtime){
-          if(ch.peak==0){ ch.peak = ch.wvf[i]; ch.peakpos = i*dtime;}
-          else if(ch.peak<ch.wvf[i]){ch.peak=ch.wvf[i];ch.peakpos = i*dtime;}
+          if(ch.peak==0){ ch.peak = filtered[i]; ch.peakpos = i*dtime;}
+          else if(ch.peak<filtered[i]){ch.peak=filtered[i];ch.peakpos = i*dtime;}
         }
         if(i<(startCharge+fast)/dtime){
           fastcomp+=ch.wvf[i];
