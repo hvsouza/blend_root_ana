@@ -66,7 +66,6 @@ public:
   Int_t linhasEvento = 9000;
   
   Int_t channel = 1;
-  
   // _______________ Parameters for giveMeSphe_MeanPulseVersion _______________/
   Double_t time_sample = 6000; // in ns
   
@@ -632,7 +631,7 @@ public:
   Double_t value = 0;
   Double_t desv = 0;
   Int_t channel = 1;
-
+  ADC_DATA ch;
 
   // ____________________ Variables to calculate ____________________ //
 
@@ -996,7 +995,8 @@ public:
       // for get_wave_form 
       if(peakPosition.at(i) - mean_before>=0 && peakPosition.at(i)+mean_after<memorydepth*dtime){
         for(Int_t j = peakPosition.at(i)/dtime - mean_before/dtime; j <= peakPosition.at(i)/dtime+mean_after/dtime; j++){
-          temp_waveforms[i].push_back(temp_peak.at(j));
+          // temp_waveforms[i].push_back(temp_peak.at(j));
+          temp_waveforms[i].push_back(ch.wvf[j]);
           //           if(temp_waveforms[i].size()>200/dtime && temp_waveforms[i].size()<400/dtime){
           //             if(temp_peak.at(j)<-20) notAGoodWaveform[i]=true;
           //           }
@@ -1065,6 +1065,7 @@ public:
             for(Int_t j = 0; j<waveforms.size(); j++){
               if(j<temp_waveforms[i].size()){
                     
+                // waveforms[j] = temp_waveforms[i][j];
                 waveforms[j] = temp_waveforms[i][j];
                 wvf[j]=waveforms[j];
                 if(valid) mean_waveforms[j]+=waveforms[j];
@@ -1237,7 +1238,7 @@ public:
     
     TFile *f1 = new TFile(rootfile.c_str(),"READ");
     TTree *t1 = (TTree*)f1->Get("t1");
-    ADC_DATA ch;
+
     TBranch *bch = t1->GetBranch(Form("Ch%i",channel));
     bch->SetAddress(&ch);
     Int_t nentries = t1->GetEntries();
@@ -1570,7 +1571,7 @@ public:
   
     TFile *f1 = new TFile(rootfile.c_str(),"READ");
     TTree *t1 = (TTree*)f1->Get("t1");
-    ADC_DATA ch;
+
     TBranch *bch = t1->GetBranch(Form("Ch%i",channel));
     bch->SetAddress(&ch);
     Int_t nentries = t1->GetEntries();
