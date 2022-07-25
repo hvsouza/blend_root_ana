@@ -510,6 +510,7 @@ public:
               n_reads++;
               raw[j] = temp;
               ch[i].wvf[j] = temp;
+              filtered[j] = temp;
             }
           //           cout << "............................ \n";
           //           getline(fin[i],headers);

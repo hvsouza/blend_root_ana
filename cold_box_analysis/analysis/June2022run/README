@@ -1,0 +1,40 @@
+15/06/2022
+
+DATA taking log
+Digitizer: CAEN DT5730SB
+Sample rate: 500 MSamples/s (2 ns step)
+Samples: 5000 (10 us total)
+Digitizer: 2 Vpp 14 Bits (0.122 mV/ADC)
+DC offset: 10% (Ch2 showed a different offset, probably internal configuration of the digitizer)
+Pretrigger: 40%
+
+Acquisition done with Wavedump.
+Each binary file has 10,000 events. The data is saved 6 headers and nsamples of data. 4 bytes per header and 2 bytes per sample. Please, refer to the wavedump manual.
+
+Channels were connected as
+
+CAEN ADC	fiber color	Device
+Ch0		light blue      xArapuca A4ch2
+Ch1             white           xArapuca A1ch1
+Ch2             green           miniArapuca A4ch1
+Ch3             blue            miniArapuca A1ch2
+
+
+20220614_cosmic_muons_data_cathode_on_11kV:
+boards offset: 11.5 mV, 14.7 mV, 31.8 mV, 9.2 mV
+Trigger with Ch0 or Ch1 with three different thresholds: 1000, 50 and 2500 ADCs (100, 5 and 250 mV)
+
+20220615_cosmic_muons_data_cathode_on_11kV
+boards offset: 11.6 mV, 14.9 mV, 31.8 mV, 9.3 mV
+Trigger with Ch0 or Ch1 with three different thresholds: 1000, 50 and 2500 ADCs (100, 5 and 250 mV)
+
+20220615_cosmic_muons_data_cathode_off
+boards offset: 7.1 mV, 9.4 mV, 17.3 mV, 8.1 mV
+Trigger with Ch0 or Ch1 with three different thresholds: 1000, 50 and 2500 ADCs (100, 5 and 250 mV)
+
+20220615_LED_calibration_cathode_off
+External trigger with different LED amplitudes. LED configuration, 1 kHz and 100 ns width (output as 50 ohms).
+
+
+
+

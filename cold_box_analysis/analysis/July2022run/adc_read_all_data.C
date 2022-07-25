@@ -13,10 +13,10 @@ void adc_read_all_data(){
     r.nbits = 14;
     r.isBinary = true;
     
-    r.baselineTime = 3500; // time limit for baseline
-    r.chargeTime = 4660; // last time to integrate 
-    r.startCharge = 3780;
-    r.maxRange = 4500; // max range to search for amplitude peak
+    r.baselineTime = 4600; // time limit for baseline
+    r.chargeTime = 6000; // last time to integrate 
+    r.startCharge = 4600;
+    r.maxRange = 5300; // max range to search for amplitude peak
     r.fast = 200; // fprompt fast integration time
     r.slow = 1700; //fprompt slow integration time
     r.exclusion_baseline = 35; // filtered waveform, anything above here will do +exclusion window
@@ -28,7 +28,7 @@ void adc_read_all_data(){
     // r.saveFilter = true;
     // r.noBaseline = true;
       
-    r.channels = {1,2,3,4};
+    r.channels = {1,2,3,4,5,6};
     
     r.adc_read_all_data();
 

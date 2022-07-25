@@ -1051,6 +1051,7 @@ public:
             if(statcharge[i]>=delta/deltaminus && statcharge[i]<=delta*deltaplus){
               naverages++;
               valid = true;
+              high_cut = mean_before+mean_after;
               for(Int_t j = low_cut/4; j<high_cut/4; j++){
                 if(temp_waveforms[i][j]>val_cut){
                   naverages--;

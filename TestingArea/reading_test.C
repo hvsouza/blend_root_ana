@@ -10,7 +10,7 @@ void reading_test(){
   vector<Double_t> raw; // waveform as vector
 
   Double_t nbits = 14; // ADC is a 14 bits, 2 Vpp
-  Double_t samplingRate = 250.e6; // 250 MSamples/s for DT5725
+  Double_t samplingRate = 500.e6; // 250 MSamples/s for DT5725
   Double_t nADCs = pow(2,nbits); // number of digital channels
   Double_t inVolts = 2./nADCs; // Multiply by this number to have the amplitude in volts;
   Double_t dtime = (1/samplingRate)*1e9; // steps in nanoseconds
@@ -44,7 +44,7 @@ void reading_test(){
       printf("Waveform size: %d \n",memorydepth);
       raw.resize(memorydepth);
       first_line=false;
-      h = new TH2D("h","h",memorydepth,0,memorydepth*4,nADCs,0,nADCs); //if you are brave, don't divide by 5 so you have high definition plot :)
+      h = new TH2D("h","h",memorydepth,0,memorydepth*dtime,nADCs,0,nADCs); //if you are brave, don't divide by 5 so you have high definition plot :)
     }
     for(int j = 0; j < memorydepth; j++)
       {
