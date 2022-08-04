@@ -60,8 +60,6 @@ public:
     hfinal = TH1::TransformHisto(fft_final,hfinal,"Ref");
     // hfinal->Scale(factor);
 
-    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
-    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
     for(Int_t i = 0; i<npts; i++){
       res[i] = hfinal->GetBinContent(i+1);
       hwvf->SetBinContent(i+1,res[i]);
@@ -120,10 +118,8 @@ public:
     // hfinal->Scale(factor);
 
 
-    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
-    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
 
-    // shift_waveform(hfinal,y.maxBin);
+    shift_waveform(hfinal,y.maxBin);
     Double_t bl = 0;
     Double_t auxbaseline = 0;
     for(Int_t i=0; i<baseline/step; i++){
@@ -140,7 +136,7 @@ public:
     fft(hwvf);
    
     flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
-    flar->SetParameters(0.3,10,0.3,1000);
+    flar->SetParameters(0.3,10,0.3,1400);
    
 
     delete hfinal;
@@ -182,8 +178,6 @@ public:
     hfinal->Scale(factor);
 
 
-    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
-    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
     for(Int_t i = 0; i<npts; i++){
       res[i] = hfinal->GetBinContent(i+1);
       hwvf->SetBinContent(i+1,res[i]);
@@ -238,10 +232,6 @@ public:
   TVirtualFFT * fft(TH1D *hsignal){
 
     if(maxBin==0) maxBin = hsignal->GetMaximumBin(); //get maximum to realign waveforms later, only one time helps with several waveforms (not all max are the same)
-    hfft->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
-    hPSD->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
-    hfft->GetYaxis()->SetTitle("Magnitude");
-    hPSD->GetYaxis()->SetTitle("PSD (Magnitude^{2} Hz^{-1})");
  
     TH1 *hm = 0;
     TVirtualFFT::SetTransform(0);
@@ -300,8 +290,6 @@ public:
     // hfinal->Scale(factor); // you dont scale to get back ...
 
 
-    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
-    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
     for(Int_t i = 0; i<npts; i++){
       res[i] = hfinal->GetBinContent(i+1);
       hwvf->SetBinContent(i+1,res[i]);
@@ -373,6 +361,8 @@ public:
     hPSD = new TH1D(Form("PSD_%s",obj_name.c_str()),Form("Power Spectral Density %s",obj_name.c_str()),npts/2,0,frequency/2);
     hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,0,npts*step);
 
+
+
     spec = new TComplex[npts];
     spec_re = new Double_t[npts];
     spec_im = new Double_t[npts];
@@ -404,8 +394,14 @@ public:
     else if(units_freq == 1)
       unit_freq = "Hz";
 
-    
-    
+
+    hfft->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
+    hPSD->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
+    hfft->GetYaxis()->SetTitle("Magnitude");
+    hPSD->GetYaxis()->SetTitle("PSD (Magnitude^{2} Hz^{-1})");
+
+    hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
+    hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
   }
   
 
