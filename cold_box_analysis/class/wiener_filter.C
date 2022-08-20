@@ -201,8 +201,9 @@ public:
 
 
   template <class T>
-  void shift_waveform(T *h, Int_t new_max){
+  void shift_waveform(T *h, Int_t new_max, Bool_t rawShift = false){
     Int_t old_max = h->GetMaximumBin();
+    if(rawShift) old_max = 0;
     Int_t old_ref = old_max - new_max;
     TH1D *htemp = (TH1D*)h->Clone("htemp");
     Double_t temp;
