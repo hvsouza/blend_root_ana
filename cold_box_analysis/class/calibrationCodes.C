@@ -937,11 +937,12 @@ class SPHE{
          
             waitingInterval = peakPosition[i]+waiting;
           }
-          if(peakPosition[i]>waitingInterval) next_is_bad = true;
+          if(peakPosition[i]<waitingInterval && waitingInterval!=-1) next_is_bad = true;
           else next_is_bad = false;
           continue;
         }
         else{
+          waitingInterval = -1;
           next_is_bad = false;
         }
       
