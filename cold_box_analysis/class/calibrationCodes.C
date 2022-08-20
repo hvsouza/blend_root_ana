@@ -1124,7 +1124,7 @@ class SPHE{
       //       }
       //     }
 
-      if(ch.selection!=0) return;
+      // if(ch.selection!=0) return;
                               
       for(Int_t i = 0; i<n; i++){
       
