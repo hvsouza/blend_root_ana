@@ -20,6 +20,27 @@ class  MyFunctionObject{
 };
 
 
+class  MyFunctionFree{
+  public:
+
+    Int_t n_peaks;
+    // use constructor to customize your function object
+    Double_t operator()(Double_t *x, Double_t *par) {
+      Double_t f;
+      Double_t xx = x[0];
+      f  = par[0]*exp(-0.5*TMath::Power((xx-par[1])/par[2],2)); // first argument
+      f = f+par[3]*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
+      f = f+par[6]*exp(-0.5*TMath::Power((xx-par[7])/par[8],2));
+      for(Int_t i = 1, j = 1; i<n_peaks; i++){
+        f = f+ abs(par[j+8])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/par[j+8+1],2));
+        j+=2;
+      }
+      return f;
+    }
+};
+
+
+
 
 
 
@@ -100,7 +121,8 @@ class Calibration
   
     Bool_t fixZero = false;
   
-  
+    Bool_t make_free_stddevs = false;
+
     Double_t sphe_charge = 0; // wave0
     Double_t sphe_charge2 = 0; // wave0
   
@@ -298,27 +320,59 @@ class Calibration
     
       hcharge->Fit("lastOne","R");
     
-      Double_t stddev = lastOne->GetParameter(2);
+      if(make_free_stddevs == false){
+        fu[0]->SetParameter(0,lastOne->GetParameter(0));
+        fu[0]->SetParameter(1,lastOne->GetParameter(1));
+        fu[0]->SetParameter(2,lastOne->GetParameter(2));
     
-      fu[0]->SetParameter(0,lastOne->GetParameter(0));
-      fu[0]->SetParameter(1,lastOne->GetParameter(1));
-      fu[0]->SetParameter(2,lastOne->GetParameter(2));
+        fu[1]->SetParameter(0,lastOne->GetParameter(3));
+        fu[1]->SetParameter(1,lastOne->GetParameter(4));
+        fu[1]->SetParameter(2,lastOne->GetParameter(5));
     
-      fu[1]->SetParameter(0,lastOne->GetParameter(3));
-      fu[1]->SetParameter(1,lastOne->GetParameter(4));
-      fu[1]->SetParameter(2,lastOne->GetParameter(5));
+        fu[2]->SetParameter(0,lastOne->GetParameter(6));
+        fu[2]->SetParameter(1,lastOne->GetParameter(7));
+        fu[2]->SetParameter(2,(TMath::Power((2),0.5)*lastOne->GetParameter(5)));
     
-      fu[2]->SetParameter(0,lastOne->GetParameter(6));
-      fu[2]->SetParameter(1,lastOne->GetParameter(7));
-      fu[2]->SetParameter(2,(TMath::Power((2),0.5)*lastOne->GetParameter(5)));
-    
-      for(Int_t i = 1; i<n_peaks; i++){
-        fu[i+2]->SetParameter(0,abs(lastOne->GetParameter(i+7)));
-        fu[i+2]->SetParameter(1,(lastOne->GetParameter(4) + (i+1)*(lastOne->GetParameter(7)-lastOne->GetParameter(4))));
-        fu[i+2]->SetParameter(2,(TMath::Power((i+2),0.5)*lastOne->GetParameter(5)));
+        for(Int_t i = 1; i<n_peaks; i++){
+          fu[i+2]->SetParameter(0,abs(lastOne->GetParameter(i+7)));
+          fu[i+2]->SetParameter(1,(lastOne->GetParameter(4) + (i+1)*(lastOne->GetParameter(7)-lastOne->GetParameter(4))));
+          fu[i+2]->SetParameter(2,(TMath::Power((i+2),0.5)*lastOne->GetParameter(5)));
+        }
       }
-    
+
+      MyFunctionFree MyFuncFree;
+      MyFuncFree.n_peaks = n_peaks;
+
+      TF1 *lastOneFree = new TF1("lastOneFree",MyFuncFree,xmin,xmax,7+n_peaks*2);
+
+      if(make_free_stddevs == true){
+        setParametersFree(lastOneFree,lastOne);
+        hcharge->Fit("lastOneFree","R");
+
+        fu[0]->SetParameter(0,lastOneFree->GetParameter(0));
+        fu[0]->SetParameter(1,lastOneFree->GetParameter(1));
+        fu[0]->SetParameter(2,lastOneFree->GetParameter(2));
+
+        fu[1]->SetParameter(0,lastOneFree->GetParameter(3));
+        fu[1]->SetParameter(1,lastOneFree->GetParameter(4));
+        fu[1]->SetParameter(2,lastOneFree->GetParameter(5));
+
+        fu[2]->SetParameter(0,lastOneFree->GetParameter(6));
+        fu[2]->SetParameter(1,lastOneFree->GetParameter(7));
+        fu[2]->SetParameter(2,lastOneFree->GetParameter(8));
+
+        for(Int_t i = 1, j = 1; i<n_peaks; i++){
+          fu[i+2]->SetParameter(0,abs(lastOneFree->GetParameter(j+8)));
+          fu[i+2]->SetParameter(1,(lastOneFree->GetParameter(4) + (i+1)*(lastOneFree->GetParameter(7)-lastOneFree->GetParameter(4))));
+          fu[i+2]->SetParameter(2,lastOneFree->GetParameter(j+1+8));
+          j+=2;
+        }
+
+      }
+
+
       lastOne->SetNpx(1000);
+      lastOneFree->SetNpx(1000);
     
       hcharge->Draw("hist");
 
@@ -326,6 +380,7 @@ class Calibration
       hcharge->GetXaxis()->SetRangeUser(-5000,200000);
       hcharge->StatOverflows(kTRUE);
       lastOne->SetRange(xmin,xmax);
+      lastOneFree->SetRange(xmin,xmax);
     
     
       for(Int_t i = 0; i<(2+n_peaks); i++){
@@ -333,7 +388,11 @@ class Calibration
         fu[i]->SetNpx(1000);
         fu[i]->Draw("SAME");
       }
-      lastOne->Draw("LP SAME");
+      if(make_free_stddevs==false) lastOne->Draw("LP SAME");
+      else {
+        lastOneFree->Draw("LP SAME");
+        lastOne = (TF1*)lastOneFree->Clone("lastOne");
+      }
       string name = histogram + ".root";
       //     c1->Print(name.c_str());
       cout << "1th peak = " << lastOne->GetParameter(4) << endl;
@@ -510,6 +569,51 @@ class Calibration
       }
     }
 
+    void setParametersFree(TF1 *lastOneFree, TF1 *lastOne){
+      lastOneFree->SetParameter(0,lastOne->GetParameter(0));
+      lastOneFree->SetParameter(1,lastOne->GetParameter(1));
+      lastOneFree->SetParameter(2,lastOne->GetParameter(2));
+      // lastOneFree->SetParLimits(2,0*lastOne->GetParameter(2),0.5*lastOne->GetParameter(2));
+
+      lastOneFree->SetParameter(3,lastOne->GetParameter(3));
+      lastOneFree->SetParameter(4,lastOne->GetParameter(4));
+      lastOneFree->SetParameter(5,lastOne->GetParameter(5));
+
+      lastOneFree->SetParameter(6,lastOne->GetParameter(6));
+      lastOneFree->SetParameter(7,lastOne->GetParameter(7));
+      lastOneFree->SetParameter(8,TMath::Power((2),0.5)*lastOne->GetParameter(5));
+
+      for(Int_t i = 1, j= 1; i<n_peaks; i++){
+        lastOneFree->SetParameter((j+9-1),lastOne->GetParameter(i+8-1));
+        lastOneFree->SetParameter((j+1+9-1),(TMath::Power((i+2),0.5)*lastOne->GetParameter(5)));
+        lastOneFree->SetParName((j+9-1),Form("A_{%d}",i+2));
+        lastOneFree->SetParName((j+1+9-1),Form("#sigma_{%d}",i+2));
+        // cout << "parameter " << j+9-1 << " = " << lastOneFree->GetParameter(j+9-1);
+        // cout << " ... parameter " << j+1+9-1 << " = " << lastOneFree->GetParameter(j+1+9-1) << endl;
+        j+=2;
+      }
+
+
+      lastOneFree->SetParName(0,"A_{baseline}");
+      lastOneFree->SetParName(1,"#mu_{baseline}");
+      lastOneFree->SetParName(2,"#sigma_{baseline}");
+      lastOneFree->SetParName(3,"A_{1}");
+      lastOneFree->SetParName(4,"#mu_{1}");
+      lastOneFree->SetParName(5,"#sigma_{1}");
+      lastOneFree->SetParName(6,"A_{2}");
+      lastOneFree->SetParName(7,"#mu_{2}");
+      lastOneFree->SetParName(8,"#sigma_{2}");
+
+      if(darknoise){
+        lastOneFree->FixParameter(4,sphe_charge);
+        lastOneFree->FixParameter(7,sphe_charge2);
+      }
+      if(fixZero){
+        lastOneFree->FixParameter(0,0);
+        lastOneFree->FixParameter(1,0);
+        lastOneFree->FixParameter(2,1);
+      }
+    }
     
 };
 
@@ -703,7 +807,6 @@ class SPHE{
     Bool_t led_calibration = false; // for led integration only
 
     Int_t just_this = 5000;
-
 
     // ____________________ matching filter ____________________
 
