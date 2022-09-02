@@ -669,7 +669,7 @@ class SPHE{
     Double_t baseCharge = 0;
     
     Double_t social_distance = 2;
-
+    Bool_t check_selection = true;
 
     Int_t interactions; // for moving avarage
     Int_t midpoint = 0; // midpoint that takes the avarage
@@ -1124,7 +1124,7 @@ class SPHE{
       //       }
       //     }
 
-      if(ch.selection!=0) return;
+      if(check_selection && ch.selection!=0) return;
                               
       for(Int_t i = 0; i<n; i++){
       
@@ -1636,24 +1636,26 @@ class SPHE{
 
     
     
-        if(noise==false && ch.selection==0){
-          valid = false;
-          for(Int_t j = 0; j<memorydepth; j++){
-            wvf[j] = temp_peak[j];
-          }
-          if(charge*dtime>=delta/deltaminus  && charge*dtime<=delta*deltaplus){
-            valid = true;
+        if(noise==false){
+          if(check_selection && ch.selection==0){
+            valid = false;
             for(Int_t j = 0; j<memorydepth; j++){
-              mean_waveforms[j]+=temp_peak[j];
+              wvf[j] = temp_peak[j];
             }
-            naverages++;
-          }
+            if(charge*dtime>=delta/deltaminus  && charge*dtime<=delta*deltaplus){
+              valid = true;
+              for(Int_t j = 0; j<memorydepth; j++){
+                mean_waveforms[j]+=temp_peak[j];
+              }
+              naverages++;
+            }
 
-          wvfcharge = charge*dtime;
-          twvf->Fill();
-          hcharge->Fill(charge*dtime);
-          // cout << charge*dtime << endl;
-          ftmp << i << "\n";
+            wvfcharge = charge*dtime;
+            twvf->Fill();
+            hcharge->Fill(charge*dtime);
+            // cout << charge*dtime << endl;
+            ftmp << i << "\n";
+          }
         }
         charge=0;
       }
