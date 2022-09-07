@@ -167,6 +167,7 @@ public:
   
   Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
   Int_t nbits = 14;
+  Int_t basebits = nbits;
   Bool_t isBinary = false;
   Bool_t saveFilter = false;
   
@@ -202,7 +203,7 @@ public:
   // TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,0);
 
   TH1D *htests = new TH1D("htests","htests",1000,0,0);
-  TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,TMath::Power(2,nbits));
+  TH1D *hbase;
   TF1* fbase = new TF1("fbase","gaus(0)",0,TMath::Power(2,nbits));
 
 
@@ -293,6 +294,7 @@ public:
     string rootfile;
     TFile *f1;
     TTree *t1;
+    hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
     Double_t tEvent = 0;
     vector<ADC_DATA> ch(channels.size());
     vector<TBranch*> bch(channels.size());
@@ -678,14 +680,14 @@ public:
     //   cout << hmean << " " << hstd << " " << res0 << endl;
     // }
     
-    Int_t bins=0;
+    Double_t bins=0;
     for(Int_t i=0; i<baselineTime/dtime;){
       if(v[i] > res0 + exclusion_baseline || v[i]<res0 - exclusion_baseline) {
         i+=exclusion_window/dtime;
       }
       else{
         result += v[i];
-        bins++;
+        bins+=1;
         i++;
       }
     }

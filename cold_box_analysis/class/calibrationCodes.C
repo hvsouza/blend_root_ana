@@ -1740,7 +1740,9 @@ class SPHE{
     
     
         if(noise==false){
-          if(check_selection && ch.selection==0){
+          if(check_selection && ch.selection!=0){
+          }
+          else{            
             valid = false;
             for(Int_t j = 0; j<memorydepth; j++){
               wvf[j] = temp_peak[j];
