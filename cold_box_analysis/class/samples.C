@@ -13,9 +13,9 @@ class SAMPLE{
     TH2D *hpers;
     SAMPLE(Int_t mypoints = 2500) : n_points{mypoints} {};
 
-    void sample_plot(Int_t myevent = 0, Int_t filter = 0, Double_t factor = 1.){
+    void sample_plot(Int_t myevent = 0, Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       DENOISE dn;
-
+      SPHE spe;
       TFile *f = new TFile(file.c_str(),"READ");
       TTree *t1 = (TTree*)f->Get(tree.c_str());
       ADC_DATA ch;
@@ -37,6 +37,12 @@ class SAMPLE{
       }
 
 
+      if(mafilter!=0) {
+        vector<Double_t> mawvf = spe.movingAverage(val,mafilter);
+        for (int j = 0; j < n_points; j++) {
+          wvf[j] = val[j] = mawvf[j];
+        }
+      }
       if(filter!=0) dn.TV1D_denoise(&val[0],&wvf[0],n_points,filter);
 
       gwvf = new TGraph(n_points,&time[0],&wvf[0]);
