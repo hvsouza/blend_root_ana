@@ -3,7 +3,7 @@
 
 class SAMPLE{
   public:
-    Int_t n_points = 2500;
+    Int_t n_points = memorydepth;
     string file = "analyzed.root";
     string channel = "Ch1";
     string plot_opt = "ALP";
@@ -11,7 +11,6 @@ class SAMPLE{
     Double_t dtime = 4;
     TGraph *gwvf;
     TH2D *hpers;
-    SAMPLE(Int_t mypoints = 2500) : n_points{mypoints} {};
 
     void sample_plot(Int_t myevent = 0, Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       DENOISE dn;
@@ -26,14 +25,12 @@ class SAMPLE{
       vector<Double_t> wvf(n_points);
       vector<Double_t> time(n_points);
 
-      for (int i=myevent; i < myevent+1; i++) {
-        bch->GetEvent(i);
+      bch->GetEvent(myevent);
 
-        for (int j = 0; j < n_points; j++) {
-          val[j] = ch.wvf[j]*factor;
-          wvf[j] = val[j];
-          time[j] = j*dtime;
-        }
+      for (int j = 0; j < n_points; j++) {
+        val[j] = ch.wvf[j]*factor;
+        wvf[j] = val[j];
+        time[j] = j*dtime;
       }
 
 
