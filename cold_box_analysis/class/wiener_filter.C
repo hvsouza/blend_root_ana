@@ -470,7 +470,30 @@ public:
   }
 
 
+    void apply_filter(Double_t cutoff_frequency){
 
+      // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
+      gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
+
+      // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
+      cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
+      gaus_filter->SetParameters(0,cutoff_frequency);
+
+      // the for is performed in k, need to convert back to frequency
+      Double_t convert_freq = frequency/npts;
+
+
+      Double_t gaus_blur = 1;
+      for(Int_t k=0; k<npts/2+1; k++){
+        if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
+        spec[k] = spec[k]*gaus_blur;
+        // cout << spec[k] << endl;
+        spec_re[k] = spec[k].Re();
+        spec_im[k] = spec[k].Im();
+        hfft->SetBinContent(k+1,spec[k].Rho());
+        hPSD->SetBinContent(k+1,spec[k].Rho2());
+      }
+    }
  
   
 };
