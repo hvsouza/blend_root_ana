@@ -230,7 +230,7 @@ public:
 
 
   
-  voit fft(TH1D *hsignal){
+  void fft(TH1D *hsignal){
 
     if(maxBin==0) maxBin = hsignal->GetMaximumBin(); //get maximum to realign waveforms later, only one time helps with several waveforms (not all max are the same)
  
