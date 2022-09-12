@@ -347,6 +347,13 @@ class Calibration
 
       if(make_free_stddevs == true){
         setParametersFree(lastOneFree,lastOne);
+        Int_t lastpar = 7+2*n_peaks-1;
+        Double_t lastGausUpperLim = 1.2*lastOneFree->GetParameter(lastpar);
+        Double_t lastGausLowerLim = 0.8*lastOneFree->GetParameter(lastpar);
+        lastOneFree->SetParLimits(lastpar,lastGausLowerLim,lastGausUpperLim);
+        // cout << lastGausLowerLim << endl;
+        // cout << lastGausUpperLim << endl;
+
         hcharge->Fit("lastOneFree","R");
 
         fu[0]->SetParameter(0,lastOneFree->GetParameter(0));
