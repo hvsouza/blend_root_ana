@@ -12,6 +12,12 @@ class SAMPLE{
     TGraph *gwvf;
     TH2D *hpers;
 
+    string xlabel = "Time (ns)";
+    string ylabel = "Amplitude (ADC Channels)";
+
+    Double_t ymin = 0;
+    Double_t ymax = 0;
+
     void sample_plot(Int_t myevent = 0, Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       DENOISE dn;
       SPHE spe;
@@ -44,10 +50,14 @@ class SAMPLE{
 
       gwvf = new TGraph(n_points,&time[0],&wvf[0]);
       gwvf->Draw(plot_opt.c_str());
-      gwvf->GetXaxis()->SetTitle("Time (ns)");
-      gwvf->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
+      gwvf->GetXaxis()->SetTitle(xlabel.c_str());
+      gwvf->GetYaxis()->SetTitle(ylabel.c_str());
 
+      if(ymax!=0 && ymin!=0){
+        gwvf->GetYaxis()->SetRangeUser(ymin,ymax);
+      }
     }
+
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="0==0"){
       DENOISE dn;
 
