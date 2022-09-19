@@ -5,7 +5,7 @@ class SAMPLE{
   public:
     Int_t n_points = memorydepth;
     string file = "analyzed.root";
-    string channel = "Ch1";
+    Int_t channel = 1;
     string plot_opt = "ALP";
     string tree = "t1";
     Double_t dtime = 4;
@@ -24,7 +24,8 @@ class SAMPLE{
       TFile *f = new TFile(file.c_str(),"READ");
       TTree *t1 = (TTree*)f->Get(tree.c_str());
       ADC_DATA ch;
-      TBranch *bch = t1->GetBranch(channel.c_str());
+      string schannel = Form("Ch%d",channel);
+      TBranch *bch = t1->GetBranch(schannel.c_str());
       bch->SetAddress(&ch);
 
       vector<Double_t> val(n_points);
@@ -64,7 +65,8 @@ class SAMPLE{
       TFile *f = new TFile(file.c_str(),"READ");
       TTree *t1 = (TTree*)f->Get(tree.c_str());
       ADC_DATA ch;
-      TBranch *bch = t1->GetBranch(channel.c_str());
+      string schannel = Form("Ch%d",channel);
+      TBranch *bch = t1->GetBranch(schannel.c_str());
       bch->SetAddress(&ch);
 
       Double_t *val = new Double_t[n_points];
@@ -75,7 +77,7 @@ class SAMPLE{
       TCanvas *c1 = new TCanvas();
       for (int i=0; i < t1->GetEntries(); i++) {
         if(cut != "0==0"){
-          Int_t nselec = t1->Draw(Form("%s.wvf[]:Iteration$*%f",channel.c_str(),dtime),Form("Entry$==%d && %s",i,cut.c_str()),"goff");
+          Int_t nselec = t1->Draw(Form("%s.wvf[]:Iteration$*%f",schannel.c_str(),dtime),Form("Entry$==%d && %s",i,cut.c_str()),"goff");
           if(nselec == 0) continue;
           t1->GetSelectedRows();
           val = t1->GetV1();
