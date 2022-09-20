@@ -197,6 +197,7 @@ public:
   Bool_t noBaseline=false;
   // Bool_t noBaseline=true;
   vector<Int_t> channels = {1,2};
+  vector<Double_t> exclusion_baselines = {30};
   Int_t nfiles = 1;
 
   // THIS did not work properly, sometimes it gets stuck in a bad region. 
@@ -517,7 +518,6 @@ public:
           //           cout << "............................ \n";
           //           getline(fin[i],headers);
         }
-        
         else{
           // for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text) 
             fin[i].read((char *) &headbin, nbytes*6);
@@ -576,6 +576,10 @@ public:
           for(Int_t l = 0; l<memorydepth; l++){
             ch[i].wvf[l] = filtered[l];
           }
+        }
+
+        if(exclusion_baselines.size() != 1){
+          exclusion_baseline = exclusion_baselines[i];
         }
         bl = baseline(filtered,ch[i].selection,i,tEvent);
         // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
