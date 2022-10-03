@@ -5,24 +5,31 @@ class SAMPLE{
   public:
     Int_t n_points = memorydepth;
     string file = "analyzed.root";
+    TFile *f;
+    TTree *t1;
     Int_t channel = 1;
     string plot_opt = "ALP";
     string tree = "t1";
     Double_t dtime = 4;
     TGraph *gwvf;
     TH2D *hpers;
-
     string xlabel = "Time (ns)";
     string ylabel = "Amplitude (ADC Channels)";
 
     Double_t ymin = 0;
     Double_t ymax = 0;
 
+    void print(){
+
+      f = new TFile(file.c_str(),"READ");
+      t1 = (TTree*)f->Get(tree.c_str());
+      t1->Print();
+    }
     void sample_plot(Int_t myevent = 0, Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       DENOISE dn;
       SPHE spe;
-      TFile *f = new TFile(file.c_str(),"READ");
-      TTree *t1 = (TTree*)f->Get(tree.c_str());
+      f = new TFile(file.c_str(),"READ");
+      t1 = (TTree*)f->Get(tree.c_str());
       ADC_DATA ch;
       string schannel = Form("Ch%d",channel);
       TBranch *bch = t1->GetBranch(schannel.c_str());
@@ -57,13 +64,14 @@ class SAMPLE{
       if(ymax!=0 && ymin!=0){
         gwvf->GetYaxis()->SetRangeUser(ymin,ymax);
       }
+      gwvf->SetEditable(kFALSE);
     }
 
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="0==0"){
       DENOISE dn;
 
-      TFile *f = new TFile(file.c_str(),"READ");
-      TTree *t1 = (TTree*)f->Get(tree.c_str());
+      f = new TFile(file.c_str(),"READ");
+      t1 = (TTree*)f->Get(tree.c_str());
       ADC_DATA ch;
       string schannel = Form("Ch%d",channel);
       TBranch *bch = t1->GetBranch(schannel.c_str());
