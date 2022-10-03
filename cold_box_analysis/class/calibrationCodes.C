@@ -116,6 +116,8 @@ class Calibration
 
     Double_t deltaplus=1.4;
     Double_t deltaminus=1.2;
+
+    Double_t stdVar = 0.5;
   
     Int_t rebin = 4;
   
@@ -347,10 +349,10 @@ class Calibration
 
       if(make_free_stddevs == true){
         setParametersFree(lastOneFree,lastOne);
-        Int_t lastpar = 7+2*n_peaks-1;
-        Double_t lastGausUpperLim = 1.2*lastOneFree->GetParameter(lastpar);
-        Double_t lastGausLowerLim = 0.8*lastOneFree->GetParameter(lastpar);
-        lastOneFree->SetParLimits(lastpar,lastGausLowerLim,lastGausUpperLim);
+        // Int_t lastpar = 7+2*n_peaks-1;
+        // Double_t lastGausUpperLim = 1.2*lastOneFree->GetParameter(lastpar);
+        // Double_t lastGausLowerLim = 0.8*lastOneFree->GetParameter(lastpar);
+        // lastOneFree->SetParLimits(lastpar,lastGausLowerLim,lastGausUpperLim);
         // cout << lastGausLowerLim << endl;
         // cout << lastGausUpperLim << endl;
 
@@ -593,6 +595,9 @@ class Calibration
       for(Int_t i = 1, j= 1; i<n_peaks; i++){
         lastOneFree->SetParameter((j+9-1),lastOne->GetParameter(i+8-1));
         lastOneFree->SetParameter((j+1+9-1),(TMath::Power((i+2),0.5)*lastOne->GetParameter(5)));
+        Double_t lastGausUpperLim = (1+stdVar)*lastOneFree->GetParameter(j+1+9-1);
+        Double_t lastGausLowerLim = stdVar*lastOneFree->GetParameter(j+1+9-1);
+        lastOneFree->SetParLimits(j+1+9-1,lastGausLowerLim,lastGausUpperLim);
         lastOneFree->SetParName((j+9-1),Form("A_{%d}",i+2));
         lastOneFree->SetParName((j+1+9-1),Form("#sigma_{%d}",i+2));
         // cout << "parameter " << j+9-1 << " = " << lastOneFree->GetParameter(j+9-1);
