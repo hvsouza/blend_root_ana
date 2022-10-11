@@ -1,0 +1,47 @@
+#+TITLE: Data taking log
+* General description
+
+Digitizer: CAEN DT5730SB \\
+Sample rate: 250 MSamples/s (4 ns step) (unless specified) \\
+Samples: 2500 (10 us total) unless specified \\
+Digitizer: 2 Vpp 14 Bits (0.122 mV/ADC) \\
+DC offset: 10% \\
+Pretrigger: 50% \\
+Acquisition done with Wavedump. \\
+Each binary file has 10,000 events (unless specified). The data are save with 6 headers and nsamples of data. 4 bytes per header and 2 bytes per sample. Please, refer to the wavedump manual. \\
+
+Channels were connect as
+
+| CAEN ADC | Device          |
+| Ch1      | miniArapuca Ch1 |
+| Ch2      | miniArapuca Ch2 |
+| Ch3      | V2 xArapuca Ch1 |
+| Ch4      | V2 xArapuca Ch2 |
+
+* Acquisition 19-08-2022
+
+**  Light leakage test (20220819_wall_light_leak)
+
+Sample rate: 500 MHz \\
+Samples: 250000 (500 us total) \\
+1,000 events in total for each run \\
+
+- run0: LED flange protected from light and fibers disconnected
+- run1: Fibers connected
+- run2: Fibers connected and digital readout turned off
+
+** SPE test at wall (20220819_wall_spe)
+- run0: Digital readout off
+- run1: Digital readout on \\
+
+  *NOTE*: run0 has only 10,000 events registered in total. run1 has 40k. \\
+  *NOTE*: Headers of run0 and run1 will say the length of the waveform in bytes is 10024, meaning 5000 samples + 6 headers. Ignore this number, the correct one is 5024.
+
+* Acquisition 22-08-2022
+
+** Long data of cathode A1 board (v2-xArapuca) for FFT
+Sample rate: 250 MHz \\
+Samples: 125000 (500 us total) \\
+1,000 events in total for each run \\
+
+- run0: random trigger, wave3 and wave4 correspond to ch1 and ch2 of v2-xArapuca.
