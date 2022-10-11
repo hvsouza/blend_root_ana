@@ -4,8 +4,8 @@
 
 void adc_read_all_data(){
     
-    system("rm files.txt");
-    system("ls -1 *.dat| sed -e 's/.dat$//' > files.txt");
+    system("rm files.log");
+    system("ls -1 *.dat| sed -e 's/.dat$//' > files.log");
     
     Read r;
         
@@ -13,20 +13,24 @@ void adc_read_all_data(){
     r.nbits = 14;
     r.isBinary = true;
     
-    r.baselineTime = 5000; // time limit for baseline
-    r.chargeTime = 7000; // last time to integrate 
-    r.startCharge = 5600;
-    r.maxRange = 7000; // max range to search for amplitude peak
-    r.fast = 600; // fprompt fast integration time
-    r.slow = 7000; //fprompt slow integration time
-    r.exclusion_baseline = 5; // filtered waveform, anything above here will do +exclusion window
-    r.exclusion_window = 500; // time in ns that it will jump for baseline
-    r.filter = 9; // denoise filter.. if filter = 0, no denoise is done. 
+    r.baselineTime = 20000; // time limit for baseline
+    r.chargeTime = 10300; // last time to integrate
+    r.startCharge = 9950;
+    r.maxRange = 5500; // max range to search for amplitude peak
+    r.fast = 200; // fprompt fast integration time
+    r.slow = 1700; //fprompt slow integration time
+    r.exclusion_baseline = 35; // filtered waveform, anything above here will do +exclusion window
+    r.exclusion_window = 1000; // time in ns that it will jump for baseline
+    r.filter = 14; // denoise filter.. if filter = 0, no denoise is done.
     r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely 
     r.stopEvent = 1000;
+    r.noBaseline = false;
+    // r.saveFilter = true;
+
+    r.channels = {1};
+    // r.channels = {1,2,3,4};
       
-    r.channels = {1,2};
-    
+
     
     r.adc_read_all_data();
 
