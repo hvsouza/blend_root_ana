@@ -14,8 +14,8 @@ void adc_read_all_data(){
     
     Read r;
         
-    r.dtime = 4;
-    r.nbits = 14;
+    r.dtime = 4; // step time in ns
+    r.nbits = 14; // this is used only for baseline histogram, changing it to 12 might help
     r.isBinary = true;
     
     r.baselineTime = 20000; // time limit for baseline
@@ -24,12 +24,12 @@ void adc_read_all_data(){
     r.maxRange = 5500; // max range to search for amplitude peak
     r.fast = 200; // fprompt fast integration time
     r.slow = 1700; //fprompt slow integration time
-    r.exclusion_baseline = 35; // filtered waveform, anything above here will do +exclusion window
+    r.exclusion_baseline = 35; // filtered waveform, anything above here will do +exclusion window while evaluating the baseline
     r.exclusion_window = 1000; // time in ns that it will jump for baseline
     r.filter = 14; // denoise filter.. if filter = 0, no denoise is done.
-    r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely 
-    r.stopEvent = 1000;
-    r.noBaseline = false;
+    r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely (you can set stopEvent)
+    r.stopEvent = 1000; //
+    r.noBaseline = false; // if you dont want to calculate baseline
     // r.saveFilter = true;
 
     r.channels = {1};
