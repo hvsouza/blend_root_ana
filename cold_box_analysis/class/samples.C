@@ -1,3 +1,8 @@
+// ________________________________________ //
+// Author: Henrique Souza
+// Filename: samples.C
+// Created: 2021
+// ________________________________________ //
 #include "MYCODES.h"
 
 

@@ -1,4 +1,10 @@
 #!/usr/bin/env sh
+# ________________________________________ #
+# Author: Henrique Souza
+# Filename: samples.C
+# Created: 2021
+# ________________________________________ #
+
 if [ -z $1 ]; then
     npts=5000
 else

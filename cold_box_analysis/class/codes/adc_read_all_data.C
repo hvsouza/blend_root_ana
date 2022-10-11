@@ -1,5 +1,10 @@
+// ________________________________________ //
+// Author: Henrique Souza
+// Filename: adc_read_all_data.C
+// Created: 2021
+// ________________________________________ //
 #define memorydepth 5000
-#include "/home/henrique/Dropbox/Unicamp/Doutorado/Root/Programs/italy/ADC_LAr_SuperCell/class/MYCODES.h"
+#include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 
 void adc_read_all_data(){

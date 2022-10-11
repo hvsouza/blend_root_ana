@@ -1,3 +1,8 @@
+// ________________________________________ //
+// Author: Henrique Souza
+// Filename: alpha_analysis.C
+// Created: 2021
+// ________________________________________ //
 #include "MYCODES.h"
 
 

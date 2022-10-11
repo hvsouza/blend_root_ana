@@ -1,3 +1,8 @@
+// ________________________________________ //
+// Author: Henrique Souza
+// Filename: MYCODES.h
+// Created: 2021
+// ________________________________________ //
 #ifndef memorydepth
 #define memorydepth 5000
 #endif

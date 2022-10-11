@@ -1,4 +1,8 @@
-
+// ________________________________________ //
+// Author: Henrique Souza
+// Filename: variables.C
+// Created: 2021
+// ________________________________________ //
 class ADC_DATA{
 public:
   Double_t peak;
