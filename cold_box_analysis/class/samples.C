@@ -70,14 +70,15 @@ class SAMPLE{
     }
 
     void applyDenoise(Int_t filter = 0){
-      if(filter!=0) dn.TV1D_denoise(&wvf[0],&wvf[0],n_points,filter);
+      dn.TV1D_denoise(&wvf[0],&wvf[0],n_points,filter);
     }
 
-    void drawGraph(Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
+    void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
+      if (opt == "") opt = plot_opt;
       if (x == nullptr) x = time;
       if (y == nullptr) y = wvf;
       gwvf = new TGraph(n,x,y);
-      gwvf->Draw(plot_opt.c_str());
+      gwvf->Draw(opt.c_str());
       gwvf->GetXaxis()->SetTitle(xlabel.c_str());
       gwvf->GetYaxis()->SetTitle(ylabel.c_str());
 
@@ -105,7 +106,7 @@ class SAMPLE{
       applyMovingAverage(mafilter);
       applyDenoise(filter);
 
-      drawGraph(n_points,&time[0],&wvf[0]);
+      drawGraph(plot_opt,n_points,&time[0],&wvf[0]);
     }
 
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="0==0"){
