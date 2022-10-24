@@ -738,7 +738,6 @@ class SPHE{
     
   public:
     
-    
     TFile *fout;
 
     TTree *tout;
@@ -1309,7 +1308,7 @@ class SPHE{
 
       peakPerEvent = 0;
     
-      vector<Double_t> ma_to_shift = movingAverage(temp_peak,pre_filter);
+      vector<Double_t> ma_to_shift = movingAverage(&temp_peak[0],pre_filter);
       vector<Double_t> shifted=delay_line(ma_to_shift, shifter);//cusp(MIN[i], h);
       smoothWithMovingAvarage(shifted); // first calculate avarage
 
@@ -1804,11 +1803,17 @@ class SPHE{
     
     }
 
-
-    vector<Double_t> movingAverage(vector<Double_t> v, Int_t myinte){
+    template<class T>
+    vector<Double_t> movingAverage(T* v, Int_t myinte){
     
-      Int_t n = v.size();
-      if(myinte==0) return v;
+      Int_t n = memorydepth;
+      vector<Double_t> res(n,0);
+      if(myinte==0) {
+        for (Int_t i = 0; i < n; i++) {
+          res[i] = v[i];
+        }
+        return res;
+      }
       if(myinte%2==0){ // if it is even, we insert the middle point, e.g. 8 interactions takes 4 before, mid, 4 later
         midpoint = myinte/2+1;    //midpoint will be 5 here
         width = myinte+1;
@@ -1819,7 +1824,6 @@ class SPHE{
       }
     
 
-      vector<Double_t> res(n,0);
       for(Int_t i = 0; i < n; i++){
 
         if(i<midpoint || i>(n-midpoint)){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
