@@ -25,6 +25,7 @@ class SAMPLE{
     Double_t ymin = 0;
     Double_t ymax = 0;
 
+    ANALYZER *z = new ANALYZER("zsample");
     DENOISE dn;
     ADC_DATA ch;
     WIENER *w = new WIENER("w",dtime,250,1e-9,1e6,memorydepth);

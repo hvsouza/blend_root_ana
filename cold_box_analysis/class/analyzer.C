@@ -61,7 +61,15 @@ class ANALYZER{
       return res*dtime;
     }
 
-    
+
+    void getWaveform(Int_t myevent = 0, Int_t k = 0, Double_t factor = 1){
+      b[k]->GetEvent(myevent);
+      for (int j = 0; j < n_points; j++) {
+        raw[j] = ch[k].wvf[j]*factor;
+        wvf[j] = raw[j];
+        time[j] = j*dtime;
+      }
+    }
 
 
     ANALYZER(string myname = "z"){

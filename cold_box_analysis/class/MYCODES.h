@@ -58,8 +58,8 @@ using namespace std;
 #include "wiener_filter.C"
 #include "calibrationCodes.C"
 #include "alpha_analysis.C"
-#include "samples.C"
 #include "analyzer.C"
+#include "samples.C"
 
 #include "calibrationCodes_CT_validation.C"
 
