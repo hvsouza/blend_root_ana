@@ -26,7 +26,6 @@ class SAMPLE{
     Double_t ymax = 0;
 
     DENOISE dn;
-    SPHE spe;
     ADC_DATA ch;
     WIENER *w = new WIENER("w",dtime,250,1e-9,1e6,memorydepth);
 
@@ -62,7 +61,7 @@ class SAMPLE{
     }
     void applyMovingAverage(Int_t mafilter = 0){
       if(mafilter!=0) {
-        vector<Double_t> mawvf = spe.movingAverage(&wvf[0],mafilter);
+        vector<Double_t> mawvf = dn.movingAverage(&wvf[0],mafilter);
         for (int j = 0; j < n_points; j++) {
           wvf[j] = mawvf[j];
         }
