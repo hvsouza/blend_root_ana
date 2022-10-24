@@ -20,6 +20,13 @@ class ANALYZER{
     vector<string> schannel;
     Double_t dtime = 4;
 
+    DENOISE dn;
+    WIENER *w;
+
+    Int_t n_points = memorydepth;
+    Double_t *raw = new Double_t[n_points];
+    Double_t *wvf = new Double_t[n_points];
+    Double_t *time = new Double_t[n_points];
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
@@ -53,6 +60,15 @@ class ANALYZER{
       }
       return res*dtime;
     }
+
+    
+
+
+    ANALYZER(string myname = "z"){
+      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
+    }
+
+
 
 
 

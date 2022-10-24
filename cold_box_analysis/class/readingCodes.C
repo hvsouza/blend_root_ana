@@ -137,6 +137,55 @@ public:
 
 
 
+
+    template<class T>
+    vector<Double_t> movingAverage(T* v, Int_t myinte = 10){
+
+      Int_t n = memorydepth;
+      Int_t midpoint = 0;
+      Int_t width = 0;
+      Double_t sum = 0;
+
+      vector<Double_t> res(n,0);
+      if(myinte==0) {
+        for (Int_t i = 0; i < n; i++) {
+          res[i] = v[i];
+        }
+        return res;
+      }
+      if(myinte%2==0){ // if it is even, we insert the middle point, e.g. 8 interactions takes 4 before, mid, 4 later
+        midpoint = myinte/2+1;    //midpoint will be 5 here
+        width = myinte+1;
+      }
+      else{
+        midpoint = (myinte-1)/2 + 1; // e.g. 9 interactions the midpoint will be 5
+        width = myinte;
+      }
+
+
+      for(Int_t i = 0; i < n; i++){
+
+        if(i<midpoint || i>(n-midpoint)){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
+          res[i] = v[i];
+        }
+        // else if(i>cut/dtime){
+          for(Int_t j = (i-midpoint); j < (i+midpoint); j++) { //first one: from j = (5-5); j<(5+5)
+            sum = sum+v[j];
+            //                 cout << sum << endl;
+          }
+          res[i] = (sum/width);
+
+
+        // }
+        // else{
+          // v[i] = (0);
+        // }
+
+        sum=0;
+      }
+      return res;
+
+    }
 };
 
 
