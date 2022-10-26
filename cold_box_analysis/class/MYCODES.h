@@ -52,13 +52,13 @@
 using namespace std;
 
 #include "variables.C"
+#include "analyzer.C"
 #include "SignalProcessing.C"
 #include "timeReader.C"
 #include "readingCodes.C"
 #include "wiener_filter.C"
 #include "calibrationCodes.C"
 #include "alpha_analysis.C"
-#include "analyzer.C"
 #include "samples.C"
 
 #include "calibrationCodes_CT_validation.C"

@@ -29,7 +29,7 @@ public:
   Double_t *re_comp = nullptr;
   Double_t *im_comp = nullptr;
   
-  TF1 *gaus_filter;
+  TF1 *f_filter;
   TF1 *flar;
 
   Double_t *res = nullptr;
@@ -91,22 +91,58 @@ public:
     fft(hwvf);
   }
 
-  void frequency_deconv(WIENER y, WIENER G, Double_t cutoff_frequency=0){
-    
-    // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
-    gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
+  void apply_filter(){
 
-    // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
-    cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
-    gaus_filter->SetParameters(0,cutoff_frequency);
-   
+    // the for is performed in k, need to convert back to frequency
+    Double_t convert_freq = frequency/npts;
+
+    Double_t filter = 1;
+    for(Int_t k=0; k<npts/2+1; k++){
+      filter = f_filter->Eval(convert_freq*k);
+      spec[k] = spec[k]*filter;
+      // cout << spec[k] << endl;
+      spec_re[k] = spec[k].Re();
+      spec_im[k] = spec[k].Im();
+      hfft->SetBinContent(k+1,spec[k].Rho());
+      hPSD->SetBinContent(k+1,spec[k].Rho2());
+    }
+  }
+
+  void setFilter(Double_t cutoff_frequency, string filter_type){
+
+    // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
+    if (filter_type == "gaus")
+    {
+      cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
+      f_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
+      // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
+      f_filter->SetParameters(0,cutoff_frequency);
+    }
+    else if (filter_type == "low")
+    {
+      f_filter = new TF1("filter","1/sqrt(1+x*x/([0]*[0]))",0,frequency);	// A gaussian filter
+      f_filter->SetParameter(0,cutoff_frequency);
+    }
+    else if (filter_type == "high")
+    {
+      f_filter = new TF1("filter","1/sqrt(1+[0]*[0]/(x*x))",0,frequency);	// A gaussian filter
+      f_filter->SetParameter(0,cutoff_frequency);
+    }
+    
+    
+
+  }
+  void frequency_deconv(WIENER y, WIENER G, Double_t cutoff_frequency=0, string filter_type = "gaus"){
+
+    setFilter(cutoff_frequency,filter_type);
+
     // the for is performed in k, need to convert back to frequency
     Double_t convert_freq = frequency/npts;
 
 
     Double_t gaus_blur = 1;
     for(Int_t k=0; k<npts/2+1; k++){
-      if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
+      if(cutoff_frequency!=0) gaus_blur = f_filter->Eval(convert_freq*k);
       spec[k] = y.spec[k]*G.spec[k]*gaus_blur;
       // cout << spec[k] << endl;
       spec_re[k] = spec[k].Re();
@@ -131,7 +167,9 @@ public:
       bl+=hfinal->GetBinContent(i+1);
       auxbaseline+=1;
     }
+    if(baseline == 0) auxbaseline = 1;
     bl=bl/auxbaseline;
+
    
     for(Int_t i = 0; i<npts; i++){
       res[i] = hfinal->GetBinContent(i+1);
@@ -148,29 +186,24 @@ public:
    
     
   }
-  void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50){ // y is the signal, h is the device response (a.k.a single photo-electron)
-     // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
-    gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
+  void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50, string filter_type = "gaus"){ // y is the signal, h is the device response (a.k.a single photo-electron)
 
-    // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
-    cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
-    gaus_filter->SetParameters(0,cutoff_frequency);
-   
+    setFilter(cutoff_frequency,filter_type);
     // the for is performed in k, need to convert back to frequency
     Double_t convert_freq = frequency/npts;
 
 
     Double_t gaus_blur = 1;
     for(Int_t k=0; k<npts/2+1; k++){
-      if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
+      if(cutoff_frequency!=0) gaus_blur = f_filter->Eval(convert_freq*k);
       spec[k] = y.spec[k]*gaus_blur/h.spec[k];
       
       spec_re[k] = spec[k].Re();
       spec_im[k] = spec[k].Im();
 
       // or you can do something like this...
-      // spec_re[k] = gaus_filter->Eval(k)*(y.re_comp[k]*h.re_comp[k] + y.im_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
-      // spec_im[k] = gaus_filter->Eval(k)*(h.re_comp[k]*y.im_comp[k] - y.re_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
+      // spec_re[k] = f_filter->Eval(k)*(y.re_comp[k]*h.re_comp[k] + y.im_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
+      // spec_im[k] = f_filter->Eval(k)*(h.re_comp[k]*y.im_comp[k] - y.re_comp[k]*h.im_comp[k])/(pow(h.re_comp[k],2)+pow(h.im_comp[k],2));
 
     }
     //Now let's make a backward transform:
@@ -475,30 +508,6 @@ public:
   }
 
 
-    void apply_filter(Double_t cutoff_frequency){
 
-      // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
-      gaus_filter = new TF1("filter","TMath::Gaus(x,[0],[1])",0,frequency);	// A gaussian filter
-
-      // the standard deviation must be sqrt(sqrt(2))* the cutoff frequen, so when x = cutoff frequency Vo/Vi = 0.7
-      cutoff_frequency = sqrt(sqrt(2))*cutoff_frequency;
-      gaus_filter->SetParameters(0,cutoff_frequency);
-
-      // the for is performed in k, need to convert back to frequency
-      Double_t convert_freq = frequency/npts;
-
-
-      Double_t gaus_blur = 1;
-      for(Int_t k=0; k<npts/2+1; k++){
-        if(cutoff_frequency!=0) gaus_blur = gaus_filter->Eval(convert_freq*k);
-        spec[k] = spec[k]*gaus_blur;
-        // cout << spec[k] << endl;
-        spec_re[k] = spec[k].Re();
-        spec_im[k] = spec[k].Im();
-        hfft->SetBinContent(k+1,spec[k].Rho());
-        hPSD->SetBinContent(k+1,spec[k].Rho2());
-      }
-    }
- 
   
 };
