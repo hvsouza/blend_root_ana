@@ -21,12 +21,13 @@ class ANALYZER{
     Double_t dtime = 4;
     string myname;
 
+    Int_t kch = 0;
     DENOISE dn;
     WIENER *w;
 
     Int_t n_points = memorydepth;
-    Double_t **raw;
-    Double_t **wvf;
+    vector<vector<Double_t>> raw;
+    vector<vector<Double_t>> wvf;
     Double_t *time = new Double_t[n_points];
 
     // This allows to create a file, a tree and a branch outside the class
@@ -42,15 +43,18 @@ class ANALYZER{
       schannel.resize(nchannels);
       ch.resize(nchannels);
 
-      raw = new Double_t *[nchannels];
-      wvf = new Double_t *[nchannels];
+      raw.resize(nchannels);
+      wvf.resize(nchannels);
       for (Int_t i = 0; i < nchannels; i++) {
         schannel[i] = lb->At(i)->GetName();
         // schannel[i] = Form("Ch%d",channels[i]);
         b[i] = t1->GetBranch(schannel[i].c_str());
         b[i]->SetAddress(&ch[i]);
-        raw[i] = new Double_t [n_points];
-        wvf[i] = new Double_t [n_points];
+        raw[i].resize(n_points);
+        wvf[i].resize(n_points);
+      }
+      for (int j = 0; j < n_points; j++) {
+        time[j] = j*dtime;
       }
     }
 
@@ -75,15 +79,55 @@ class ANALYZER{
 
     void getWaveform(Int_t myevent = 0, Int_t k = 0, Double_t factor = 1){
       b[k]->GetEvent(myevent);
-      for (int j = 0; j < n_points; j++) {
-        raw[k][j] = ch[k].wvf[j]*factor;
-        wvf[j][k] = raw[j][k];
-        time[j] = j*dtime;
+    }
+
+    void applyMovingAverage(Int_t mafilter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+      Double_t *_temp = new Double_t[memorydepth];
+      if(mafilter!=0) {
+        if (_raw == _filtered) {
+          _raw = _temp;
+          _filtered = ch[kch].wvf;
+          for (Int_t i = 0; i < memorydepth; i++) {
+            _raw[i] = _filtered[i];
+          }
+        }
+        dn.movingAverage(_raw,_filtered,mafilter);
       }
     }
 
+    void applyDenoise(Int_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+      if (_raw == nullptr){
+        _raw = ch[kch].wvf;
+        _filtered = ch[kch].wvf;
+      }
+      dn.TV1D_denoise(_raw,_filtered,n_points,filter);
+    }
+
+    void applyFreqFilter(Double_t frequency_cut, string filter_type = "gaus", Double_t *_filtered = nullptr){
+      if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      for(Int_t i = 0; i < memorydepth; i++){
+        w->hwvf->SetBinContent(i+1,_filtered[i]);
+      }
+      w->fft(w->hwvf);
+      w->setFilter(frequency_cut,filter_type);
+      w->apply_filter();
+      w->backfft(*w);
+      for(Int_t i = 0; i < memorydepth; i++){
+        _filtered[i] = w->hwvf->GetBinContent(i+1);
+      }
+      // w->hwvf->Draw("");
+    }
+
+
+    void makeCopy(Double_t *cpy, Double_t *original = nullptr){
+      if (original == nullptr) original = ch[kch].wvf;
+      for (Int_t i = 0; i < memorydepth; i++) {
+        cpy[i] = original[i];
+      }
+    }
 
     ANALYZER(string m_myname = "z") : myname{m_myname}{
+
     }
 
 
