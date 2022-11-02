@@ -645,11 +645,16 @@ public:
         // numberoflines--;
         // break;
       // }
-      if(eventFile<maxEvents){t1->Fill();tEvent+=1;}
-      if(OnlyOneEvent == true && eventFile==stopEvent-1){
+      if(eventFile<maxEvents){
+        t1->Fill();
+        tEvent+=1;
         if((headbin.EventSize-24)/2 != memorydepth){
           cout << "WARNING !!!! INCORRECT LENGTH !!! Reading: " << memorydepth << ", folder: " << (headbin.EventSize-24)/2 << endl;
+          closeMyWhile = true;
         }
+      }
+
+      if(OnlyOneEvent == true && eventFile==stopEvent-1){
         closeMyWhile=true;
       }
       eventFile++;
