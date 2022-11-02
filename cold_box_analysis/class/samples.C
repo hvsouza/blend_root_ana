@@ -12,15 +12,8 @@ class SAMPLE: public ANALYZER{
     Int_t n_points = memorydepth;
     string file = "analyzed.root";
     Int_t kch = 0;
-    string plot_opt = "ALP";
     string tree = "t1";
-    TGraph *gwvf;
     TH2D *hpers;
-    string xlabel = "Time (ns)";
-    string ylabel = "Amplitude (ADC Channels)";
-
-    Double_t ymin = 0;
-    Double_t ymax = 0;
 
 
 
@@ -41,74 +34,44 @@ class SAMPLE: public ANALYZER{
     }
 
     bool getWaveform(Int_t myevent = 0, Double_t factor = 1){
-      if (kch>=nchannels){
-        cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
-        return false;
-      }
-      b[kch]->GetEvent(myevent);
-      for (int j = 0; j < n_points; j++) {
-        raw[kch][j] = ch[kch].wvf[j]*factor;
-        wvf[kch][j] = raw[kch][j];
-        time[j] = j*dtime;
-      }
-      return true;
+      bool status = getWaveformHard(myevent,factor);
+      return status;
 
     }
 
-    void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
+
+    void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       if (opt == "") opt = plot_opt;
-      if (x == nullptr) x = time;
-      if (y == nullptr) y = ch[kch].wvf;
-      gwvf = new TGraph(n,x,y);
-      gwvf->Draw(opt.c_str());
-      gwvf->GetXaxis()->SetTitle(xlabel.c_str());
-      gwvf->GetYaxis()->SetTitle(ylabel.c_str());
-
-      if(ymax!=0 && ymin!=0){
-        gwvf->GetYaxis()->SetRangeUser(ymin,ymax);
-      }
-      gwvf->SetEditable(kFALSE);
-    }
-
-    void sample_plot(Int_t myevent = 0, Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       bool state = getWaveform(myevent);
       if (!state) return;
       applyMovingAverage(mafilter);
       applyDenoise(filter);
 
-      drawGraph(plot_opt,n_points,&time[0],&ch[kch].wvf[0]);
+      drawGraph(opt,n_points,&time[0],&ch[kch].wvf[0]);
     }
 
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="0==0"){
 
       hpers = new TH2D("hpers","hpers",n_points,0,n_points*dtime,nbins,ymin,ymax);
       TCanvas *c1 = new TCanvas();
-      Double_t *traw = new Double_t(memorydepth);
+      
       for (int i=0; i < t1->GetEntries(); i++) {
         if(cut != "0==0"){
-          Int_t nselec = t1->Draw(Form("%s.wvf[%d][]:Iteration$*%f",schannel[kch].c_str(),kch,dtime),Form("Entry$==%d && %s",i,cut.c_str()),"goff");
+          Int_t nselec = t1->Draw("1",Form("Entry$==%d && %s",i,cut.c_str()),"goff");
           if(nselec == 0) continue;
-          t1->GetSelectedRows();
-          traw = t1->GetV1();
-          time = t1->GetV2();
-          for (int j = 0; j < n_points; j++) {
-            raw[kch][j] = traw[j];
-          }
+          // t1->GetSelectedRows();
+          // Double_t *traw= t1->GetV1();
+          // for (int j = 0; j < n_points; j++) {
+            // ch[kch].wvf[j] = traw[j];
+          // }
+          b[kch]->GetEvent(i);
         }
         else{
           b[kch]->GetEvent(i);
-
-          for (int j = 0; j < n_points; j++) {
-            raw[kch][j] = ch[kch].wvf[j];
-            wvf[kch][j] = raw[kch][j];
-            time[j] = j*dtime;
-          }
-
         }
         applyDenoise(filter);
 
         for (int j = 0; j < n_points; j++) {
-          if(filter==0) ch[kch].wvf[j] = raw[kch][j];
           hpers->Fill(time[j],ch[kch].wvf[j]);
         }
 
