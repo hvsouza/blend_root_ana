@@ -11,8 +11,8 @@
 class ANALYZER{
   public:
 
-    TFile *f;
-    TTree *t1;
+    TFile *f = nullptr;
+    TTree *t1 = nullptr;
     vector<TBranch*> b;
     vector<ADC_DATA> ch;
     Int_t nchannels = 0;
@@ -29,6 +29,14 @@ class ANALYZER{
     vector<vector<Double_t>> raw;
     vector<vector<Double_t>> wvf;
     Double_t *time = new Double_t[n_points];
+
+    string plot_opt = "AL";
+    TGraph *gwvf;
+    string xlabel = "Time (ns)";
+    string ylabel = "Amplitude (ADC Channels)";
+
+    Double_t ymin = 0;
+    Double_t ymax = 0;
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
@@ -78,8 +86,28 @@ class ANALYZER{
 
 
     void getWaveform(Int_t myevent = 0, Int_t k = 0, Double_t factor = 1){
+      if (k>=nchannels){
+        cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
+        return false;
+      }
       b[k]->GetEvent(myevent);
     }
+
+    bool getWaveformHard(Int_t myevent = 0, Double_t factor = 1){
+      if (kch>=nchannels){
+        cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
+        return false;
+      }
+      b[kch]->GetEvent(myevent);
+      for (int j = 0; j < n_points; j++) {
+        raw[kch][j] = ch[kch].wvf[j]*factor;
+        wvf[kch][j] = raw[kch][j];
+        time[j] = j*dtime;
+      }
+      return true;
+
+    }
+
 
     void applyMovingAverage(Int_t mafilter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       Double_t *_temp = new Double_t[memorydepth];
@@ -126,6 +154,20 @@ class ANALYZER{
       }
     }
 
+    void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
+      if (opt == "") opt = plot_opt;
+      if (x == nullptr) x = time;
+      if (y == nullptr) y = ch[kch].wvf;
+      gwvf = new TGraph(n,x,y);
+      gwvf->Draw(opt.c_str());
+      gwvf->GetXaxis()->SetTitle(xlabel.c_str());
+      gwvf->GetYaxis()->SetTitle(ylabel.c_str());
+
+      if(ymax!=0 && ymin!=0){
+        gwvf->GetYaxis()->SetRangeUser(ymin,ymax);
+      }
+      gwvf->SetEditable(kFALSE);
+    }
     ANALYZER(string m_myname = "z") : myname{m_myname}{
 
     }
