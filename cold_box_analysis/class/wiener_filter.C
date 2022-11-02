@@ -107,8 +107,31 @@ public:
       hPSD->SetBinContent(k+1,spec[k].Rho2());
     }
   }
-
-  void setFilter(Double_t cutoff_frequency, string filter_type){
+    
+  void applyBandCut(Double_t lowFreq, Double_t highFreq){
+    WIENER _temp("_temp",this->step,this->frequency,this->units_step, this->units_freq, this->npts);
+    for(Int_t k=0; k<npts/2+1; k++){
+      _temp.spec[k] = 1.;
+      // cout << spec[k] << endl;
+      _temp.spec_re[k] = spec[k].Re();
+      _temp.spec_im[k] = spec[k].Im();
+      _temp.hfft->SetBinContent(k+1,_temp.spec[k].Rho());
+      _temp.hPSD->SetBinContent(k+1,_temp.spec[k].Rho2());
+    }
+    _temp.setFilter(lowFreq, "high");
+    _temp.apply_filter();
+    _temp.setFilter(highFreq, "low");
+    _temp.apply_filter();
+    for(Int_t k=0; k<npts/2+1; k++){
+      spec[k] = 1. - spec[k];
+      // cout << spec[k] << endl;
+      spec_re[k] = spec[k].Re();
+      spec_im[k] = spec[k].Im();
+      hfft->SetBinContent(k+1,spec[k].Rho());
+      hPSD->SetBinContent(k+1,spec[k].Rho2());
+    }
+  }
+    void setFilter(Double_t cutoff_frequency, string filter_type){
 
     // cutoff_frequency is the cutoff frequency in MHz (or your unit set)
     if (filter_type == "gaus")
@@ -128,8 +151,7 @@ public:
       f_filter = new TF1("filter","1/sqrt(1+[0]*[0]/(x*x))",0,frequency);	// A gaussian filter
       f_filter->SetParameter(0,cutoff_frequency);
     }
-    
-    
+      
 
   }
   void frequency_deconv(WIENER y, WIENER G, Double_t cutoff_frequency=0, string filter_type = "gaus"){
@@ -301,11 +323,6 @@ public:
     delete hm;
 
   }
-
-
-
-
-
 
 
 
