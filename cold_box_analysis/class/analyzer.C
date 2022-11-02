@@ -88,7 +88,7 @@ class ANALYZER{
     void getWaveform(Int_t myevent = 0, Int_t k = 0, Double_t factor = 1){
       if (k>=nchannels){
         cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
-        return false;
+        return;
       }
       b[k]->GetEvent(myevent);
     }
@@ -131,13 +131,15 @@ class ANALYZER{
       dn.TV1D_denoise(_raw,_filtered,n_points,filter);
     }
 
-    void applyFreqFilter(Double_t frequency_cut, string filter_type = "gaus", Double_t *_filtered = nullptr){
+    void setFreqFilter(Double_t frequency_cut, string filter_type = "gaus"){
+      w->setFilter(frequency_cut,filter_type);
+    }
+    void applyFreqFilter(Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch].wvf;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_filtered[i]);
       }
       w->fft(w->hwvf);
-      w->setFilter(frequency_cut,filter_type);
       w->apply_filter();
       w->backfft(*w);
       for(Int_t i = 0; i < memorydepth; i++){
@@ -146,6 +148,18 @@ class ANALYZER{
       // w->hwvf->Draw("");
     }
 
+    void applyBandCut(WIENER *_temp = nullptr, Double_t *_filtered = nullptr){
+      if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      for(Int_t i = 0; i < memorydepth; i++){
+        w->hwvf->SetBinContent(i+1,_filtered[i]);
+      }
+      w->fft(w->hwvf);
+      w->applyBandCut(_temp);
+      w->backfft(*w);
+      for(Int_t i = 0; i < memorydepth; i++){
+        _filtered[i] = w->hwvf->GetBinContent(i+1);
+      }
+    }
 
     void makeCopy(Double_t *cpy, Double_t *original = nullptr){
       if (original == nullptr) original = ch[kch].wvf;
