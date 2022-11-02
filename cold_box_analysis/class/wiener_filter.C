@@ -37,6 +37,7 @@ public:
 
   string unit_time;
   string unit_freq;
+  
 
   // h is the s.p.e. response
   // n is the noise
@@ -107,24 +108,29 @@ public:
       hPSD->SetBinContent(k+1,spec[k].Rho2());
     }
   }
-    
-  void applyBandCut(Double_t lowFreq, Double_t highFreq){
-    WIENER _temp("_temp",this->step,this->frequency,this->units_step, this->units_freq, this->npts);
+
+  void setBandCut(Double_t lowFreq, Double_t highFreq, WIENER *_temp){
     for(Int_t k=0; k<npts/2+1; k++){
-      _temp.spec[k] = 1.;
+      _temp->spec[k] = 1.;
       // cout << spec[k] << endl;
-      _temp.spec_re[k] = spec[k].Re();
-      _temp.spec_im[k] = spec[k].Im();
-      _temp.hfft->SetBinContent(k+1,_temp.spec[k].Rho());
-      _temp.hPSD->SetBinContent(k+1,_temp.spec[k].Rho2());
+      _temp->spec_re[k] = _temp->spec[k].Re();
+      _temp->spec_im[k] = _temp->spec[k].Im();
     }
-    _temp.setFilter(lowFreq, "high");
-    _temp.apply_filter();
-    _temp.setFilter(highFreq, "low");
-    _temp.apply_filter();
+    _temp->setFilter(lowFreq, "high");
+    _temp->apply_filter();
+    _temp->setFilter(highFreq, "low");
+    _temp->apply_filter();
     for(Int_t k=0; k<npts/2+1; k++){
-      spec[k] = 1. - spec[k];
-      // cout << spec[k] << endl;
+      _temp->spec[k] = 1. - _temp->spec[k];
+      // _temp->hfft->SetBinContent(k+1,_temp->spec[k].Rho());
+      // _temp->hPSD->SetBinContent(k+1,_temp->spec[k].Rho2());
+    }
+    // _temp->hfft->Draw();
+  }
+    
+  void applyBandCut(WIENER *_temp){
+    for(Int_t k=0; k<npts/2+1; k++){
+      spec[k] = spec[k]*_temp->spec[k];
       spec_re[k] = spec[k].Re();
       spec_im[k] = spec[k].Im();
       hfft->SetBinContent(k+1,spec[k].Rho());
@@ -321,6 +327,7 @@ public:
     powerSpectrum = hPSD->Integral()*2; // *2 because it is only half of the spectrum
      
     delete hm;
+    delete fft;
 
   }
 
@@ -352,11 +359,12 @@ public:
 
     fft(hwvf);
    
-    flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
-    flar->SetParameters(0.3,10,0.3,1000);
+    // flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
+    // flar->SetParameters(0.3,10,0.3,1000);
    
 
     delete hfinal;
+    delete fft_final;
    
   }
 
