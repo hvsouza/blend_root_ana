@@ -129,7 +129,7 @@ class WIENER{
     }
     
     void applyBandCut(WIENER *_temp){
-      convolve(temp);
+      convolve(_temp);
     }
     void setFilter(Double_t cutoff_frequency, string filter_type){
 
