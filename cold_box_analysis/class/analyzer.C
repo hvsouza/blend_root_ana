@@ -13,6 +13,7 @@ class ANALYZER{
 
     TFile *f = nullptr;
     TTree *t1 = nullptr;
+    Int_t nentries = 0;
     vector<TBranch*> b;
     vector<ADC_DATA> ch;
     Int_t nchannels = 0;
@@ -40,7 +41,6 @@ class ANALYZER{
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
-    // void setAnalyzer
     void setAnalyzer(){
       w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
       if(f == nullptr) f = new TFile("analyzed.root","READ");
@@ -64,6 +64,15 @@ class ANALYZER{
       for (int j = 0; j < n_points; j++) {
         time[j] = j*dtime;
       }
+      nentries = t1->GetEntries();
+    }
+
+    void getFFT(Double_t *_v = nullptr){
+      if(_v == nullptr) _v = ch[kch].wvf;
+      for(Int_t i = 0; i < memorydepth; i++){
+        w->hwvf->SetBinContent(i+1,_v[i]);
+      }
+      w->fft(w->hwvf);
     }
 
     void setAnalyzerExt(TFile *&ft, TTree *&tr, vector<TBranch *> &bt){
