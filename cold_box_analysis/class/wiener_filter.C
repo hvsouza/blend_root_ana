@@ -129,13 +129,7 @@ class WIENER{
     }
     
     void applyBandCut(WIENER *_temp){
-      for(Int_t k=0; k<npts/2+1; k++){
-        spec[k] = spec[k]*_temp->spec[k];
-        spec_re[k] = spec[k].Re();
-        spec_im[k] = spec[k].Im();
-        hfft->SetBinContent(k+1,spec[k].Rho());
-        hPSD->SetBinContent(k+1,spec[k].Rho2());
-      }
+      convolve(temp);
     }
     void setFilter(Double_t cutoff_frequency, string filter_type){
 
@@ -158,6 +152,17 @@ class WIENER{
         f_filter->SetParameter(0,cutoff_frequency);
       }
       
+
+    }
+
+    void convolve(WIENER *_temp){
+      for(Int_t k=0; k<npts/2+1; k++){
+        spec[k] = spec[k]*_temp->spec[k];
+        spec_re[k] = spec[k].Re();
+        spec_im[k] = spec[k].Im();
+        hfft->SetBinContent(k+1,spec[k].Rho());
+        hPSD->SetBinContent(k+1,spec[k].Rho2());
+      }
 
     }
     void frequency_deconv(WIENER y, WIENER G, Double_t cutoff_frequency=0, string filter_type = "gaus"){
