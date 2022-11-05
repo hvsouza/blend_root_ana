@@ -83,6 +83,26 @@ class SAMPLE: public ANALYZER{
       hpers->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
       
     }
+
+    void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0){
+
+      if (maxevent==0) {
+        maxevent = nentries;
+      }
+      TCanvas *c1 = new TCanvas("c1");
+
+      for(Int_t i = 0; i < maxevent; i++){
+        sample_plot(i,"AL",filter);
+        printf("\rEvent %d", i);
+        fflush(stdout);
+        c1->Modified();
+        c1->Update();
+        if (gSystem->ProcessEvents())
+          break;
+        if(dt!=0) this_thread::sleep_for(chrono::milliseconds(dt));
+      }
+    }
+
     SAMPLE(string m_myname = "s"){
       myname = m_myname;
       setAnalyzer();

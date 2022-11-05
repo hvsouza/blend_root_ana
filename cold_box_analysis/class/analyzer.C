@@ -191,6 +191,7 @@ class ANALYZER{
       }
       gwvf->SetEditable(kFALSE);
     }
+
     ANALYZER(string m_myname = "z") : myname{m_myname}{
 
     }
@@ -198,6 +199,73 @@ class ANALYZER{
 
 
 
+    void showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0);
+    void averageFFT(Int_t maxevent = 0, string selection = "");
 
 
 };
+
+
+
+void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = ""){
+  if (maxevent==0) {
+    maxevent = nentries;
+  }
+  TH1D *h = (TH1D*)w->hfft->Clone("h");
+  Int_t k = 0;
+  TCanvas *c1 = new TCanvas("c1");
+  for(Int_t i = 0; i < maxevent; i++){
+    if(selection != ""){
+       Int_t nselec = t1->Draw("1",Form("Entry$==%d && %s",i,selection.c_str()),"goff");
+       if(nselec == 0) continue;
+    }
+    getWaveform(i);
+    getFFT();
+    for (Int_t j = 0; j < memorydepth/2; j++) h->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
+  }
+  h->Draw();
+}
+void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0){
+
+  if (maxevent==0) {
+    maxevent = nentries;
+  }
+  TH1D *h = (TH1D*)w->hfft->Clone("h");
+  vector<TH1D *> hfft(naverage);
+  Int_t k = 0;
+  TCanvas *c1 = new TCanvas("c1");
+  for(Int_t i = 0; i < maxevent; i++){
+    getWaveform(i);
+    getFFT();
+    if (i < naverage) {
+      hfft[k] = (TH1D*)w->hfft->Clone(Form("h%d",k));
+      for (Int_t j = 0; j < memorydepth/2; j++) h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
+      if (naverage == 1) h->Draw();
+    }
+    else{
+      if (k < naverage) {
+        for (Int_t j = 0; j < memorydepth/2; j++) {
+          h->AddBinContent(j+1,-hfft[k]->GetBinContent(j+1));
+          hfft[k]->SetBinContent(j+1,w->hfft->GetBinContent(j+1));
+          h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
+        }
+        printf("\rEvent %d", i);
+        fflush(stdout);
+        c1->Modified();
+        c1->Update();
+        if (gSystem->ProcessEvents())
+          break;
+        if(dt!=0) this_thread::sleep_for(chrono::milliseconds(dt));
+      }
+      else{
+        if (i == naverage){
+          h->Draw();
+        }
+        k = 0;
+      }
+    }
+
+    k++;
+    if(naverage == 1) k = 0;
+  }
+}
