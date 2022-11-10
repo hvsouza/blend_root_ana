@@ -155,6 +155,21 @@ class WIENER{
 
     }
 
+    void convertDecibel(){
+      for(Int_t k=0; k<npts/2+1; k++){
+        hfft->SetBinContent(k+1,20*TMath::Log10(hfft->GetBinContent(k+1)));
+        hPSD->SetBinContent(k+1,20*TMath::Log10(hPSD->GetBinContent(k+1)));
+      }
+    }
+    void fillPlane(){
+      for(Int_t k=0; k<npts/2+1; k++){
+        spec[k] = 1;
+        spec_re[k] = spec[k].Re();
+        spec_im[k] = spec[k].Im();
+        hfft->SetBinContent(k+1,spec[k].Rho());
+        hPSD->SetBinContent(k+1,spec[k].Rho2());
+      }
+    }
     void convolve(WIENER *_temp){
       for(Int_t k=0; k<npts/2+1; k++){
         spec[k] = spec[k]*_temp->spec[k];
