@@ -21,6 +21,8 @@ class ANALYZER{
     vector<string> schannel;
     Double_t dtime = 4;
     string myname;
+    string filename = "";
+    TEventList *lev = nullptr;
 
     Int_t kch = 0;
     DENOISE dn;
@@ -48,6 +50,7 @@ class ANALYZER{
       if(f == nullptr) f = new TFile("analyzed.root","READ");
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
       TList *lb = (TList*)t1->GetListOfBranches();
+      lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
       nchannels = lb->GetEntries();
       b.resize(nchannels);
       schannel.resize(nchannels);
@@ -207,13 +210,15 @@ class ANALYZER{
       }
       haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),kch),"Averaged waveform",memorydepth,0,memorydepth*dtime);
       Int_t total = 0;
-      for(Int_t i = 0; i < maxevent; i++){
-        if(selection != ""){
-          Int_t nselec = t1->Draw("1",Form("Entry$==%d && %s",i,selection.c_str()),"goff");
-          if(nselec == 0) continue;
-        }
-        getWaveform(i);
-
+      t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
+      Int_t nev = lev->GetN();
+      if (maxevent < nev) {
+        nev = maxevent;
+      }
+      Int_t iev = 0;
+      for(Int_t i = 0; i < nev; i++){
+        iev = lev->GetEntry(i);
+        getWaveform(iev);
         total += 1;
         for (Int_t j = 0; j < memorydepth; j++){
           haverage[kch]->AddBinContent(j+1,ch[kch].wvf[j]);
@@ -227,8 +232,8 @@ class ANALYZER{
 
 
 
-      void showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0);
-      void averageFFT(Int_t maxevent = 0, string selection = "");
+      void showFFT(Int_t naverage, Int_t maxevent, Int_t dt);
+      void averageFFT(Int_t maxevent, string selection);
 
 
 };
@@ -239,16 +244,23 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = ""){
   if (maxevent==0) {
     maxevent = nentries;
   }
+  t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
+  Int_t nev = lev->GetN();
+  if (maxevent < nev) {
+    nev = maxevent;
+  }
+  Int_t iev = 0;
   hfft[kch] = (TH1D*)w->hfft->Clone("h");
-  for(Int_t i = 0; i < maxevent; i++){
-    if(selection != ""){
-       Int_t nselec = t1->Draw("1",Form("Entry$==%d && %s",i,selection.c_str()),"goff");
-       if(nselec == 0) continue;
-    }
+  Int_t total = 0;
+  for(Int_t i = 0; i < nev; i++){
+    iev = lev->GetEntry(i);
+    getWaveform(iev);
     getWaveform(i);
     getFFT();
     for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
+    total++;
   }
+  hfft[kch]->Scale(1./total);
 }
 void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0){
 
