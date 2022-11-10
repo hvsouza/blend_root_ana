@@ -103,8 +103,8 @@ class SAMPLE: public ANALYZER{
       }
     }
 
-    SAMPLE(string m_myname = "s"){
+    SAMPLE(string m_myname = "s", string m_filename = "analyzed.root"){
       myname = m_myname;
-      setAnalyzer();
+      setAnalyzer(m_filename);
     }
 };

@@ -21,7 +21,7 @@ class ANALYZER{
     vector<string> schannel;
     Double_t dtime = 4;
     string myname;
-    string filename = "";
+    string filename = "analyzed.root";
     TEventList *lev = nullptr;
 
     Int_t kch = 0;
@@ -45,9 +45,10 @@ class ANALYZER{
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
-    void setAnalyzer(){
+    void setAnalyzer(string m_filename = "analyzed.root"){
+      filename = m_filename;
       w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
-      if(f == nullptr) f = new TFile("analyzed.root","READ");
+      if(f == nullptr) f = new TFile(filename.c_str(),"READ");
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
       TList *lb = (TList*)t1->GetListOfBranches();
       lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
@@ -75,14 +76,6 @@ class ANALYZER{
       nentries = t1->GetEntries();
     }
 
-    void getFFT(Double_t *_v = nullptr){
-      if(_v == nullptr) _v = ch[kch].wvf;
-      for(Int_t i = 0; i < memorydepth; i++){
-        w->hwvf->SetBinContent(i+1,_v[i]);
-      }
-      w->fft(w->hwvf);
-    }
-
     void setAnalyzerExt(TFile *&ft, TTree *&tr, vector<TBranch *> &bt){
       f = ft;
       tr = (TTree*)ft->Get("t1");
@@ -90,6 +83,14 @@ class ANALYZER{
       bt.resize(nchannels);
       setAnalyzer();
       for (Int_t i = 0; i < nchannels; i++) bt[i] = b[i];
+    }
+
+    void getFFT(Double_t *_v = nullptr){
+      if(_v == nullptr) _v = ch[kch].wvf;
+      for(Int_t i = 0; i < memorydepth; i++){
+        w->hwvf->SetBinContent(i+1,_v[i]);
+      }
+      w->fft(w->hwvf);
     }
 
     Double_t integrate(Int_t channel = 0, Double_t from = 0, Double_t to = 0){
