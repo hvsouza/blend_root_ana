@@ -11,7 +11,6 @@ class SAMPLE: public ANALYZER{
   public:
     Int_t n_points = memorydepth;
     string file = "analyzed.root";
-    Int_t kch = 0;
     string tree = "t1";
 
 
@@ -32,16 +31,10 @@ class SAMPLE: public ANALYZER{
       printf("%s not found, run s.print() to check the branches\n",mych.c_str());
     }
 
-    bool getWaveform(Int_t myevent = 0, Double_t factor = 1){
-      bool status = getWaveformHard(myevent,factor);
-      return status;
-
-    }
-
 
     void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       if (opt == "") opt = plot_opt;
-      bool state = getWaveform(myevent);
+      bool state = getWaveformHard(myevent,factor);
       if (!state) return;
       applyMovingAverage(mafilter);
       applyDenoise(filter);
