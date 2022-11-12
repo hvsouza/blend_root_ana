@@ -39,6 +39,7 @@ class ANALYZER{
     TGraph *gwvf;
     string xlabel = "Time (ns)";
     string ylabel = "Amplitude (ADC Channels)";
+    TH2D *hpers;
 
     Double_t ymin = 0;
     Double_t ymax = 0;
@@ -228,6 +229,33 @@ class ANALYZER{
       }
 
       haverage[kch]->Scale(1./total);
+    }
+
+    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut=""){
+
+      hpers = new TH2D("hpers","hpers",n_points,0,n_points*dtime,nbins,ymin,ymax);
+      TCanvas *c1 = new TCanvas();
+
+      t1->Draw(Form(">>lev_%s",myname.c_str()),cut.c_str());
+      Int_t nev = lev->GetN();
+      Int_t iev = 0;
+      for(Int_t i = 0; i < nev; i++){
+        iev = lev->GetEntry(i);
+        b[kch]->GetEvent(iev);
+        applyDenoise(filter);
+        
+
+        for (int j = 0; j < n_points; j++) {
+          hpers->Fill(time[j],ch[kch].wvf[j]);
+        }
+
+      }
+
+
+      hpers->Draw("colz");
+      hpers->GetXaxis()->SetTitle("Time (ns)");
+      hpers->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
+
     }
 
 
