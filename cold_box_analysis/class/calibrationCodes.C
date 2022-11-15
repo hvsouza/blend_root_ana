@@ -86,7 +86,9 @@ class Calibration
     
   public:
     
-  
+
+
+    string myname = "c";
     Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     Int_t nbits = 14; // DIGITIZER bits
     Int_t linhasEvento = 9000;
@@ -148,11 +150,111 @@ class Calibration
 
 
     // ____________________________________________________________________________________________________ //
-    void fit_sphe_wave(string name){
-   
+    void fit_sphe_wave(string name, bool optimize = true){
+
+      if (optimize == true) searchParameters(name,2,false);
       makeSphe(name);
     }
 
+    void searchParameters(string histogram, Double_t sigmaSearch = 2, bool debug = false){
+
+      TFile *f1 = new TFile(rootFile.c_str(),"READ");
+      TH1D *h = (TH1D*)f1->Get(histogram.c_str());
+
+      h->Rebin(rebin);
+      Double_t scale = 1/(h->Integral());
+      h->Scale(scale);
+      Int_t nbins = h->GetNbinsX();
+      Double_t *source = new Double_t[nbins];
+      Double_t *destVector = new Double_t[nbins];
+
+      Double_t sigma;
+      vector<Double_t> fPositionX(100);
+      vector<Double_t> fPositionY(100);
+      Int_t fNPeaks = 0;
+      Int_t nfound = 0;
+      Int_t bin;
+      // const Int_t nbins = 1024;
+      xmin = h->GetXaxis()->GetXmin();
+      xmax = h->GetXaxis()->GetXmax();
+      Double_t a;
+      h->SetTitle("High resolution peak searching, number of iterations = 3");
+      h->GetXaxis()->SetRange(1,nbins);
+      TH1D *d = new TH1D("d","",nbins,xmin,xmax);
+
+      for (Int_t i = 0; i < nbins; i++) source[i]=h->GetBinContent(i + 1);
+
+
+      TSpectrum *s = new TSpectrum();
+
+      Double_t sigmastep = 0.2;
+      while(nfound < 3 && sigmaSearch>0.5){
+        nfound = s->SearchHighRes(source, destVector, nbins, sigmaSearch, 2, kTRUE, 3, kTRUE, 3);
+        sigmaSearch-=sigmastep;
+      }
+      if(nfound < 3){
+        cout << "Could not optimize parameters, only " << nfound << " peaks found" << endl;
+        debug = true;
+      }
+      Double_t *xpeaks_t = s->GetPositionX();
+      vector<Double_t> xpeaks(nfound);
+      for (Int_t i = 0; i < nfound; i++) xpeaks[i] = xpeaks_t[i];
+
+      std::sort(xpeaks.begin(),xpeaks.end());
+      for (Int_t i = 0; i < nfound; i++) {
+        a=xpeaks[i];
+        bin = 1 + Int_t(a + 0.5);
+        fPositionX[i] = h->GetBinCenter(bin);
+        fPositionY[i] = h->GetBinContent(bin);
+      }
+
+
+      Double_t upplim_gaus_base = fPositionX[0]+(3./4)*(fPositionX[1]-fPositionX[0])/2;
+      TF1 *faux = new TF1("faux","gaus",xmin,upplim_gaus_base);
+      faux->SetParameters(fPositionY[0],fPositionX[0],sqrt(fPositionX[0]));
+      h->Fit("faux","R0Q");
+
+      peak0 = fPositionY[0];
+      mean0 = fPositionX[0];
+      sigma0 = faux->GetParameter(2);
+
+      peak1 = fPositionY[1];
+      mean1 = fPositionX[1];
+      sigma1 = faux->GetParameter(2);
+
+      startpoint = fPositionY[2];
+      Double_t lowestpt = 0;
+      for (Int_t i = 1+xpeaks[2]+0.5; i < nbins; i++){
+        if(h->GetBinContent(i+1)<= 1.*scale){
+          lowestpt = h->GetBinCenter(i);
+          break;
+        }
+      }
+      n_peaks = Int_t(lowestpt/fPositionX[1]);
+
+      if(debug)
+      {
+        TCanvas *cdb = new TCanvas("cdb");
+        cdb->cd();
+        h->Draw("hist");
+        TPolyMarker * pm = new TPolyMarker(nfound, &fPositionX[0], &fPositionY[0]);
+        pm->SetMarkerStyle(23);
+        pm->SetMarkerColor(kRed);
+        pm->SetMarkerSize(1.3);
+        pm->Draw("SAME");
+
+        for (Int_t i = 0; i < nbins; i++) d->SetBinContent(i + 1,destVector[i]);
+        d->SetLineColor(kRed);
+        d->Draw("SAME");
+
+        printf("Found %d candidate peaks\n",nfound);
+        for(Int_t i=0;i<nfound;i++) printf("posx= %f, posy= %f\n",fPositionX[i], fPositionY[i]);
+        faux->Draw("SAME");
+        cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << fPositionX[0] << endl;
+      }
+
+      
+    }
 
 
 
@@ -180,7 +282,7 @@ class Calibration
 
     // ____________________________________________________________________________________________________ //
     void makeSphe(string histogram){
-    
+
       string histogram_tempo = histogram+"_stat";
       TFile *f1 = new TFile(rootFile.c_str(),"READ");
       TH1D *hcharge = (TH1D*)f1->Get(histogram.c_str());
@@ -631,6 +733,12 @@ class Calibration
         lastOneFree->FixParameter(2,1);
       }
     }
+
+
+
+    Calibration(string mname = "c"){
+      myname = mname;
+    }
     
 };
 
@@ -643,69 +751,6 @@ class Calibration
 
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ //
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
