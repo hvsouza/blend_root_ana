@@ -540,6 +540,17 @@ public:
         // cout << headers << endl;
       }
     }
+
+    if(isBinary){
+      fin[0].read((char *) &headbin, nbytes*6);
+      if((headbin.EventSize-24)/2 != memorydepth){
+        cout << "ERROR !!!! INCORRECT LENGTH !!! Reading: " << memorydepth << ", folder: " << (headbin.EventSize-24)/2 << endl;
+        return;
+      }
+    }
+
+    fin[0].clear();
+    fin[0].seekg(0);
     while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
       Int_t n_reads = 0;    
     
@@ -648,10 +659,6 @@ public:
       if(eventFile<maxEvents){
         t1->Fill();
         tEvent+=1;
-        if((headbin.EventSize-24)/2 != memorydepth){
-          cout << "WARNING !!!! INCORRECT LENGTH !!! Reading: " << memorydepth << ", folder: " << (headbin.EventSize-24)/2 << endl;
-          closeMyWhile = true;
-        }
       }
 
       if(OnlyOneEvent == true && eventFile==stopEvent-1){
