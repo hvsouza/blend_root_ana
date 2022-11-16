@@ -169,8 +169,6 @@ class Calibration
       Double_t *destVector = new Double_t[nbins];
 
       Double_t sigma;
-      vector<Double_t> fPositionX(100);
-      vector<Double_t> fPositionY(100);
       Int_t fNPeaks = 0;
       Int_t nfound = 0;
       Int_t bin;
@@ -188,7 +186,7 @@ class Calibration
       TSpectrum *s = new TSpectrum();
 
       Double_t sigmastep = 0.2;
-      while(nfound < 3 && sigmaSearch>0.5){
+      while(nfound < 3 && sigmaSearch>=1){
         nfound = s->SearchHighRes(source, destVector, nbins, sigmaSearch, 2, kTRUE, 3, kTRUE, 3);
         sigmaSearch-=sigmastep;
       }
@@ -198,11 +196,14 @@ class Calibration
       }
       Double_t *xpeaks_t = s->GetPositionX();
       vector<Double_t> xpeaks(nfound);
+      Int_t pos0 = 0; // this in case there is some peak before zero
+      vector<Double_t> fPositionX(nfound-pos0);
+      vector<Double_t> fPositionY(nfound-pos0);
       for (Int_t i = 0; i < nfound; i++) xpeaks[i] = xpeaks_t[i];
 
       std::sort(xpeaks.begin(),xpeaks.end());
-      for (Int_t i = 0; i < nfound; i++) {
-        a=xpeaks[i];
+      for (Int_t i = 0; i < nfound-pos0; i++) {
+        a=xpeaks[i+pos0];
         bin = 1 + Int_t(a + 0.5);
         fPositionX[i] = h->GetBinCenter(bin);
         fPositionY[i] = h->GetBinContent(bin);
@@ -224,7 +225,7 @@ class Calibration
 
       startpoint = fPositionY[2];
       Double_t lowestpt = 0;
-      for (Int_t i = 1+xpeaks[2]+0.5; i < nbins; i++){
+      for (Int_t i = 1+xpeaks[pos0+2]+0.5; i < nbins; i++){
         if(h->GetBinContent(i+1)<= 1.*scale){
           lowestpt = h->GetBinCenter(i);
           break;
@@ -237,7 +238,7 @@ class Calibration
         TCanvas *cdb = new TCanvas("cdb");
         cdb->cd();
         h->Draw("hist");
-        TPolyMarker * pm = new TPolyMarker(nfound, &fPositionX[0], &fPositionY[0]);
+        TPolyMarker * pm = new TPolyMarker(nfound-pos0, &fPositionX[0], &fPositionY[0]);
         pm->SetMarkerStyle(23);
         pm->SetMarkerColor(kRed);
         pm->SetMarkerSize(1.3);
@@ -250,7 +251,7 @@ class Calibration
         printf("Found %d candidate peaks\n",nfound);
         for(Int_t i=0;i<nfound;i++) printf("posx= %f, posy= %f\n",fPositionX[i], fPositionY[i]);
         faux->Draw("SAME");
-        cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << fPositionX[0] << endl;
+        cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << fPositionX[1] << endl;
       }
 
       

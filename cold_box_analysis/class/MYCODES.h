@@ -49,6 +49,9 @@
 #include <TMatrixD.h>
 #include "TSystem.h"
 #include <TEventList.h>
+#include <TPolyMarker.h>
+#include <TSpectrum.h>
+#include <TGaxis.h>
 
 
 
