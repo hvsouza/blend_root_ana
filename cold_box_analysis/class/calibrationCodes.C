@@ -254,6 +254,15 @@ class Calibration
         cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << fPositionX[1] << endl;
       }
 
+      if(n_peaks <= 0){
+        cout << "Something wrong: npeaks = " << n_peaks << endl;
+        cout << "Changing to 5" << endl;
+        n_peaks = 5;
+      }
+      else if (n_peaks>18){
+        n_peaks = 18;
+      }
+      
       
     }
 
