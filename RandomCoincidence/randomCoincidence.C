@@ -111,8 +111,8 @@ void randomCoincidence(){
       fflush(stdout);
       for (Int_t i = 0; i < ndet; i++) {
         // det[i] = new DET(100,100e-9,i+1);
-        // det[i]->setDet(100,_ncoinc[aux]);
-        det[i]->setDet(_nrate[aux],100e-9);
+        det[i]->setDet(100,_ncoinc[aux]);
+        // det[i]->setDet(_nrate[aux],100e-9);
         det[i]->generateEvents();
 
       }
