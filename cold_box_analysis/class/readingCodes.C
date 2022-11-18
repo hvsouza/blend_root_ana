@@ -261,9 +261,51 @@ public:
 
   string format_time = "hh:mm:ss";
   string format_date = "dd-mmm-yyyy";
+
+  void get_ch_info(string logfilename){
+    ifstream logfile;
+    logfile.open(logfilename.c_str(),ios::in);
+
+    if(logfile.good() && logfile.is_open()){ // Ok
+      // cout << "Reading file " << files << " ... " << endl;
+    }
+    else{
+      cout << "The file " << logfilename << " did not open!!" << endl;
+      return;
+    }
+    string dataname = "";
+    Int_t aux = 0;
+    // While for read the entire file
+    string wave_ref = "wave";
+    int wavenum = 0;
+    int temp = -1;
+    vector<Int_t> tempch;
+    while(!logfile.fail()){
+        logfile >> dataname;
+        cout << dataname << endl;
+        if(logfile.bad() || logfile.fail()){
+          break;
+        }
+        size_t found  = dataname.find(wave_ref);
+        found = found + wave_ref.length();
+        wavenum = (int)dataname[found] - '0';
+        cout << wavenum << endl;
+        if(wavenum != temp){
+          if (aux == 0) temp = wavenum;
+          tempch.push_back(wavenum);
+        }
+        else{
+          break;
+        }
+        aux++;
+    }
+    channels = tempch;
+    logfile.close();
+  }
   
-  void adc_read_all_data(){
-    
+  void adc_read_all_data(Bool_t do_get_ch_info = true){
+
+    if (do_get_ch_info) get_ch_info("files.log");
     readFiles("files.log"); //use it like this
     //     readData("myfile", 100); //or like this
     return;
