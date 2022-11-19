@@ -23,4 +23,9 @@ if [ -z $2 ]; then
 else
     file=$2
 fi
-eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h" -e "SAMPLE s(\"s\",\"$file\")"'
+
+if [ $file == 'no' ]; then
+    eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"'
+else
+    eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h" -e "SAMPLE s(\"s\",\"$file\")"'
+fi
