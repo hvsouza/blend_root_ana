@@ -105,7 +105,7 @@ class Calibration
   
     // _______________ Parameters for fit_sphe_wave _______________/
   
-    string rootFile;
+    string rootFile = "";
   
     Int_t n_peaks = 7;
     Double_t peak0 = 0.1;
@@ -158,8 +158,16 @@ class Calibration
 
     void searchParameters(string histogram, Double_t sigmaSearch = 2, bool debug = false){
 
-      TFile *f1 = new TFile(rootFile.c_str(),"READ");
-      TH1D *h = (TH1D*)f1->Get(histogram.c_str());
+      TFile *f1 = nullptr;
+      TH1D *h = nullptr;
+      if (rootFile != "") {
+        f1 = new TFile(rootFile.c_str(),"READ");
+        h = (TH1D*)f1->Get(histogram.c_str());
+      }
+      else{
+        h = (TH1D*)gDirectory->Get(histogram.c_str());
+      }
+
 
       h->Rebin(rebin);
       Double_t scale = 1/(h->Integral());
@@ -226,7 +234,7 @@ class Calibration
       startpoint = fPositionY[2];
       Double_t lowestpt = 0;
       for (Int_t i = 1+xpeaks[pos0+2]+0.5; i < nbins; i++){
-        if(h->GetBinContent(i+1)<= 1.*scale){
+        if(h->GetBinContent(i+1)<= 2*h->GetMinimum(0)*scale){
           lowestpt = h->GetBinCenter(i);
           break;
         }
@@ -263,7 +271,8 @@ class Calibration
         n_peaks = 18;
       }
       
-      
+
+      // delete f1, h, source, destVector;
     }
 
 
@@ -294,9 +303,15 @@ class Calibration
     void makeSphe(string histogram){
 
       string histogram_tempo = histogram+"_stat";
-      TFile *f1 = new TFile(rootFile.c_str(),"READ");
-      TH1D *hcharge = (TH1D*)f1->Get(histogram.c_str());
-    
+      TH1D *hcharge;
+      TFile *f1 = nullptr;
+      if (rootFile != "") {
+        TFile *f1 = new TFile(rootFile.c_str(),"READ");
+        hcharge = (TH1D*)f1->Get(histogram.c_str());
+      }
+      else{
+        hcharge = (TH1D*)gDirectory->Get(histogram.c_str());
+      }
       hcharge->Rebin(rebin);
     
       ofstream out;
@@ -334,13 +349,15 @@ class Calibration
       // func->SetParLimits(2,0.9*sigma0,2*sigma0);
     
       Int_t aux = 0;
+      // TO BE CHECKED ! Maybe it is better to not control the startpoing so hardly
+      Double_t temp_startpoint = startpoint;
       for(Int_t i = 0; i<n_peaks; i++){
-        func->SetParameter((i+6+aux),startpoint);
+        func->SetParameter((i+6+aux),temp_startpoint);
         aux++;
         func->SetParameter((i+6+aux),(i+2)*mean1);
         aux++;
         func->SetParameter((i+6+aux),(i+2)*sigma1);
-        startpoint = startpoint/5;
+        // temp_startpoint = temp_startpoint/3;
       }
       func->SetParName(4,"#mu");
       func->SetParName(5,"#sigma");
@@ -793,15 +810,15 @@ class SPHE{
     
   public:
     
-    TFile *fout;
+    TFile *fout=nullptr;
 
-    TTree *tout;
+    TTree *tout = nullptr;
 
     Bool_t creation = true; //to verify creation of ttree branches
 
 
-    TFile *fwvf;
-    TTree *twvf;
+    TFile *fwvf = nullptr;
+    TTree *twvf = nullptr;
 
 
     Double_t value = 0;
@@ -909,9 +926,9 @@ class SPHE{
     Int_t aux_events = 0;
 
 
-    TGraph *g_smooth;
-    TGraph *g_normal;
-    TGraph *g_points;
+    TGraph *g_smooth = nullptr;
+    TGraph *g_normal = nullptr;
+    TGraph *g_points = nullptr;
     
     vector<Double_t> temp_peak;
     vector<Double_t> peak_smooth;
@@ -952,7 +969,7 @@ class SPHE{
     Int_t high_cut = 2000;
     Double_t val_cut = 6;
     TMultiGraph *gm = new TMultiGraph();
-    TGraph *gwaveforms;
+    TGraph *gwaveforms = nullptr;
     Double_t shifter = 12;
 
     Double_t sphe_charge;
@@ -2022,8 +2039,8 @@ class Resolution{
   public:
 
     vector<Int_t> channels = {1,2};
-    TFile *fout;
-    TTree *tout;
+    TFile *fout = nullptr;
+    TTree *tout = nullptr;
     Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     Int_t nbits = 14; // DIGITIZER bits
 
