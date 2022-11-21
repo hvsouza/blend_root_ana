@@ -357,7 +357,7 @@ class Calibration
         func->SetParameter((i+6+aux),(i+2)*mean1);
         aux++;
         func->SetParameter((i+6+aux),(i+2)*sigma1);
-        // temp_startpoint = temp_startpoint/3;
+        temp_startpoint = temp_startpoint/3;
       }
       func->SetParName(4,"#mu");
       func->SetParName(5,"#sigma");
@@ -542,7 +542,7 @@ class Calibration
       cout << "2th peak = " << lastOne->GetParameter(7) << endl;
       cout << "sphe charge = " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
       cout << " SNR = " << lastOne->GetParameter(4)/sqrt(pow(lastOne->GetParameter(2),2)+pow(lastOne->GetParameter(5),2)) << endl;
-      cout << " SNR2 = " << lastOne->GetParameter(4)/lastOne->GetParameter(2) << endl;
+      cout << " SNR2 = " << abs(lastOne->GetParameter(4)/lastOne->GetParameter(2)) << endl;
       out <<  lastOne->GetParameter(4) << " " << lastOne->GetParameter(7) << " " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
     
       // ____________________________ Finish of sphe fit ____________________________ //

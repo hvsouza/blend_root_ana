@@ -289,7 +289,7 @@ public:
         size_t found  = dataname.find(wave_ref);
         found = found + wave_ref.length();
         wavenum = (int)dataname[found] - '0';
-        cout << wavenum << endl;
+        // cout << wavenum << endl;
         if(wavenum != temp){
           if (aux == 0) temp = wavenum;
           tempch.push_back(wavenum);
