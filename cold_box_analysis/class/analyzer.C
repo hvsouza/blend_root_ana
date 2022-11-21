@@ -167,6 +167,17 @@ class ANALYZER{
       // w->hwvf->Draw("");
     }
 
+    void getBackFFT(Double_t *_filtered = nullptr){
+      if (_filtered == nullptr){
+        _filtered = ch[kch].wvf;
+      }
+      w->backfft(*w);
+      for(Int_t i = 0; i < memorydepth; i++){
+        _filtered[i] = w->hwvf->GetBinContent(i+1);
+      }
+
+    }
+
     void applyBandCut(WIENER *_temp = nullptr, Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch].wvf;
       for(Int_t i = 0; i < memorydepth; i++){
@@ -213,6 +224,7 @@ class ANALYZER{
       haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),kch),"Averaged waveform",memorydepth,0,memorydepth*dtime);
       Int_t total = 0;
       t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
+      lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
       Int_t nev = lev->GetN();
       if (maxevent < nev) {
         nev = maxevent;
@@ -237,13 +249,13 @@ class ANALYZER{
       TCanvas *c1 = new TCanvas();
 
       t1->Draw(Form(">>lev_%s",myname.c_str()),cut.c_str());
+      lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
       Int_t nev = lev->GetN();
       Int_t iev = 0;
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
         b[kch]->GetEvent(iev);
         applyDenoise(filter);
-        
 
         for (int j = 0; j < n_points; j++) {
           hpers->Fill(time[j],ch[kch].wvf[j]);
@@ -274,6 +286,7 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
     maxevent = nentries;
   }
   t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
+  lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
   Int_t nev = lev->GetN();
   if (maxevent < nev) {
     nev = maxevent;
