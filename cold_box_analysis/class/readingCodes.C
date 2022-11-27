@@ -282,7 +282,7 @@ public:
     vector<Int_t> tempch;
     while(!logfile.fail()){
         logfile >> dataname;
-        cout << dataname << endl;
+        // cout << dataname << endl;
         if(logfile.bad() || logfile.fail()){
           break;
         }
@@ -341,7 +341,7 @@ public:
     f1 = new TFile(rootfile.c_str(),"RECREATE");
     t1 = new TTree("t1","ADC processed waveform");
     for(Int_t i = 0; i<channels.size(); i++){
-      bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch);
+      bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
     }
     
     
@@ -429,7 +429,7 @@ public:
         f1 = new TFile(rootfile.c_str(),"RECREATE");
         t1 = new TTree("t1","ADC processed waveform");
         for(Int_t i = 0; i<channels.size(); i++){
-          bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch);
+          bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
         }
         
         

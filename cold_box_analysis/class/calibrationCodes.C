@@ -1833,12 +1833,12 @@ class SPHE{
           else{            
             valid = false;
             for(Int_t j = 0; j<memorydepth; j++){
-              wvf[j] = temp_peak[j];
+              wvf[j] = ch.wvf[j];
             }
             if(charge*dtime>=delta/deltaminus  && charge*dtime<=delta*deltaplus){
               valid = true;
               for(Int_t j = 0; j<memorydepth; j++){
-                mean_waveforms[j]+=temp_peak[j];
+                mean_waveforms[j]+=ch.wvf[j];
               }
               naverages++;
             }
