@@ -423,6 +423,29 @@ class WIENER{
       delete htemp;
     }
 
+
+    void setFromHist(TH1D *hin){
+      npts = hin->GetNbinsX();
+      step = 1.;
+      Double_t min = hin->GetBinCenter(1) - hin->GetBinWidth(1)/2.;
+      Double_t max = hin->GetBinCenter(npts) - hin->GetBinWidth(1)/2.;
+      frequency = 1./step;
+
+      units_step = 1;
+      units_freq = 1;
+      delete hfft;
+      delete hPSD;
+      delete hwvf;
+      hfft = new TH1D(Form("fft_%s",obj_name.c_str()),Form("FFT %s",obj_name.c_str()),npts/2,0,frequency/2);
+      hPSD = new TH1D(Form("PSD_%s",obj_name.c_str()),Form("Power Spectral Density %s",obj_name.c_str()),npts/2,0,frequency/2);
+      hwvf = new TH1D(Form("wvf_%s",obj_name.c_str()),Form("wvf_%s",obj_name.c_str()),npts,min,max);
+
+      for (Int_t i = 0; i < npts; i++) {
+        hwvf->SetBinContent(i+1,hin->GetBinContent(i+1));
+      }
+
+    }
+
   
 
     WIENER(string myname) : obj_name{myname} {startup();};
@@ -459,23 +482,25 @@ class WIENER{
         unit_time = "ns";
       else if(units_step == 1e-6)
         unit_time = "#mus";
-        
       else if(units_step == 1e-3)
         unit_time = "ms";
-        
       else if(units_step == 1)
         unit_time = "s";
+      else{
+        unit_time = "A.U.";
+      }
 
       if(units_freq == 1e9)
         unit_freq = "GHz";
       else if(units_freq == 1e6)
         unit_freq = "MHz";
-        
       else if(units_freq == 1e3)
         unit_freq = "kHz";
-        
       else if(units_freq == 1)
         unit_freq = "Hz";
+      else{
+        unit_freq = "A.U.";
+      }
 
 
       hfft->GetXaxis()->SetTitle(Form("Frequency (%s)",unit_freq.c_str()));
