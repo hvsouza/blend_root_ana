@@ -195,7 +195,7 @@ class Calibration
 
       Double_t sigmastep = 0.2;
       while(nfound < 3 && sigmaSearch>=1){
-        nfound = s->SearchHighRes(source, destVector, nbins, sigmaSearch, 2, kTRUE, 3, kTRUE, 3);
+        nfound = s->SearchHighRes(source, destVector, nbins, sigmaSearch, 2, kFALSE, 3, kTRUE, 3);
         sigmaSearch-=sigmastep;
       }
       if(nfound < 3){
