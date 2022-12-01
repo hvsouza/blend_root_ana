@@ -19,9 +19,9 @@ class WIENER{
 
     Double_t baseline = 0;
 
-    TH1D *hfft;
-    TH1D *hPSD;
-    TH1D *hwvf;
+    TH1D *hfft = nullptr;
+    TH1D *hPSD = nullptr;
+    TH1D *hwvf = nullptr;
     Double_t powerSpectrum = 0;
     TComplex *spec = nullptr;
     Double_t *spec_re = nullptr;
@@ -244,7 +244,12 @@ class WIENER{
       Double_t gaus_blur = 1;
       for(Int_t k=0; k<npts/2+1; k++){
         if(cutoff_frequency!=0) gaus_blur = f_filter->Eval(convert_freq*k);
-        spec[k] = y.spec[k]*gaus_blur/h.spec[k];
+        if(h.spec[k].Re()!=0 && h.spec[k].Re()!= 0){
+          spec[k] = y.spec[k]*gaus_blur/h.spec[k];
+        }
+        else{
+          spec[k] = 0;
+        }
       
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
