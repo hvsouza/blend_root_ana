@@ -21,7 +21,7 @@ void deconvolve_hist(){
   TH1D *hg = (TH1D*)h->Clone("hg");
   hg->Reset();
   TF1 *fga = new TF1("fga","TMath::Gaus(x,[0],[1])",-20000,80000);
-  fga->SetParameters(0,600);
+  fga->SetParameters(0,1300);
   for (Int_t i = 0; i < nbins; i++) {
     hg->SetBinContent(i+1,fga->Eval(i*hg->GetBinWidth(1)));
   }
@@ -51,7 +51,7 @@ void deconvolve_hist(){
   g.hfft->Draw();
 
 
-  w.deconvolve(w, g,0.046);
+  w.deconvolve(w, g,0.07);
 
   TCanvas *c3 = new TCanvas("c3");
   c3->Divide(2,1);
@@ -72,7 +72,7 @@ void deconvolve_hist(){
     source[i] = h->GetBinContent(i+1);
     response[i] = g.hwvf->GetBinContent(i+1);
   }
-  s->Deconvolution(source,response,nbins,1,1,1);
+  s->Deconvolution(source,response,nbins,1,3,2);
   TH1D *hs = (TH1D*)h->Clone("hs");
   hs->Reset();
   for (Int_t i = 0; i < nbins; i++) hs->SetBinContent(i + 1,source[i]);
