@@ -300,6 +300,23 @@ public:
         aux++;
     }
     channels = tempch;
+    Int_t nchannels = channels.size();
+    Int_t noriginal = exclusion_baselines.size();
+    if (noriginal > nchannels){
+      if (noriginal-1 >= channels[nchannels-1]){
+        for (Int_t j = 0; j < nchannels; j++) {
+          exclusion_baselines[j] =  exclusion_baselines[channels[j]];
+        }
+        exclusion_baselines.resize(nchannels);
+      }
+    }
+    else if (noriginal < nchannels && noriginal != 1) {
+      exclusion_baselines.resize(nchannels);
+      for(Int_t j = noriginal; j < exclusion_baselines.size(); j++){
+        exclusion_baselines[j] = exclusion_baselines[0];
+      }
+    }
+    for (Int_t j = 0; j < nchannels; j++) cout << exclusion_baselines[j] << endl;
     logfile.close();
   }
   
@@ -307,7 +324,6 @@ public:
 
     if (do_get_ch_info) get_ch_info("files.log");
     readFiles("files.log"); //use it like this
-    //     readData("myfile", 100); //or like this
     return;
     
   }

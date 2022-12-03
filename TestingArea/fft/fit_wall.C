@@ -1,6 +1,6 @@
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
-void fit_sphe_wave5(){
+void fit_wall(){
     
     Calibration Cal;
     
