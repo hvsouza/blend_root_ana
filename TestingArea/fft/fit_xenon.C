@@ -24,7 +24,7 @@ void fit_xenon(){
     // Cal.startpoint = 0.015; // amplitude for 2 p.e.
 
     // Cal.xmin = -10000; // range for graph display (not fit)
-    Cal.xmax = 8000;
+    // Cal.xmax = 8000;
 
     // Cal.deltaplus = 1.35;
     // Cal.deltaminus = 1.4;

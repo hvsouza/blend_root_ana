@@ -106,6 +106,7 @@ class Calibration
     // _______________ Parameters for fit_sphe_wave _______________/
   
     string rootFile = "";
+    string histogram_name = "";
   
     Int_t n_peaks = 7;
     Double_t peak0 = 0.1;
@@ -117,6 +118,8 @@ class Calibration
     Double_t sigma1 = 400;
   
     Double_t startpoint = 0.001;
+    Double_t poisson_ratio = 3.;
+    TF1 *faux = nullptr;
   
     Double_t xmin = -10000;
     Double_t xmax = 40000;
@@ -155,6 +158,19 @@ class Calibration
       if (optimize == true) searchParameters(name,2,false);
       makeSphe(name);
     }
+    Double_t fact(Double_t n){
+      if( n == 1 || n == 0 ){
+        return 1;
+      }
+      else{
+        return n*fact(n-1);
+      }
+    }
+    Double_t poisson(Double_t lambda, Double_t k){
+      Double_t factk = fact(k);
+      Double_t nume = exp(-lambda)*TMath::Power(lambda,k);
+      return nume/factk;
+    }
 
     void searchParameters(string histogram, Double_t sigmaSearch = 2, bool debug = false){
 
@@ -167,6 +183,7 @@ class Calibration
       else{
         h = (TH1D*)gDirectory->Get(histogram.c_str());
       }
+      histogram_name = histogram;
 
 
       h->Rebin(rebin);
@@ -208,7 +225,6 @@ class Calibration
       vector<Double_t> fPositionX(nfound-pos0);
       vector<Double_t> fPositionY(nfound-pos0);
       for (Int_t i = 0; i < nfound; i++) xpeaks[i] = xpeaks_t[i];
-
       std::sort(xpeaks.begin(),xpeaks.end());
       for (Int_t i = 0; i < nfound-pos0; i++) {
         a=xpeaks[i+pos0];
@@ -219,7 +235,7 @@ class Calibration
 
 
       Double_t upplim_gaus_base = fPositionX[0]+(3./4)*(fPositionX[1]-fPositionX[0])/2;
-      TF1 *faux = new TF1("faux","gaus",xmin,upplim_gaus_base);
+      faux = new TF1("faux","gaus(0)",xmin,upplim_gaus_base);
       faux->SetParameters(fPositionY[0],fPositionX[0],sqrt(fPositionX[0]));
       h->Fit("faux","R0Q");
 
@@ -238,8 +254,39 @@ class Calibration
           lowestpt = h->GetBinCenter(i);
           break;
         }
+        if (i == nbins-1){
+          lowestpt = h->GetBinCenter(i);
+        }
       }
       n_peaks = Int_t(lowestpt/fPositionX[1]);
+
+      Double_t total_events = h->Integral("width");
+      Double_t zero_events = faux->Integral(xmin, xmax);
+      Double_t prob_zeros = zero_events/total_events;
+
+      Double_t width = h->GetBinWidth(1);
+      Double_t startbin = h->GetBinCenter(1);
+
+      // bin_center = (nbins-1)*width + startbin;
+      Int_t npois = 3;
+      Int_t bin_n_peak = round(npois*mean1 - startbin)/width + 1;
+
+      Double_t lambda1 = -TMath::Log(prob_zeros);
+      Double_t lambda2 = h->GetMean()/mean1;
+      Double_t lambda = lambda1;
+
+      Double_t peak_by_formula1 = startpoint/(pow(poisson(lambda1,npois-1)/poisson(lambda1,npois),npois-2));
+      Double_t peak_by_formula2 = startpoint/(pow(poisson(lambda2,npois-1)/poisson(lambda2,npois),npois-2));
+      Double_t diff1 = abs(h->GetBinContent(bin_n_peak) - peak_by_formula1);
+      Double_t diff2 = abs(h->GetBinContent(bin_n_peak) - peak_by_formula2);
+
+
+      lambda = diff1 <= diff2 ? lambda1 : lambda2;
+
+      Double_t poisson2 = poisson(lambda,2);
+      Double_t poisson3 = poisson(lambda,3);
+      Double_t poisson_ratio = poisson2/poisson3;
+
 
       if(debug)
       {
@@ -312,6 +359,7 @@ class Calibration
       else{
         hcharge = (TH1D*)gDirectory->Get(histogram.c_str());
       }
+      histogram_name = histogram;
       hcharge->Rebin(rebin);
     
       ofstream out;
@@ -357,7 +405,7 @@ class Calibration
         func->SetParameter((i+6+aux),(i+2)*mean1);
         aux++;
         func->SetParameter((i+6+aux),(i+2)*sigma1);
-        temp_startpoint = temp_startpoint/3;
+        temp_startpoint = temp_startpoint/poisson_ratio;
       }
       func->SetParName(4,"#mu");
       func->SetParName(5,"#sigma");
