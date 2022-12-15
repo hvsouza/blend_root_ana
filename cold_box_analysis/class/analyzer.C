@@ -43,6 +43,8 @@ class ANALYZER{
 
     Double_t ymin = 0;
     Double_t ymax = 0;
+    Double_t temp_charge = 0;
+    Double_t temp_max = 0;
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
@@ -94,13 +96,94 @@ class ANALYZER{
       w->fft(w->hwvf);
     }
 
-    Double_t integrate(Int_t channel = 0, Double_t from = 0, Double_t to = 0){
+    Double_t getMean(Double_t from, Double_t to){
+      Double_t res = 0;
+      Double_t totalev = 0;
+      for (Int_t i = from/dtime; i < to/dtime; i++) {
+        res += ch[kch].wvf[i];
+        totalev+=1;
+      }
+      return res/totalev;
+    }
+
+    Double_t getMaximum(Double_t from, Double_t to){
+      Double_t max = -1e12;
+      for (Int_t i = from/dtime; i < to/dtime; i++) {
+        if(ch[kch].wvf[i]>=max){
+          max = ch[kch].wvf[i];
+        }
+      }
+      return max;
+    }
+
+    Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}){
+      kch = channel;
+      Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
+      Double_t peak_level = 0;
+      if (ispulse){
+        peak_level = getMaximum(peak_range[0],peak_range[1]);
+      }
+      else{
+        peak_level = getMean(peak_range[0],peak_range[1]);
+      }
+      Int_t startpoint = baseline_range[1]/dtime;
+      Int_t endpoint = peak_range[1]/dtime;
+      Bool_t triggered = false;
+      Double_t time_mark = 0;
+
+      for(Int_t i = startpoint; i < endpoint; i++){
+        if (ch[kch].wvf[i] >= 0.1*(peak_level-baseline_level) && triggered==false) {
+          triggered = true;
+          time_mark = i*dtime;
+        }
+        else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)){
+          time_mark = i*dtime - time_mark;
+          return time_mark;
+        }
+      }
+      return 0;
+    }
+
+    void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr){
+      kch = channel;
+      for(Int_t i = 0; i < nentries; i++){
+        getWaveform(i,kch);
+        applyDenoise(filter);
+        htemp->Fill(rise_time(kch, baseline_range, ispulse, peak_range));
+      }
+    }
+
+
+    Double_t getTOT(Int_t channel = 0, Double_t from = 0, Double_t to = 0, Double_t time_trigger = 20, Double_t minimum_gap_ns = 12){
+      Bool_t triggered = false;
+      Double_t time_mark = 0;
+      for(Int_t i = from/dtime; i<to/dtime; i++){
+        if(ch[channel].wvf[i]>time_trigger && triggered == false){
+          triggered = true;
+          time_mark = i*dtime;
+          // break;
+        }
+        else if(triggered==true && ch[channel].wvf[i]<time_trigger && (i*dtime-time_mark)>=minimum_gap_ns){
+          time_mark = i*dtime - time_mark;
+          return time_mark;
+        }
+      }
+      return 0;
+    }
+
+
+    void integrate(Int_t channel = 0, Double_t from = 0, Double_t to = 0){
       Double_t res = 0;
       if (to == 0) to = memorydepth*dtime;
+      Double_t max = -1e12;
       for(Int_t i = from/dtime; i < to/dtime; i++){
         res += ch[channel].wvf[i];
+        if(ch[channel].wvf[i]>=max){
+          max = ch[channel].wvf[i];
+        }
       }
-      return res*dtime;
+      temp_charge = res*dtime;
+      temp_max = max;
     }
 
 
