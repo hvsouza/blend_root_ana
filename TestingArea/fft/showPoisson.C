@@ -5,12 +5,45 @@ void showPoisson(){
   TFile *f = new TFile("sphe_histograms_italy.root","READ");
   Calibration Cal;
 
-  Cal.dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
+  Int_t opt = 6;
 
-  Cal.rebin = 1;
-  Cal.make_free_stddevs = true;
+  if (opt == 1) {
+    Cal.rebin = 125;
+    Cal.make_free_stddevs = true;
+    Cal.rootFile = "sphe_histograms_darkCount.root";
+    Cal.searchParameters("analyzed_1",2,true);
+  }
+  else if (opt == 2){
+    Cal.rebin = 6;
+    Cal.make_free_stddevs = true;
+    Cal.rootFile = "sphe_histograms_italy.root";
+    Cal.searchParameters("wave_35V70_200ADC_1",2,true);
+  }
+  else if (opt == 3){
+    Cal.rebin = 50;
+    Cal.make_free_stddevs = true;
+    Cal.rootFile = "sphe_histograms_darkCount_Ch1.root";
+    Cal.searchParameters("analyzed_1",2,true);
+  }
+  else if (opt == 4){
+    Cal.rebin = 125;
+    Cal.make_free_stddevs = true;
+    Cal.rootFile = "sphe_histograms_darkCount_Ch5.root";
+    Cal.searchParameters("analyzed_5",2,true);
+  }
+  else if (opt == 5){
+    Cal.rebin = 64;
+    // Cal.make_free_stddevs = true;
+    Cal.rootFile = "sphe_histograms.root";
+    Cal.searchParameters("wave0_48V00_1V78_50ns",2,true);
+  }
+  else if (opt == 6){
+    Cal.rebin = 1;
+    // Cal.make_free_stddevs = true;
     Cal.rootFile = "SPE.root";
     Cal.searchParameters("analyzed_1",2,true);
+  }
+
 
   TH1D *h = (TH1D*)gDirectory->Get(Cal.histogram_name.c_str());
   h->Rebin(Cal.rebin);
