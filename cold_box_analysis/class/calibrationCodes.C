@@ -292,6 +292,8 @@ class Calibration
       {
         TCanvas *cdb = new TCanvas("cdb");
         cdb->cd();
+        h->GetYaxis()->SetTitle("Normalized count");
+        h->GetXaxis()->SetTitle("Charge (ADC*ns)");
         h->Draw("hist");
         TPolyMarker * pm = new TPolyMarker(nfound-pos0, &fPositionX[0], &fPositionY[0]);
         pm->SetMarkerStyle(23);
