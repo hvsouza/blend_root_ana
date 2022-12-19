@@ -326,7 +326,7 @@ class ANALYZER{
       haverage[kch]->Scale(1./total);
     }
 
-    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut=""){
+    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
 
       hpers = new TH2D("hpers","hpers",n_points,0,n_points*dtime,nbins,ymin,ymax);
       TCanvas *c1 = new TCanvas();
@@ -341,7 +341,7 @@ class ANALYZER{
         applyDenoise(filter);
 
         for (int j = 0; j < n_points; j++) {
-          hpers->Fill(time[j],ch[kch].wvf[j]);
+          hpers->Fill(time[j],ch[kch].wvf[j]*factor);
         }
 
       }
@@ -376,17 +376,20 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
   }
   Int_t iev = 0;
   hfft[kch] = (TH1D*)w->hfft->Clone("h");
+  hfft[kch]->Reset();
   Int_t total = 0;
   for(Int_t i = 0; i < nev; i++){
     iev = lev->GetEntry(i);
-    getWaveform(iev);
-    getWaveform(i);
+    getWaveform(iev,kch);
     getFFT();
-    if (inDecibel) w->convertDecibel();
     for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
     total++;
   }
   hfft[kch]->Scale(1./total);
+  if (inDecibel){
+    w->convertDecibel(hfft[kch]);
+    hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
+  }
 }
 void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0, bool inDecibel = false){
 
@@ -398,7 +401,7 @@ void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0, bo
   Int_t k = 0;
   TCanvas *c1 = new TCanvas("c1");
   for(Int_t i = 0; i < maxevent; i++){
-    getWaveform(i);
+    getWaveform(i,kch);
     getFFT();
     if (inDecibel) w->convertDecibel();
     if (i < naverage) {
