@@ -156,9 +156,18 @@ class WIENER{
     }
 
     void convertDecibel(){
+      Double_t fftmax = hfft->GetMaximum();
+      Double_t psdmax = hPSD->GetMaximum();
       for(Int_t k=0; k<npts/2+1; k++){
-        hfft->SetBinContent(k+1,20*TMath::Log10(hfft->GetBinContent(k+1)));
-        hPSD->SetBinContent(k+1,20*TMath::Log10(hPSD->GetBinContent(k+1)));
+        hfft->SetBinContent(k+1,20*TMath::Log10(hfft->GetBinContent(k+1)/fftmax));
+        hPSD->SetBinContent(k+1,20*TMath::Log10(hPSD->GetBinContent(k+1)/psdmax));
+      }
+    }
+    void convertDecibel(TH1D *htemp){
+      Double_t max = htemp->GetMaximum();
+      cout << max << endl;
+      for(Int_t k=0; k<npts/2+1; k++){
+        htemp->SetBinContent(k+1,20*TMath::Log10(htemp->GetBinContent(k+1)/max));
       }
     }
     void fillPlane(){
