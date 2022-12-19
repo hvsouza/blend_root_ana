@@ -250,7 +250,7 @@ class Calibration
       startpoint = fPositionY[2];
       Double_t lowestpt = 0;
       for (Int_t i = 1+xpeaks[pos0+2]+0.5; i < nbins; i++){
-        if(h->GetBinContent(i+1)<= 2*h->GetMinimum(0)*scale){
+        if(h->GetBinContent(i+1)<= 10*h->GetMinimum(0)*scale){
           lowestpt = h->GetBinCenter(i);
           break;
         }
@@ -259,6 +259,11 @@ class Calibration
         }
       }
       n_peaks = Int_t(lowestpt/fPositionX[1]);
+      if(n_peaks > 10){
+        n_peaks = 10;
+        xmax = n_peaks*fPositionX[1];
+      }
+
 
       Double_t total_events = h->Integral("width");
       Double_t zero_events = faux->Integral(xmin, xmax);
