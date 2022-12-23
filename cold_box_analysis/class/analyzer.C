@@ -300,7 +300,7 @@ class ANALYZER{
 
     }
 
-    void averageWaveform(Int_t maxevent = 0, string selection = ""){
+    void averageWaveform(Int_t maxevent = 0, string selection = "", Double_t filter =  0){
       if (maxevent==0) {
         maxevent = nentries;
       }
@@ -316,6 +316,7 @@ class ANALYZER{
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
         getWaveform(iev);
+        applyDenoise(filter);
         total += 1;
         for (Int_t j = 0; j < memorydepth; j++){
           haverage[kch]->AddBinContent(j+1,ch[kch].wvf[j]);
@@ -357,14 +358,14 @@ class ANALYZER{
 
 
       void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
-      void averageFFT(Int_t maxevent, string selectioni, bool inDecibel);
+      void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter = 0);
 
 
 };
 
 
 
-void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = false){
+void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = false, Double_t filter = 0){
   if (maxevent==0) {
     maxevent = nentries;
   }
@@ -381,6 +382,7 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
   for(Int_t i = 0; i < nev; i++){
     iev = lev->GetEntry(i);
     getWaveform(iev,kch);
+    applyDenoise(filter);
     getFFT();
     for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
     total++;
