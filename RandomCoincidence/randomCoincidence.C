@@ -14,8 +14,8 @@ class DET{
     Double_t per_time = 10e-6; // in microseconds
     Double_t sipms = 80;
     Double_t area_sipms = 36;
-    Int_t seed;
     TRandom3 *r = nullptr;
+    Int_t seed;
 
 
     Double_t window = 0.05; // total window of acquisition
@@ -56,8 +56,8 @@ class DET{
       prob_per_step = 1. - exp(-freq*timestep);
 
 
-      Double_t R = 2*freq*freq*coinc_window;
-      Double_t trigger_per_time = R*per_time;
+      // Double_t R = 4*pow(freq,4)*pow(coinc_window,3);
+      // Double_t trigger_per_time = R*per_time;
       // cout << "freq = " << freq << " R = " << R << " " << trigger_per_time << endl;
 
     }
@@ -81,7 +81,7 @@ void randomCoincidence(){
 
   for (Int_t i = 0; i < ndet; i++) det[i] = new DET(i+1);
 
-  const Int_t nvar = 100;
+  const Int_t nvar = 50;
   Int_t avg = 5;
   Double_t _nrate[nvar] = {};
   Double_t _ncoinc[nvar] = {};
@@ -89,15 +89,19 @@ void randomCoincidence(){
 
 
   Double_t ncounts[nvar] = {};
+  Double_t ncounts_error[nvar] = {};
   Double_t nratex[nvar] = {};
+  Double_t nratex_error[nvar] = {};
   Double_t lognratex[nvar] = {};
   Double_t r_random[nvar] = {};
+  Double_t r_random_error[nvar] = {};
   Double_t log_r_random[nvar] = {};
   Double_t r_counts[nvar] = {};
+  Double_t r_counts_error[nvar] = {};
 
   for (Int_t i = 0; i < nvar; i++) {
     _ncoinc[i] = 10e-9 + 10e-9*i;
-    _nrate[i] = 1 + 10*i;
+    _nrate[i] = 10*(i+1);
   }
 
   Int_t totalwhile = 0;
@@ -111,7 +115,7 @@ void randomCoincidence(){
       fflush(stdout);
       for (Int_t i = 0; i < ndet; i++) {
         // det[i] = new DET(100,100e-9,i+1);
-        det[i]->setDet(100,_ncoinc[aux]);
+        det[i]->setDet(70,_ncoinc[aux]);
         // det[i]->setDet(_nrate[aux],100e-9);
         det[i]->generateEvents();
 
@@ -125,12 +129,19 @@ void randomCoincidence(){
       Int_t ntriggers = 0;
       for(Int_t k = 0; k < n; k++){
         trigger = 0;
-        if(det[0]->hits[k]>0.5){
-          trigger++;
-          before = k-coinc_bin < 0 ? 0 : k - coinc_bin;
-          after = k+coinc_bin > n ? n : k + coinc_bin;
-          for (Int_t i = 1; i < ndet; i++) {
-            for(Int_t j = before; j < after; j++){
+        for (Int_t i = 0; i < ndet; i++){
+          if(det[i]->hits[k]>0.5){
+            trigger++;
+            break;
+          }
+        }
+        if(trigger!=0){
+          // before = k-coinc_bin < 0 ? 0 : k - coinc_bin;
+          before = k;
+          after = k+coinc_bin > n-1 ? n-1 : k + coinc_bin;
+          trigger = 0;
+          for (Int_t i = 0; i < ndet; i++) {
+            for(Int_t j = before; j <= after; j++){
               if(det[i]->hits[j]>0.5) {
                 trigger++;
                 break;
@@ -146,7 +157,9 @@ void randomCoincidence(){
         }
       }
       nratex[aux] = _nrate[aux]*det[0]->sipms*det[0]->area_sipms;
+      nratex_error[aux] = sqrt(nratex[aux]);
       ncounts[aux] = nratex[aux]*det[0]->per_time;
+      ncounts_error[aux] = sqrt(nratex[aux])*det[0]->per_time;
       r_random[aux] += ntriggers/det[0]->window/avg;
       r_counts[aux] += ntriggers*det[0]->per_time/det[0]->window/avg;
 
@@ -159,28 +172,30 @@ void randomCoincidence(){
   }
 
   for(Int_t aux = 0; aux < totalwhile; aux++){
-      lognratex[aux] = log(nratex[aux]);
-      _log_ncoinc[aux] = log(_ncoinc[aux]);
-      if(r_random[aux] > 0){
-        log_r_random[aux] = log(r_random[aux]);
-      }
-      else{
-        r_random[aux] = log(0.00000001);
-        nratex[aux] = log(0.000000001);
-      }
+    r_random_error[aux] = sqrt(r_random[aux]);
+    r_counts_error[aux] = r_random_error[aux]*det[0]->per_time;
+    lognratex[aux] = log(nratex[aux]);
+    _log_ncoinc[aux] = log(_ncoinc[aux]);
+    if(r_random[aux] > 0){
+      log_r_random[aux] = log(r_random[aux]);
+    }
+    else{
+      r_random[aux] = log(0.00000001);
+      nratex[aux] = log(0.000000001);
+    }
   }
 
   TCanvas *c1 = new TCanvas("c1","R vs R");
-  TGraph *gw = new TGraph(nvar,nratex,r_random);
+  TGraphErrors *gw = new TGraphErrors(nvar,nratex,r_random,nratex_error,r_random_error);
   gw->SetMarkerStyle(21);
   gw->GetXaxis()->SetTitle("R_{nominal} (Hz)");
   gw->GetYaxis()->SetTitle("R_{random} (Hz)");
   gw->Draw("AP");
 
   TCanvas *c2 = new TCanvas("c2", "R vs T");
-  TGraph *gc = new TGraph(nvar,_ncoinc,r_random);
+  TGraphErrors *gc = new TGraphErrors(nvar,_ncoinc,r_random, 0, r_random_error);
   gc->GetXaxis()->SetTitle("T(s)");
-  gc->GetYaxis()->SetTitle("R_{nominal} (Hz)");
+  gc->GetYaxis()->SetTitle("R_{random} (Hz)");
   gc->SetMarkerStyle(21);
   gc->Draw("AP");
 
@@ -199,24 +214,32 @@ void randomCoincidence(){
   g5->Draw("AP");
 
   TCanvas *c5 = new TCanvas("c5", "C vs C");
-  TGraph *g6 = new TGraph(nvar, ncounts, r_counts);
+  TGraphErrors *g6 = new TGraphErrors(nvar, ncounts, r_counts, ncounts_error, r_counts_error);
 
   c5->cd();
   c5->SetLogy();
   g6->GetXaxis()->SetTitle(Form("Events per %d #mus",Int_t(det[0]->per_time*1e6)));
   g6->GetYaxis()->SetTitle(Form("Random trigger per %d #mus",Int_t(det[0]->per_time*1e6)));
   g6->SetMarkerStyle(21);
+  g6->GetYaxis()->SetRangeUser(3e-5,2e-1);
   g6->Draw("AP");   //draw an axis on the right side
 
   Double_t xmin = g6->GetXaxis()->GetXmin();
   Double_t xmax = g6->GetXaxis()->GetXmax();
-  Double_t ymin = g6->GetYaxis()->GetXmin();
-  Double_t ymax = g6->GetYaxis()->GetXmax();
+  Double_t ymin = 3e-5;
+  Double_t ymax = 2e-1;
+  // Double_t ymin = g6->GetYaxis()->GetXmin();
+  // Double_t ymax = g6->GetYaxis()->GetXmax();
   TGaxis *axis = new TGaxis(xmax,ymin,xmax,ymax,(ymin/det[0]->per_time), (ymax/det[0]->per_time),510,"+LG");
   axis->SetTitle("R_{random} (Hz)");
   axis->SetLineColor(kRed);
   axis->SetLabelColor(kRed);
+  axis->SetTitleColor(kRed);
   axis->Draw();
+
+  TF1 *fteo = new TF1("fteo","[0]*4*pow(x/10e-6,4)*pow(100e-9,3)*10e-6",1,30);
+  fteo->FixParameter(0,1);
+  g6->Fit("fteo");
 
 
 
