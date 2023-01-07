@@ -358,7 +358,7 @@ class ANALYZER{
 
 
       void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
-      void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter = 0);
+      void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
 
 
 };
