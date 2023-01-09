@@ -19,18 +19,6 @@ class SAMPLE: public ANALYZER{
       t1->Print();
     }
 
-    void setChannel(string mych = "Ch1"){
-      for(Int_t i = 0; i < nchannels; i++){
-        if(mych == schannel[i])
-        {
-          kch = i;
-          return;
-        }
-      }
-
-      printf("%s not found, run s.print() to check the branches\n",mych.c_str());
-    }
-
 
     void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
       if (opt == "") opt = plot_opt;

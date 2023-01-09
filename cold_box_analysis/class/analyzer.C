@@ -58,6 +58,7 @@ class ANALYZER{
       nchannels = lb->GetEntries();
       b.resize(nchannels);
       schannel.resize(nchannels);
+      channels.resize(nchannels);
       ch.resize(nchannels);
       raw.resize(nchannels);
       wvf.resize(nchannels);
@@ -67,6 +68,7 @@ class ANALYZER{
       for (Int_t i = 0; i < nchannels; i++) {
 
         schannel[i] = lb->At(i)->GetName();
+        channels[i] = schannel[i][2] - '0';
         // schannel[i] = Form("Ch%d",channels[i]);
         b[i] = t1->GetBranch(schannel[i].c_str());
         b[i]->SetAddress(&ch[i]);
@@ -230,6 +232,7 @@ class ANALYZER{
         _raw = ch[kch].wvf;
         _filtered = ch[kch].wvf;
       }
+      if (filter == 0) return;
       dn.TV1D_denoise(_raw,_filtered,n_points,filter);
     }
 
@@ -300,14 +303,50 @@ class ANALYZER{
 
     }
 
+
+    void selectByAmplitude(Double_t filter = 0, Double_t xmin = 0, Double_t xmax = 0, Double_t limit = 100){
+      lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
+      if(lev->GetN() == 0){
+        getSelection(myname, "");
+      }
+      TEventList *ttemp = new TEventList("ttemp", "ttemp");
+
+      if (xmax == 0) {
+        xmax = memorydepth*dtime;
+      }
+      for(Int_t i = 0; i < lev->GetN(); i++){
+        getWaveform(lev->GetEntry(i), kch);
+        applyDenoise(filter);
+        for(Int_t j = xmin/dtime; j < xmax/dtime; j++){
+          if(ch[kch].wvf[j] > limit){
+            ttemp->Enter(i);
+            break;
+          }
+        }
+      }
+      lev->Subtract(ttemp);
+      delete ttemp;
+    }
+    void getSelection(string myname, string selection)
+    {
+      if(selection!="use_mine"){
+        t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
+        lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
+      }
+      else{
+        if (lev->GetN() == 0){
+          cout << "No event selectected... " << endl;
+        }
+      }
+    }
+
     void averageWaveform(Int_t maxevent = 0, string selection = "", Double_t filter =  0){
       if (maxevent==0) {
         maxevent = nentries;
       }
       haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),kch),"Averaged waveform",memorydepth,0,memorydepth*dtime);
       Int_t total = 0;
-      t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
-      lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
+      getSelection(myname, selection);
       Int_t nev = lev->GetN();
       if (maxevent < nev) {
         nev = maxevent;
@@ -332,8 +371,7 @@ class ANALYZER{
       hpers = new TH2D("hpers","hpers",n_points,0,n_points*dtime,nbins,ymin,ymax);
       TCanvas *c1 = new TCanvas();
 
-      t1->Draw(Form(">>lev_%s",myname.c_str()),cut.c_str());
-      lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
+      getSelection(myname, cut);
       Int_t nev = lev->GetN();
       Int_t iev = 0;
       for(Int_t i = 0; i < nev; i++){
@@ -354,11 +392,21 @@ class ANALYZER{
 
     }
 
+    void setChannel(string mych = "Ch1"){
+      for(Int_t i = 0; i < nchannels; i++){
+        if(mych == schannel[i])
+        {
+          kch = i;
+          return;
+        }
+      }
+
+      printf("%s not found, run s.print() to check the branches\n",mych.c_str());
+    }
 
 
-
-      void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
-      void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
+    void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
+    void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
 
 
 };
@@ -369,14 +417,13 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
   if (maxevent==0) {
     maxevent = nentries;
   }
-  t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
-  lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
+  getSelection(myname, selection);
   Int_t nev = lev->GetN();
   if (maxevent < nev) {
     nev = maxevent;
   }
   Int_t iev = 0;
-  hfft[kch] = (TH1D*)w->hfft->Clone("h");
+  hfft[kch] = (TH1D*)w->hfft->Clone(Form("hfft_%s_ch%d",myname.c_str(),kch));
   hfft[kch]->Reset();
   Int_t total = 0;
   for(Int_t i = 0; i < nev; i++){
@@ -388,6 +435,8 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
     total++;
   }
   hfft[kch]->Scale(1./total);
+  hfft[kch]->SetEntries(total);
+
   if (inDecibel){
     w->convertDecibel(hfft[kch]);
     hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
