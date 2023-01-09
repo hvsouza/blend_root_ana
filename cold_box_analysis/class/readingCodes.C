@@ -316,7 +316,7 @@ public:
         exclusion_baselines[j] = exclusion_baselines[0];
       }
     }
-    // for (Int_t j = 0; j < nchannels; j++) cout << exclusion_baselines[j] << endl;
+    // for (Int_t j = 0; j < nchannels; j++) cout << j << " " << channels[j] << " " <<  exclusion_baselines[j] << endl;
     logfile.close();
   }
   
