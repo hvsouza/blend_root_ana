@@ -50,11 +50,11 @@ class ANALYZER{
     // The reference type will allow us to change the pointer address
     void setAnalyzer(string m_filename = "analyzed.root"){
       filename = m_filename;
-      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
       if(f == nullptr) f = new TFile(filename.c_str(),"READ");
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
+      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
       TList *lb = (TList*)t1->GetListOfBranches();
-      lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
+      this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
       nchannels = lb->GetEntries();
       b.resize(nchannels);
       schannel.resize(nchannels);
@@ -305,9 +305,10 @@ class ANALYZER{
 
 
     void selectByAmplitude(Double_t filter = 0, Double_t xmin = 0, Double_t xmax = 0, Double_t limit = 100){
+      f->cd();
       lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
       if(lev->GetN() == 0){
-        getSelection(myname, "");
+        getSelection("");
       }
       TEventList *ttemp = new TEventList("ttemp", "ttemp");
 
@@ -327,11 +328,12 @@ class ANALYZER{
       lev->Subtract(ttemp);
       delete ttemp;
     }
-    void getSelection(string myname, string selection)
+
+    void getSelection(string selection)
     {
+      f->cd();
       if(selection!="use_mine"){
         t1->Draw(Form(">>lev_%s",myname.c_str()),selection.c_str());
-        lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
       }
       else{
         if (lev->GetN() == 0){
@@ -346,7 +348,7 @@ class ANALYZER{
       }
       haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),kch),"Averaged waveform",memorydepth,0,memorydepth*dtime);
       Int_t total = 0;
-      getSelection(myname, selection);
+      getSelection(selection);
       Int_t nev = lev->GetN();
       if (maxevent < nev) {
         nev = maxevent;
@@ -371,7 +373,7 @@ class ANALYZER{
       hpers = new TH2D("hpers","hpers",n_points,0,n_points*dtime,nbins,ymin,ymax);
       TCanvas *c1 = new TCanvas();
 
-      getSelection(myname, cut);
+      getSelection(cut);
       Int_t nev = lev->GetN();
       Int_t iev = 0;
       for(Int_t i = 0; i < nev; i++){
@@ -417,7 +419,7 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
   if (maxevent==0) {
     maxevent = nentries;
   }
-  getSelection(myname, selection);
+  getSelection(selection);
   Int_t nev = lev->GetN();
   if (maxevent < nev) {
     nev = maxevent;
