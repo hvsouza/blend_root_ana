@@ -18,7 +18,7 @@ class DET{
     Int_t seed;
 
 
-    Double_t window = 0.05; // total window of acquisition
+    Double_t window = 0.5; // total window of acquisition
     Double_t coinc_window = 100e-9; // coincidence window
     Double_t timestep = 10e-9; // time steps
     Int_t coinc_bin = 0;
@@ -82,7 +82,7 @@ void randomCoincidence(){
   for (Int_t i = 0; i < ndet; i++) det[i] = new DET(i+1);
 
   const Int_t nvar = 50;
-  Int_t avg = 5;
+  Int_t avg = 10;
   Double_t _nrate[nvar] = {};
   Double_t _ncoinc[nvar] = {};
   Double_t _log_ncoinc[nvar] = {};
@@ -115,8 +115,8 @@ void randomCoincidence(){
       fflush(stdout);
       for (Int_t i = 0; i < ndet; i++) {
         // det[i] = new DET(100,100e-9,i+1);
-        det[i]->setDet(70,_ncoinc[aux]);
-        // det[i]->setDet(_nrate[aux],100e-9);
+        // det[i]->setDet(70,_ncoinc[aux]);
+        det[i]->setDet(_nrate[aux],100e-9);
         det[i]->generateEvents();
 
       }
@@ -214,30 +214,31 @@ void randomCoincidence(){
   g5->Draw("AP");
 
   TCanvas *c5 = new TCanvas("c5", "C vs C");
-  TGraphErrors *g6 = new TGraphErrors(nvar, ncounts, r_counts, ncounts_error, r_counts_error);
+  TGraphErrors *g6 = new TGraphErrors(nvar, nratex, r_random, nratex_error, r_random_error);
 
   c5->cd();
   c5->SetLogy();
-  g6->GetXaxis()->SetTitle(Form("Events per %d #mus",Int_t(det[0]->per_time*1e6)));
-  g6->GetYaxis()->SetTitle(Form("Random trigger per %d #mus",Int_t(det[0]->per_time*1e6)));
+  g6->GetXaxis()->SetTitle("Rate of few p.e. per channel (Hz)");
+  g6->GetYaxis()->SetTitle("Random trigger rate (Hz)");
+  // g6->GetYaxis()->SetTitle(Form("Random trigger per %d #mus",Int_t(det[0]->per_time*1e6)));
   g6->SetMarkerStyle(21);
-  g6->GetYaxis()->SetRangeUser(3e-5,2e-1);
   g6->Draw("AP");   //draw an axis on the right side
 
   Double_t xmin = g6->GetXaxis()->GetXmin();
   Double_t xmax = g6->GetXaxis()->GetXmax();
-  Double_t ymin = 3e-5;
-  Double_t ymax = 2e-1;
+  Double_t ymin = 0.5;
+  Double_t ymax = 20e3;
+  g6->GetYaxis()->SetRangeUser(ymin,ymax);
   // Double_t ymin = g6->GetYaxis()->GetXmin();
   // Double_t ymax = g6->GetYaxis()->GetXmax();
-  TGaxis *axis = new TGaxis(xmax,ymin,xmax,ymax,(ymin/det[0]->per_time), (ymax/det[0]->per_time),510,"+LG");
-  axis->SetTitle("R_{random} (Hz)");
+  TGaxis *axis = new TGaxis(xmax,ymin,xmax,ymax,(ymin*det[0]->per_time), (ymax*det[0]->per_time),510,"+LG");
+  axis->SetTitle(Form("Random trigger per %d #mus",Int_t(det[0]->per_time*1e6)));
   axis->SetLineColor(kRed);
   axis->SetLabelColor(kRed);
   axis->SetTitleColor(kRed);
   axis->Draw();
 
-  TF1 *fteo = new TF1("fteo","[0]*4*pow(x/10e-6,4)*pow(100e-9,3)*10e-6",1,30);
+  TF1 *fteo = new TF1("fteo","[0]*4*pow(x,4)*pow(100e-9,3)",1,30);
   fteo->FixParameter(0,1);
   g6->Fit("fteo");
 
