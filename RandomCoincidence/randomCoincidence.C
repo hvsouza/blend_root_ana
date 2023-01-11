@@ -82,7 +82,7 @@ void randomCoincidence(){
   for (Int_t i = 0; i < ndet; i++) det[i] = new DET(i+1);
 
   const Int_t nvar = 50;
-  Int_t avg = 10;
+  Int_t avg = 5;
   Double_t _nrate[nvar] = {};
   Double_t _ncoinc[nvar] = {};
   Double_t _log_ncoinc[nvar] = {};
@@ -93,9 +93,11 @@ void randomCoincidence(){
   Double_t nratex[nvar] = {};
   Double_t nratex_error[nvar] = {};
   Double_t lognratex[nvar] = {};
+  Double_t lognratex_error[nvar] = {};
   Double_t r_random[nvar] = {};
   Double_t r_random_error[nvar] = {};
   Double_t log_r_random[nvar] = {};
+  Double_t log_r_random_error[nvar] = {};
   Double_t r_counts[nvar] = {};
   Double_t r_counts_error[nvar] = {};
 
@@ -175,13 +177,19 @@ void randomCoincidence(){
     r_random_error[aux] = sqrt(r_random[aux]);
     r_counts_error[aux] = r_random_error[aux]*det[0]->per_time;
     lognratex[aux] = log(nratex[aux]);
+    lognratex_error[aux] = nratex_error[aux]/nratex[aux];
     _log_ncoinc[aux] = log(_ncoinc[aux]);
     if(r_random[aux] > 0){
       log_r_random[aux] = log(r_random[aux]);
+      log_r_random_error[aux] = r_random_error[aux]/r_random[aux];
     }
-    else{
-      r_random[aux] = log(0.00000001);
-      nratex[aux] = log(0.000000001);
+    else {
+      r_random[aux] = log(1e-8);
+      log_r_random[aux] = 1e-8;
+      nratex[aux] = log(1e-8);
+      lognratex[aux] = 1e-8;
+      _log_ncoinc[aux] = 1e-8;
+      _ncoinc[aux] = 0.1e-9;
     }
   }
 
@@ -200,14 +208,14 @@ void randomCoincidence(){
   gc->Draw("AP");
 
   TCanvas *c3 = new TCanvas("c3","log R vs log R");
-  TGraph *gcoinc = new TGraph(nvar,lognratex,log_r_random);
+  TGraphErrors *gcoinc = new TGraphErrors(nvar,lognratex,log_r_random, lognratex_error, log_r_random_error);
   gcoinc->GetXaxis()->SetTitle("Log(R_{nominal}[Hz])");
   gcoinc->GetYaxis()->SetTitle("Log(R_{random}[Hz])");
   gcoinc->SetMarkerStyle(21);
   gcoinc->Draw("AP");
 
   TCanvas *c4 = new TCanvas("c4","log R vs log T");
-  TGraph *g5 = new TGraph(nvar,_log_ncoinc,log_r_random);
+  TGraphErrors *g5 = new TGraphErrors(nvar,_log_ncoinc,log_r_random, 0, log_r_random_error);
   g5->GetXaxis()->SetTitle("Log(T[s])");
   g5->GetYaxis()->SetTitle("Log(R_{random}[Hz])");
   g5->SetMarkerStyle(21);
