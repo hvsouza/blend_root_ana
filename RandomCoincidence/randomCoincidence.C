@@ -82,7 +82,7 @@ void randomCoincidence(){
   for (Int_t i = 0; i < ndet; i++) det[i] = new DET(i+1);
 
   const Int_t nvar = 50;
-  Int_t avg = 5;
+  Int_t avg = 10;
   Double_t _nrate[nvar] = {};
   Double_t _ncoinc[nvar] = {};
   Double_t _log_ncoinc[nvar] = {};
@@ -101,12 +101,15 @@ void randomCoincidence(){
   Double_t r_counts[nvar] = {};
   Double_t r_counts_error[nvar] = {};
 
+  vector<TH1D *> hrandom(nvar);
   for (Int_t i = 0; i < nvar; i++) {
+    hrandom[i] = new TH1D(Form("hrandom%d",i),Form("hrandom%d",i),200,0,0);
     _ncoinc[i] = 10e-9 + 10e-9*i;
     _nrate[i] = 10*(i+1);
   }
 
   Int_t totalwhile = 0;
+
   for(Int_t ntimes = 0; ntimes < avg; ntimes++)
   {
     Int_t aux = 0;
@@ -162,8 +165,7 @@ void randomCoincidence(){
       nratex_error[aux] = sqrt(nratex[aux]);
       ncounts[aux] = nratex[aux]*det[0]->per_time;
       ncounts_error[aux] = sqrt(nratex[aux])*det[0]->per_time;
-      r_random[aux] += ntriggers/det[0]->window/avg;
-      r_counts[aux] += ntriggers*det[0]->per_time/det[0]->window/avg;
+      hrandom[aux]->Fill(ntriggers/det[0]->window);
 
 
       aux++;
@@ -174,7 +176,9 @@ void randomCoincidence(){
   }
 
   for(Int_t aux = 0; aux < totalwhile; aux++){
-    r_random_error[aux] = sqrt(r_random[aux]);
+    r_random[aux] += hrandom[aux]->GetMean();
+    r_counts[aux] += r_random[aux]*det[0]->per_time;
+    r_random_error[aux] = hrandom[aux]->GetStdDev();;
     r_counts_error[aux] = r_random_error[aux]*det[0]->per_time;
     lognratex[aux] = log(nratex[aux]);
     lognratex_error[aux] = nratex_error[aux]/nratex[aux];
