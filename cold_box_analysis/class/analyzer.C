@@ -146,10 +146,12 @@ class ANALYZER{
       return 0;
     }
 
-    void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr){
+    void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr, string selection = ""){
+      getSelection(selection);
       kch = channel;
-      for(Int_t i = 0; i < nentries; i++){
-        getWaveform(i,kch);
+
+      for(Int_t i = 0; i < lev->GetN(); i++){
+        getWaveform(lev->GetEntry(i),kch);
         applyDenoise(filter);
         htemp->Fill(rise_time(kch, baseline_range, ispulse, peak_range));
       }
@@ -303,8 +305,27 @@ class ANALYZER{
 
     }
 
+    bool checkHigher(Double_t a, Double_t b){
+      if (a > b){return true;}
+      else{return false;}
+    }
+    bool checkLower(Double_t a, Double_t b){
+      if (a < b){return true;}
+      else{return false;}
+    }
 
-    void selectByAmplitude(Double_t filter = 0, Double_t xmin = 0, Double_t xmax = 0, Double_t limit = 100){
+    void invertSelection(){
+      TEventList *ttemp = new TEventList("ttemp", "ttemp");
+      t1->Draw(">>ttemp","");
+      ttemp->Subtract(lev);
+      lev->Reset();
+      for (Int_t i = 0; i < ttemp->GetN(); i++) {
+        lev->Enter(ttemp->GetEntry(i));
+      }
+      delete ttemp;
+    }
+
+    void selectByAmplitude(Double_t filter = 0, Double_t xmin = 0, Double_t xmax = 0, Double_t limit = 100, string type = "higher"){
       f->cd();
       lev = (TEventList*)gDirectory->Get(Form("lev_%s",myname.c_str()));
       if(lev->GetN() == 0){
@@ -318,8 +339,11 @@ class ANALYZER{
       for(Int_t i = 0; i < lev->GetN(); i++){
         getWaveform(lev->GetEntry(i), kch);
         applyDenoise(filter);
+        bool contact = false;
         for(Int_t j = xmin/dtime; j < xmax/dtime; j++){
-          if(ch[kch].wvf[j] > limit){
+          if(type == "higher") contact = checkHigher(ch[kch].wvf[j], limit);
+          else contact = checkLower(ch[kch].wvf[j], limit);
+          if(contact){
             ttemp->Enter(i);
             break;
           }
