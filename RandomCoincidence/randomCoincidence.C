@@ -75,14 +75,14 @@ class DET{
 
 void randomCoincidence(){
 
-  Int_t ndet = 4;
+  Int_t ndet = 8;
 
   vector<DET*> det(ndet);
 
   for (Int_t i = 0; i < ndet; i++) det[i] = new DET(i+1);
 
   const Int_t nvar = 50;
-  Int_t avg = 5;
+  Int_t avg = 200;
   Double_t _nrate[nvar] = {};
   Double_t _ncoinc[nvar] = {};
   Double_t _log_ncoinc[nvar] = {};
@@ -174,7 +174,8 @@ void randomCoincidence(){
   }
 
   for(Int_t aux = 0; aux < totalwhile; aux++){
-    r_random_error[aux] = sqrt(r_random[aux]);
+    // r_random_error[aux] = (r_random[aux] < 20*det[0]->window*avg) ? sqrt(r_random[aux]/det[0]->window/avg) : sqrt(r_random[aux]);
+    r_random_error[aux] = sqrt(r_random[aux]/det[0]->window/avg);
     r_counts_error[aux] = r_random_error[aux]*det[0]->per_time;
     lognratex[aux] = log(nratex[aux]);
     lognratex_error[aux] = nratex_error[aux]/nratex[aux];
@@ -246,7 +247,7 @@ void randomCoincidence(){
   axis->SetTitleColor(kRed);
   axis->Draw();
 
-  TF1 *fteo = new TF1("fteo","[0]*4*pow(x,4)*pow(100e-9,3)",1,30);
+  TF1 *fteo = new TF1("fteo",Form("[0]*%d*pow(x,%d)*pow(100e-9,%d)",ndet,ndet,ndet-1),1,30);
   fteo->FixParameter(0,1);
   g6->Fit("fteo");
 
