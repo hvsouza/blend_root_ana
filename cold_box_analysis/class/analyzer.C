@@ -122,7 +122,31 @@ class ANALYZER{
       return max;
     }
 
-    Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}){
+    void set_up_lines(TLine *l){
+      l->SetLineColorAlpha(kBlue,0.6);
+      l->SetLineStyle(9);
+      l->Draw("SAME");
+
+    }
+
+    void draw_rise_lines(Double_t start, Double_t finish, Double_t baseline_level, Double_t peak_level){
+      TLine *lbase = new TLine(0, baseline_level, dtime*memorydepth, baseline_level);
+      TLine *lpeak = new TLine(0, peak_level, dtime*memorydepth, peak_level);
+      TLine *l90 = new TLine(0, 0.9*(peak_level-baseline_level), dtime*memorydepth, 0.9*(peak_level-baseline_level));
+      TLine *l10 = new TLine(0, 0.1*(peak_level-baseline_level), dtime*memorydepth, 0.1*(peak_level-baseline_level));
+
+      TLine *lstart = new TLine(start, baseline_level, start, peak_level);
+      TLine *lfinish = new TLine(finish, baseline_level, finish, peak_level);
+
+      set_up_lines(lbase);
+      set_up_lines(lpeak);
+      set_up_lines(l90);
+      set_up_lines(l10);
+      set_up_lines(lstart);
+      set_up_lines(lfinish);
+
+    }
+    Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, bool debug = false){
       kch = channel;
       Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
       Double_t peak_level = 0;
@@ -143,6 +167,7 @@ class ANALYZER{
           time_mark = i*dtime;
         }
         else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)){
+          if(debug) draw_rise_lines(time_mark, i*dtime, baseline_level, peak_level);
           time_mark = i*dtime - time_mark;
           return time_mark;
         }
@@ -181,7 +206,6 @@ class ANALYZER{
       }
       return 0;
     }
-
 
     void integrate(Int_t channel = 0, Double_t from = 0, Double_t to = 0){
       Double_t res = 0;
