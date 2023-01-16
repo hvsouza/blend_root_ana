@@ -81,6 +81,10 @@ class ANALYZER{
       nentries = t1->GetEntries();
     }
 
+    Int_t getIdx(){
+      return channels[kch];
+    }
+
     void setAnalyzerExt(TFile *&ft, TTree *&tr, vector<TBranch *> &bt){
       f = ft;
       tr = (TTree*)ft->Get("t1");
@@ -149,11 +153,14 @@ class ANALYZER{
     void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr, string selection = ""){
       getSelection(selection);
       kch = channel;
+      htemp->GetYaxis()->SetTitle("# of events");
+      htemp->GetXaxis()->SetTitle("Rise time_{90} (ns)");
 
       for(Int_t i = 0; i < lev->GetN(); i++){
         getWaveform(lev->GetEntry(i),kch);
         applyDenoise(filter);
-        htemp->Fill(rise_time(kch, baseline_range, ispulse, peak_range));
+        Double_t val = rise_time(kch, baseline_range, ispulse, peak_range);
+        htemp->Fill(val);
       }
     }
 
@@ -370,7 +377,9 @@ class ANALYZER{
       if (maxevent==0) {
         maxevent = nentries;
       }
-      haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),kch),"Averaged waveform",memorydepth,0,memorydepth*dtime);
+      haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",memorydepth,0,memorydepth*dtime);
+      haverage[kch]->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
+      haverage[kch]->GetXaxis()->SetTitle("Time (ns)");
       Int_t total = 0;
       getSelection(selection);
       Int_t nev = lev->GetN();
@@ -380,7 +389,7 @@ class ANALYZER{
       Int_t iev = 0;
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
-        getWaveform(iev);
+        getWaveform(iev,kch);
         applyDenoise(filter);
         total += 1;
         for (Int_t j = 0; j < memorydepth; j++){
@@ -390,6 +399,7 @@ class ANALYZER{
       }
 
       haverage[kch]->Scale(1./total);
+      haverage[kch]->SetEntries(total);
     }
 
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
@@ -402,7 +412,7 @@ class ANALYZER{
       Int_t iev = 0;
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
-        b[kch]->GetEvent(iev);
+        getWaveform(iev,kch);
         applyDenoise(filter);
 
         for (int j = 0; j < n_points; j++) {
