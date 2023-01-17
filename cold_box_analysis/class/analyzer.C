@@ -103,6 +103,7 @@ class ANALYZER{
     }
 
     Double_t getMean(Double_t from, Double_t to){
+      if (from == to) return 0;
       Double_t res = 0;
       Double_t totalev = 0;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
@@ -149,6 +150,7 @@ class ANALYZER{
     Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, bool debug = false){
       kch = channel;
       Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
+
       Double_t peak_level = 0;
       if (ispulse){
         peak_level = getMaximum(peak_range[0],peak_range[1]);
@@ -172,6 +174,7 @@ class ANALYZER{
           return time_mark;
         }
       }
+      if(debug) draw_rise_lines(time_mark, 0, baseline_level, peak_level);
       return 0;
     }
 
@@ -221,6 +224,27 @@ class ANALYZER{
       temp_max = max;
     }
 
+    void getWaveFromHistogram(TH1D *htemp){
+      if (htemp->GetNbinsX() != memorydepth){
+        cout << "Not same amount of samples! Graph has " << htemp->GetNbinsX() << endl;
+        return;
+      }
+      for(Int_t i = 0; i < htemp->GetNbinsX(); i++){
+        ch[kch].wvf[i] = htemp->GetBinContent(i+1);
+      }
+    }
+    void getWaveFromGraph(TGraph *gtemp){
+      Double_t *xtemp = nullptr;
+      Int_t ntemp = gtemp->GetN();
+      if (ntemp != memorydepth){
+        cout << "Not same amount of samples! Graph has " << ntemp << endl;
+        return;
+      }
+      for(Int_t i = 0; i < ntemp; i++){
+        ch[kch].wvf[i] = *(gtemp->GetY()+i);
+      }
+    }
+
 
     void getWaveform(Int_t myevent = 0, Int_t k = 0, Double_t factor = 1){
       if (k>=nchannels){
@@ -238,6 +262,7 @@ class ANALYZER{
       b[kch]->GetEvent(myevent);
       for (int j = 0; j < n_points; j++) {
         raw[kch][j] = ch[kch].wvf[j]*factor;
+        ch[kch].wvf[j] = ch[kch].wvf[j]*factor;
         wvf[kch][j] = raw[kch][j];
         time[j] = j*dtime;
       }
@@ -440,7 +465,7 @@ class ANALYZER{
         applyDenoise(filter);
 
         for (int j = 0; j < n_points; j++) {
-          hpers->Fill(time[j],ch[kch].wvf[j]*factor);
+          hpers->Fill(j*dtime,ch[kch].wvf[j]*factor);
         }
 
       }
