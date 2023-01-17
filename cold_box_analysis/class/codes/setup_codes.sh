@@ -3,12 +3,11 @@
 current_dir=$( pwd )
 cd ../
 class_dir=$( pwd )
-cd -
+cd ~-
 
 files=$(/bin/ls -1 | grep .C)
 
 for f in $files; do
-    #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
     linenumber=$(eval "sed -n '/MYCODES.h/=' $f") # search line with pathern
     if [ -z "$linenumber" ]; then
         continue
@@ -27,7 +26,7 @@ for line in $lines; do
     if [ $COUNTER -eq 0 ]; then
         sed -i "$line i \ \ \ \ eval \'root -e \"#define memorydepth \$npts\" -e \".L $class_dir/MYCODES.h\"\' " load_my_class.sh
     else
-        sed -i "$line i \ \ \ \ eval \'root -e \"#define memorydepth \$npts\" -e \".L $class_dir/MYCODES.h\" -e \"SAMPLE s\(\\\"s\\\",\\\"\$file\"\)\"\' " load_my_class.sh
+        sed -i "$line i \ \ \ \ eval \'root -e \"#define memorydepth \$npts\" -e \".L $class_dir/MYCODES.h\" -e \"SAMPLE s\(\\\\\"s\\\\\",\\\\\"\$file\"\)\"\' " load_my_class.sh
     fi
     COUNTER=$(( COUNTER + 1 ))
 
