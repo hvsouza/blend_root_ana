@@ -3,7 +3,7 @@
 current_dir=$( pwd )
 cd ../
 class_dir=$( pwd )
-cd ~-
+cd $current_dir
 
 files=$(/bin/ls -1 | grep .C)
 
