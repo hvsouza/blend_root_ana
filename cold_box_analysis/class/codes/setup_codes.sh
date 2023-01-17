@@ -25,9 +25,9 @@ lines=$(eval "sed -n '/define/=' load_my_class.sh")
 for line in $lines; do
     sed -i "$line d" load_my_class.sh
     if [ $COUNTER -eq 0 ]; then
-        sed -i "$line i \ \ \ \ eval 'root -e \"#define memorydepth \$npts\" -e \".L \$class_dir/MYCODES.h\"' " load_my_class.sh
+        sed -i "$line i \ \ \ \ eval \'root -e \"#define memorydepth \$npts\" -e \".L $class_dir/MYCODES.h\"\' " load_my_class.sh
     else
-        sed -i "$line i \ \ \ \ eval 'root -e \"#define memorydepth \$npts\" -e \".L \$class_dir/MYCODES.h\" -e \"SAMPLE s\(\\\"s\\\",\\\"\$file\")"' " load_my_class.sh
+        sed -i "$line i \ \ \ \ eval \'root -e \"#define memorydepth \$npts\" -e \".L $class_dir/MYCODES.h\" -e \"SAMPLE s\(\\\"s\\\",\\\"\$file\"\)\"\' " load_my_class.sh
     fi
     COUNTER=$(( COUNTER + 1 ))
 
