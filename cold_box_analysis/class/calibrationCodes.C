@@ -212,7 +212,7 @@ class Calibration
 
       Double_t sigmastep = 0.2;
       while(nfound < 3 && sigmaSearch>=1){
-        nfound = s->SearchHighRes(source, destVector, nbins, sigmaSearch, 2, kFALSE, 3, kTRUE, 3);
+        nfound = s->SearchHighRes(source, destVector, nbins, sigmaSearch, 2, kFALSE, 5, kTRUE, 3);
         sigmaSearch-=sigmastep;
       }
       if(nfound < 3){
@@ -247,7 +247,17 @@ class Calibration
       mean1 = fPositionX[1];
       sigma1 = faux->GetParameter(2);
 
-      startpoint = fPositionY[2];
+      if (nfound-pos0 >= 3)
+      {
+        startpoint =  fPositionY[2];
+      }
+      else{
+        Int_t bin_first_peak = 1 + Int_t(xpeaks[1+pos0]);
+        Int_t bin_baseline = 1 + Int_t(xpeaks[0+pos0]);
+        Int_t bin_second = 2*bin_first_peak-bin_baseline; // same as b + (b-a)
+        startpoint = h->GetBinContent(bin_second);
+        // cout << startpoint << " " << bin_first_peak << " " << bin_baseline << " " << bin_second << " " << h->GetBinCenter(bin_second) << endl;
+      }
       Double_t lowestpt = 0;
       for (Int_t i = 1+xpeaks[pos0+2]+0.5; i < nbins; i++){
         if(h->GetBinContent(i+1)<= 10*h->GetMinimum(0)*scale){
