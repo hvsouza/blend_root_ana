@@ -243,6 +243,7 @@ class Read{
     // Bool_t noBaseline=true;
     vector<Int_t> channels = {1,2};
     vector<Double_t> exclusion_baselines = {30};
+    vector<vector<Double_t>> charge_start_finish;
 
     Int_t nfiles = 1;
 
@@ -263,6 +264,43 @@ class Read{
     string format_time = "hh:mm:ss";
     string format_date = "dd-mmm-yyyy";
 
+    void reset_double_vector(vector<vector<Double_t>> val){
+      Int_t nchannels = channels.size();
+      Int_t noriginal = val.size();
+      if (noriginal > nchannels){
+        if (noriginal-1 >= channels[nchannels-1]){
+          for (Int_t j = 0; j < nchannels; j++) {
+            val[j] =  val[channels[j]];
+          }
+          val.resize(nchannels);
+        }
+      }
+      else if (noriginal < nchannels && noriginal != 1) {
+        val.resize(nchannels);
+        for(Int_t j = noriginal; j < val.size(); j++){
+          val[j] = val[0];
+        }
+      }
+    }
+    void reset_vector(vector<Double_t> val){
+      Int_t nchannels = channels.size();
+      Int_t noriginal = val.size();
+      if (noriginal > nchannels){
+        if (noriginal-1 >= channels[nchannels-1]){
+          for (Int_t j = 0; j < nchannels; j++) {
+            val[j] =  val[channels[j]];
+          }
+          val.resize(nchannels);
+        }
+      }
+      else if (noriginal < nchannels && noriginal != 1) {
+        val.resize(nchannels);
+        for(Int_t j = noriginal; j < val.size(); j++){
+          val[j] = val[0];
+        }
+      }
+      // for (Int_t j = 0; j < nchannels; j++) cout << j << " " << channels[j] << " " <<  exclusion_baselines[j] << endl;
+    }
     void get_ch_info(string logfilename){
       ifstream logfile;
       logfile.open(logfilename.c_str(),ios::in);
@@ -301,23 +339,8 @@ class Read{
         aux++;
       }
       channels = tempch;
-      Int_t nchannels = channels.size();
-      Int_t noriginal = exclusion_baselines.size();
-      if (noriginal > nchannels){
-        if (noriginal-1 >= channels[nchannels-1]){
-          for (Int_t j = 0; j < nchannels; j++) {
-            exclusion_baselines[j] =  exclusion_baselines[channels[j]];
-          }
-          exclusion_baselines.resize(nchannels);
-        }
-      }
-      else if (noriginal < nchannels && noriginal != 1) {
-        exclusion_baselines.resize(nchannels);
-        for(Int_t j = noriginal; j < exclusion_baselines.size(); j++){
-          exclusion_baselines[j] = exclusion_baselines[0];
-        }
-      }
-      // for (Int_t j = 0; j < nchannels; j++) cout << j << " " << channels[j] << " " <<  exclusion_baselines[j] << endl;
+      reset_vector(exclusion_baselines);
+      reset_double_vector(charge_start_finish);
       logfile.close();
     }
   
