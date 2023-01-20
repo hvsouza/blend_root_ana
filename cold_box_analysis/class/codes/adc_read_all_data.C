@@ -11,6 +11,8 @@ void adc_read_all_data(){
     
     system("rm files.log");
     system("ls -1 *.dat| sed -e 's/.dat$//' > files.log");
+    // system("ls -1 *.dat | grep wave | sed -e 's/.dat$//' > files.log"); // to only check one channel
+    // system("ls -1 *.dat | grep wave[2,3] | sed -e 's/.dat$//' > files.log"); // to only check channels 2 and 3
     
     Read r;
         
