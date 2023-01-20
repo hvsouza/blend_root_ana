@@ -34,7 +34,7 @@ void create_histograms(){
   vector<TH1D*> hpeak(n);
   TH2D *h2p = new TH2D("h2p","h2p",500,-5,1000,2000,-100,14000);
   TH2D *h2 = new TH2D("h2","h2",300,0,30,4000,-50,1000);
-  TGraph *gpeaks = new TGraph();
+  TGraphErrors *gpeaks = new TGraphErrors();
   gStyle->SetPadTickX(0);
   gStyle->SetPadTickY(0);
   TCanvas *c1 = new TCanvas("c1","c1",1920,0,1920,1080);
@@ -60,8 +60,8 @@ void create_histograms(){
   cpeak->Update();
 
 
-  Double_t sphe = 6064.7; // V.ns
-  if(mychannel == "Ch6") sphe = 2208.27;
+  Double_t sphe = 6046; // V.ns
+  if(mychannel == "Ch6") sphe = 2253.87;
   Double_t increase = 0;
   Int_t nbins_d = 100;
   Int_t gpts = 0;
@@ -100,7 +100,7 @@ void create_histograms(){
     Double_t maxInt = 10700;
     if(mychannel == "Ch6"){
       minInt = 10320;
-      maxInt = 10500;
+      maxInt = 10600;
     }
     for(Int_t j = 0; j<t1[i]->GetEntries(); j++){
     // for(Int_t j = 0; j<2000; j++){
@@ -127,6 +127,7 @@ void create_histograms(){
         hpeak[i]->Fill(max);
         h2p->Fill(charge*dtime/sphe,max);
         gpeaks->SetPoint(gpts,charge*dtime/sphe,max);
+        gpeaks->SetPointError(gpts,sqrt(charge*dtime/sphe),sqrt(max));
         // cout << gpts << " " << gpeaks->GetN() << " " << h2p->GetEntries() << endl;
         gpts++;
         h2->Fill(volts[i],charge*dtime/sphe);
@@ -190,7 +191,9 @@ void create_histograms(){
     // Double_t aux_arror_std = fga[i]->GetParError(2);
     
     
-    Eravgs[i] = sqrt(pow(aux_arror_avgs,2)+pow(ErSTD[i],2)/h[i]->GetEntries());
+    // Eravgs[i] = sqrt(pow(aux_arror_avgs,2)+pow(ErSTD[i],2)/* /h[i]->GetEntries() */);
+    Eravgs[i] = ErSTD[i];
+    // Eravgs[i] = ErSTD[i]/sqrt(avgs[i]);
     Erpeak[i] = sqrt(pow(aux_arror_peak,2)+pow(sigma_peak[i],2)/hpeak[i]->GetEntries());
 
     sigma_mu[i] = 100*ErSTD[i]/avgs[i];

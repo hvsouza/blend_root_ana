@@ -103,8 +103,8 @@ void create_histograms_x(){
     Double_t minInt = 10320;
     Double_t maxInt = 10700;
     if(mychannel == "Ch6"){
-      minInt = 10320;
-      maxInt = 10500;
+      minInt = 10300;
+      maxInt = 10600;
     }
     // for(Int_t j = 0; j<t1[i]->GetEntries(); j++){
     for(Int_t j = 0; j<2000; j++){
