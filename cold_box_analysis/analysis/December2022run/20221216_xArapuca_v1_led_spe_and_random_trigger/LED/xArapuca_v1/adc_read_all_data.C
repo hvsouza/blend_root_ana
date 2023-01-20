@@ -5,7 +5,7 @@
 void adc_read_all_data(){
     
     system("rm files.log");
-    system("ls -1 *.dat| sed -e 's/.dat$//' > files.log");
+    system("ls -1 *.dat | grep wave2 | sed -e 's/.dat$//' > files.log");
     
     Read r;
         
@@ -14,7 +14,7 @@ void adc_read_all_data(){
     r.isBinary = true;
     
     r.baselineTime = 20000; // time limit for baseline
-    r.chargeTime = 10500; // last time to integrate
+    r.chargeTime = 11000; // last time to integrate
     r.startCharge = 10120;
     r.maxRange = 5500; // max range to search for amplitude peak
     r.fast = 200; // fprompt fast integration time
