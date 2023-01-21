@@ -14,9 +14,9 @@ class  MyFunctionObject{
     Double_t operator()(Double_t *x, Double_t *par) {
       Double_t f;
       Double_t xx = x[0];
-      f  = par[0]*exp(-0.5*TMath::Power((xx-par[1])/par[2],2)); // first argument
-      f = f+par[3]*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
-      f = f+par[6]*exp(-0.5*TMath::Power((xx-par[7])/(TMath::Power((2),0.5)*par[5]),2));
+      f  = abs(par[0])*exp(-0.5*TMath::Power((xx-par[1])/par[2],2)); // first argument
+      f = f+abs(par[3])*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
+      f = f+abs(par[6])*exp(-0.5*TMath::Power((xx-par[7])/(TMath::Power((2),0.5)*par[5]),2));
       for(Int_t i = 1; i<n_peaks; i++){
         f = f+ abs(par[i+7])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/(TMath::Power((i+2),0.5)*par[5]),2));
       }
