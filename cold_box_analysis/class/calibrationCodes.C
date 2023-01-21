@@ -245,7 +245,7 @@ class Calibration
 
       peak1 = fPositionY[1];
       mean1 = fPositionX[1];
-      sigma1 = faux->GetParameter(2);
+      sigma1 = 0.8*faux->GetParameter(2);
 
       if (nfound-pos0 >= 3)
       {
@@ -268,10 +268,10 @@ class Calibration
           lowestpt = h->GetBinCenter(i);
         }
       }
-      n_peaks = Int_t(lowestpt/fPositionX[1]);
+      n_peaks = Int_t(lowestpt/(fPositionX[1]-fPositionX[0])); // this should probably be -1 !!
       if(n_peaks > 10){
         n_peaks = 10;
-        xmax = n_peaks*fPositionX[1];
+        xmax = n_peaks*(fPositionX[1]-fPositionX[0]);
       }
 
 
@@ -323,7 +323,7 @@ class Calibration
         printf("Found %d candidate peaks\n",nfound);
         for(Int_t i=0;i<nfound;i++) printf("posx= %f, posy= %f\n",fPositionX[i], fPositionY[i]);
         faux->Draw("SAME");
-        cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << fPositionX[1] << endl;
+        cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << (fPositionX[1]-fPositionX[0]) << endl;
       }
 
       if(n_peaks <= 0){
@@ -421,7 +421,7 @@ class Calibration
         aux++;
         func->SetParameter((i+6+aux),(i+2)*mean1);
         aux++;
-        func->SetParameter((i+6+aux),(i+2)*sigma1);
+        func->SetParameter((i+6+aux),sqrt(i+2)*sigma1);
         temp_startpoint = temp_startpoint/poisson_ratio;
       }
       func->SetParName(4,"#mu");
