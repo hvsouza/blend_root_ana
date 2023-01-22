@@ -894,6 +894,8 @@ class SPHE{
     Double_t desv = 0;
     Int_t channel = 1;
     ADC_DATA ch;
+    ADC_DATA sample;
+
 
     // ____________________ Variables to calculate ____________________ //
 
@@ -1027,7 +1029,6 @@ class SPHE{
     // variables to find mean waveform
     Bool_t get_wave_form = false;
     vector<Double_t> mean_waveforms;
-    Double_t wvf[memorydepth];
     Double_t wvfcharge;
     Bool_t valid;
     Int_t naverages;
@@ -1332,12 +1333,12 @@ class SPHE{
                     
                   // waveforms[j] = temp_waveforms[i][j];
                   waveforms[j] = temp_waveforms[i][j];
-                  wvf[j]=waveforms[j];
+                  sample.wvf[j]=waveforms[j];
                   if(valid) mean_waveforms[j]+=waveforms[j];
                 }
                 else{
                   waveforms[j] = 0;
-                  wvf[j]=0;
+                  sample.wvf[j]=0;
                   mean_waveforms[j]+=waveforms[j];
                 }
                   
@@ -1472,7 +1473,8 @@ class SPHE{
 
     // ____________________________________________________________________________________________________ //
     void makeHistogram(string filename){
-    
+
+
       if(matching == true){
         getMySample();
         
@@ -1483,6 +1485,7 @@ class SPHE{
         
         cout << area_off << " " << shift << endl;
       }
+
     
       if(creation){
         tout->Branch("value",&value,"value/D");
@@ -1494,10 +1497,8 @@ class SPHE{
         tout->Branch("ptsHigh",&ptsHigh,"ptsHigh/D");
         tout->Branch("strikes",&strikes,"strikes/D");
         //         creation = false;
-        
-        twvf->Branch("charge",&wvfcharge,"charge/D");
-        twvf->Branch("wvf",&wvf,Form("wvf[%i]/D",memorydepth));
-        twvf->Branch("valid",&valid,"valid/O");
+
+        twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
       }
     
       cout << "reading: " << filename << endl;
@@ -1829,9 +1830,7 @@ class SPHE{
       sphe_std = sphe_std_ch0;
   
       if(creation){
-        twvf->Branch("charge",&wvfcharge,"charge/D");
-        twvf->Branch("wvf",&wvf,Form("wvf[%i]/D",memorydepth));
-        twvf->Branch("valid",&valid,"valid/O");
+        twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
       }
       cout << "reading: " << filename << endl;
       string rootfile = filename + ".root";
@@ -1902,7 +1901,7 @@ class SPHE{
           else{            
             valid = false;
             for(Int_t j = 0; j<memorydepth; j++){
-              wvf[j] = ch.wvf[j];
+              sample.wvf[j] = ch.wvf[j];
             }
             if(charge*dtime>=delta/deltaminus  && charge*dtime<=delta*deltaplus){
               valid = true;
@@ -1913,6 +1912,8 @@ class SPHE{
             }
 
             wvfcharge = charge*dtime;
+            sample.charge = wvfcharge;
+            sample.selection = valid;
             twvf->Fill();
             hcharge->Fill(charge*dtime);
             // cout << charge*dtime << endl;
