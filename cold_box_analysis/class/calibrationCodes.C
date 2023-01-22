@@ -271,7 +271,7 @@ class Calibration
       n_peaks = Int_t(lowestpt/(fPositionX[1]-fPositionX[0])); // this should probably be -1 !!
       if(n_peaks > 10){
         n_peaks = 10;
-        xmax = n_peaks*(fPositionX[1]-fPositionX[0]);
+        xmax = n_peaks*(fPositionX[1]-fPositionX[0]) + fPositionX[0];
       }
 
 
@@ -419,7 +419,7 @@ class Calibration
       for(Int_t i = 0; i<n_peaks; i++){
         func->SetParameter((i+6+aux),temp_startpoint);
         aux++;
-        func->SetParameter((i+6+aux),(i+2)*mean1);
+        func->SetParameter((i+6+aux),(i+2)*(mean1 - mean0) + mean1);
         aux++;
         func->SetParameter((i+6+aux),sqrt(i+2)*sigma1);
         temp_startpoint = temp_startpoint/poisson_ratio;
@@ -581,16 +581,16 @@ class Calibration
 
       lastOne->SetNpx(1000);
       lastOneFree->SetNpx(1000);
-    
+
       hcharge->Draw("hist");
 
-    
-      hcharge->GetXaxis()->SetRangeUser(-5000,200000);
+
+      // hcharge->GetXaxis()->SetRangeUser(-5000,200000);
       hcharge->StatOverflows(kTRUE);
       lastOne->SetRange(xmin,xmax);
       lastOneFree->SetRange(xmin,xmax);
-    
-    
+
+
       for(Int_t i = 0; i<(2+n_peaks); i++){
         fu[i]->SetLineColor(kGray+1);
         fu[i]->SetNpx(1000);
@@ -606,22 +606,22 @@ class Calibration
       cout << "1th peak = " << lastOne->GetParameter(4) << endl;
       cout << "2th peak = " << lastOne->GetParameter(7) << endl;
       cout << "sphe charge = " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
-      cout << " SNR = " << lastOne->GetParameter(4)/sqrt(pow(lastOne->GetParameter(2),2)+pow(lastOne->GetParameter(5),2)) << endl;
-      cout << " SNR2 = " << abs(lastOne->GetParameter(4)/lastOne->GetParameter(2)) << endl;
+      cout << " SNR = " << (lastOne->GetParameter(4))/sqrt(pow(lastOne->GetParameter(2),2)+pow(lastOne->GetParameter(5),2)) << endl;
+      cout << " SNR2 = " << abs((lastOne->GetParameter(4))/lastOne->GetParameter(2)) << endl;
       out <<  lastOne->GetParameter(4) << " " << lastOne->GetParameter(7) << " " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
-    
+
       // ____________________________ Finish of sphe fit ____________________________ //
-    
+
 
       //_________________ Drawing lines for the cross-talk probability _________________ //
-    
+
       sphe_charge = lastOne->GetParameter(4);
       sphe_charge2 = lastOne->GetParameter(7);
-    
+
       Double_t delta1 = (sphe_charge2 - sphe_charge)/deltaminus;
       Double_t delta2 = deltaplus*(sphe_charge2 - sphe_charge);
       //     Double_t delta2 = sphe_charge+(sphe_charge2 - sphe_charge)/2;
-    
+
       Double_t ymax = hcharge->GetMaximum();
 
       TLine *l1 = new TLine(delta1,0,delta1,ymax);
