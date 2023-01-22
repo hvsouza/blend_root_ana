@@ -447,48 +447,52 @@ class Calibration
       hcharge->Scale(scale);
       hcharge->Draw("hist");
       hcharge->Fit("func","R0Q");
-    
+      if (false){
+        func->Draw("SAME");
+        return;
+      }
+
       // recovery parameters
       getMyParameters(peaks,stdpeaks,func);
       aux=0;
       // use as fixed
       for(Int_t i = 0; i<n_peaks; i++){
-        
+
         func->FixParameter((i+7+aux),peaks[i]-(i+1)*func->GetParameter(1));
         aux++;
         func->FixParameter((i+7+aux),stdpeaks[i]);
         aux++;
       }
-        
+
       if(darknoise){
         func->FixParameter(4,sphe_charge);
         func->FixParameter(7,sphe_charge2);
       }
-    
+
       if(fixZero){
         func->FixParameter(0,0);
         func->FixParameter(1,0);
         func->FixParameter(2,1);
       }
       hcharge->Fit("func","R0Q");
-    
+
       // set a new function, now fixed for real
-    
+
       MyFunctionObject MyFunc;
       MyFunc.n_peaks = n_peaks;
-    
+
       TF1 *lastOne = new TF1("lastOne",MyFunc,xmin,xmax,7+n_peaks);
-    
-    
+
+
       lastOne->SetParameter(0,func->GetParameter(0));
       lastOne->SetParameter(1,func->GetParameter(1));
       lastOne->SetParameter(2,func->GetParameter(2));
       // lastOne->SetParLimits(2,0*func->GetParameter(2),0.5*func->GetParameter(2));
-    
+
       lastOne->SetParameter(3,func->GetParameter(3));
       lastOne->SetParameter(4,func->GetParameter(4));
       lastOne->SetParameter(5,func->GetParameter(5));
-    
+
       lastOne->SetParameter(6,func->GetParameter(6));
       lastOne->SetParameter(7,func->GetParameter(7));
       aux = 0;
