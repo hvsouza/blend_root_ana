@@ -719,6 +719,9 @@ class Read{
           if(exclusion_baselines.size() != 1){
             exclusion_baseline = exclusion_baselines[i];
           }
+          else if (exclusion_baselines.size() == 1){
+            exclusion_baseline = exclusion_baselines[0];
+          }
           bl = baseline(filtered,ch[i].selection,i,tEvent);
           // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
           // if(bl==-9999) cout << i << " " << tEvent << endl;
