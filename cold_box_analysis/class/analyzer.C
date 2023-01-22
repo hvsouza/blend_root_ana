@@ -342,6 +342,29 @@ class ANALYZER{
       }
     }
 
+    void shift_waveform(TH1D *h, Int_t new_max, Bool_t rawShift = false){
+      Int_t old_max = h->GetMaximumBin();
+      if(rawShift) old_max = 0;
+      Int_t old_ref = old_max - new_max;
+      TH1D *htemp = (TH1D*)h->Clone("htemp");
+      Double_t temp;
+      if(old_ref<0){
+        // cout << " case lower" << endl;
+        old_ref = n_points-(new_max-old_max);
+      }
+      for(Int_t i = 1; i<n_points-(old_ref); i++){
+        temp = htemp->GetBinContent(old_ref+i);
+        h->SetBinContent(i,temp);
+      }
+      Int_t aux = 1;
+      for(Int_t i = n_points-(old_ref); i<=n_points; i++){
+        temp = htemp->GetBinContent(aux);
+        h->SetBinContent(i,temp);
+        aux++;
+      }
+      delete htemp;
+    }
+
     void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
       if (opt == "") opt = plot_opt;
       if (x == nullptr) x = time;
