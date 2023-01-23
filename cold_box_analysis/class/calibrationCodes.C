@@ -18,7 +18,7 @@ class  MyFunctionObject{
       f = f+abs(par[3])*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
       f = f+abs(par[6])*exp(-0.5*TMath::Power((xx-par[7])/(TMath::Power((2),0.5)*par[5]),2));
       for(Int_t i = 1; i<n_peaks; i++){
-        f = f+ abs(par[i+7])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/(TMath::Power((i+2),0.5)*par[5]),2));
+        f = f+ (par[i+7])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/(TMath::Power((i+2),0.5)*par[5]),2));
       }
       return f;
     }
@@ -33,9 +33,9 @@ class  MyFunctionFree{
     Double_t operator()(Double_t *x, Double_t *par) {
       Double_t f;
       Double_t xx = x[0];
-      f  = par[0]*exp(-0.5*TMath::Power((xx-par[1])/par[2],2)); // first argument
-      f = f+par[3]*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
-      f = f+par[6]*exp(-0.5*TMath::Power((xx-par[7])/par[8],2));
+      f  = abs(par[0])*exp(-0.5*TMath::Power((xx-par[1])/par[2],2)); // first argument
+      f = f+abs(par[3])*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
+      f = f+abs(par[6])*exp(-0.5*TMath::Power((xx-par[7])/par[8],2));
       for(Int_t i = 1, j = 1; i<n_peaks; i++){
         f = f+ abs(par[j+8])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/par[j+8+1],2));
         j+=2;
@@ -447,7 +447,14 @@ class Calibration
       hcharge->Scale(scale);
       hcharge->Draw("hist");
       hcharge->Fit("func","R0Q");
-      if (false){
+      // Debug level:
+      // 0 none
+      // 1 first general fit
+      // 2 second general fit
+      // 3 first lastOne fit wiht fix parameters
+
+      Int_t debug_level = 0;
+      if (debug_level == 1){
         func->Draw("SAME");
         return;
       }
@@ -475,6 +482,10 @@ class Calibration
         func->FixParameter(2,1);
       }
       hcharge->Fit("func","R0Q");
+      if (debug_level == 2){
+        func->Draw("SAME");
+        return;
+      }
 
       // set a new function, now fixed for real
 
@@ -522,9 +533,10 @@ class Calibration
         lastOne->FixParameter(1,0);
         lastOne->FixParameter(2,1);
       }
-    
-      hcharge->Fit("lastOne","R");
-    
+      Int_t fit_status = -1;
+      fit_status = hcharge->Fit("lastOne","R");
+      cout << "Fit status before free std dev: " << fit_status << endl;
+
       if(make_free_stddevs == false){
         fu[0]->SetParameter(0,lastOne->GetParameter(0));
         fu[0]->SetParameter(1,lastOne->GetParameter(1));
@@ -544,6 +556,15 @@ class Calibration
           fu[i+2]->SetParameter(2,(TMath::Power((i+2),0.5)*lastOne->GetParameter(5)));
         }
       }
+      if (debug_level == 3){
+        lastOne->Draw("SAME");
+        for(Int_t i = 0; i<(2+n_peaks); i++){
+          fu[i]->SetLineColor(kGray+1);
+          fu[i]->SetNpx(1000);
+          fu[i]->Draw("SAME");
+        }
+        return;
+      }
 
       MyFunctionFree MyFuncFree;
       MyFuncFree.n_peaks = n_peaks;
@@ -559,7 +580,9 @@ class Calibration
         // cout << lastGausLowerLim << endl;
         // cout << lastGausUpperLim << endl;
 
-        hcharge->Fit("lastOneFree","R");
+        fit_status = hcharge->Fit("lastOneFree","R");
+        cout << "Fit status with free std dev: " << fit_status << endl;
+
 
         fu[0]->SetParameter(0,lastOneFree->GetParameter(0));
         fu[0]->SetParameter(1,lastOneFree->GetParameter(1));
@@ -587,9 +610,11 @@ class Calibration
       lastOneFree->SetNpx(1000);
 
       hcharge->Draw("hist");
+      
 
+      xmin = fu[0]->GetParameter(1)-5*fu[0]->GetParameter(2);
 
-      // hcharge->GetXaxis()->SetRangeUser(-5000,200000);
+      hcharge->GetXaxis()->SetRangeUser(1.2*xmin,1.1*xmax);
       hcharge->StatOverflows(kTRUE);
       lastOne->SetRange(xmin,xmax);
       lastOneFree->SetRange(xmin,xmax);
