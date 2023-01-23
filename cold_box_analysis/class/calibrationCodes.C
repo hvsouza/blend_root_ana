@@ -271,14 +271,16 @@ class Calibration
         }
       }
       n_peaks = Int_t(lowestpt/(fPositionX[1]-fPositionX[0])); // this should probably be -1 !!
-      if(n_peaks <= 0){
+      if(n_peaks <= 0 || nfound-pos0 < 3){
         cout << "Something wrong: npeaks = " << n_peaks << endl;
         cout << "Changing to 5" << endl;
         n_peaks = 5;
       }
-      else if(n_peaks > 10){ // this value was 18 at some point
-        n_peaks = 10;
-        xmax = (n_peaks)*(fPositionX[1]-fPositionX[0]) + fPositionX[0];
+      else{
+        if(n_peaks > 10){ // this value was 18 at some point
+          n_peaks = 10;
+        }
+        xmax = (n_peaks+1)*(fPositionX[1]-fPositionX[0]) + fPositionX[0];
       }
 
 
