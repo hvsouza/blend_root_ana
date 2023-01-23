@@ -725,6 +725,8 @@ class Read{
           bl = baseline(filtered,ch[i].selection,i,tEvent);
           // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
           // if(bl==-9999) cout << i << " " << tEvent << endl;
+
+          ch[i].base = bl;
           getvalues(i,ch[i],filtered,bl);
           ch[i].event = tEvent;
         

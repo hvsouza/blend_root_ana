@@ -12,13 +12,14 @@ class ADC_DATA{
     Double_t event;
     Double_t time;
     Double_t wvf[memorydepth];
+    Double_t base;
     Int_t selection;
     
     ADC_DATA();
-    string tobranch = "peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[" + to_string(memorydepth) + "]/D:selection/I";
+    string tobranch = "peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[" + to_string(memorydepth) + "]/D:base/D:selection/I";
 
     void setBranchName(Int_t n = memorydepth){
-      tobranch = "peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[" + to_string(n) + "]/D:selection/I";
+      tobranch = "peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[" + to_string(n) + "]/D:base/D:selection/I";
     }
 
     // const char *tobranch = Form("peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[%i]/D:selection/I",memorydepth);
@@ -36,5 +37,6 @@ ADC_DATA::ADC_DATA(){
   fprompt = 0;
   event = 0; 
   time = 0;
-  selection = 0; 
+  selection = 0;
+  base = 0;
 }
