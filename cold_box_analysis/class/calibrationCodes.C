@@ -247,19 +247,21 @@ class Calibration
       mean1 = fPositionX[1];
       sigma1 = 0.8*faux->GetParameter(2);
 
-      if (nfound-pos0 >= 3)
+      Int_t bin_second = 0; // corresponding bin of the second peak
+      if (nfound-pos0 >= 3) // in case it was found
       {
         startpoint =  fPositionY[2];
+        bin_second = 1 + xpeaks[pos0 + 2] + 0.5;
       }
       else{
         Int_t bin_first_peak = 1 + Int_t(xpeaks[1+pos0]);
         Int_t bin_baseline = 1 + Int_t(xpeaks[0+pos0]);
-        Int_t bin_second = 2*bin_first_peak-bin_baseline; // same as b + (b-a)
+        bin_second = 2*bin_first_peak-bin_baseline; // same as b + (b-a)
         startpoint = h->GetBinContent(bin_second);
         // cout << startpoint << " " << bin_first_peak << " " << bin_baseline << " " << bin_second << " " << h->GetBinCenter(bin_second) << endl;
       }
       Double_t lowestpt = 0;
-      for (Int_t i = 1+xpeaks[pos0+2]+0.5; i < nbins; i++){
+      for (Int_t i = bin_second; i < nbins; i++){
         if(h->GetBinContent(i+1)<= 10*h->GetMinimum(0)*scale){
           lowestpt = h->GetBinCenter(i);
           break;
@@ -269,9 +271,14 @@ class Calibration
         }
       }
       n_peaks = Int_t(lowestpt/(fPositionX[1]-fPositionX[0])); // this should probably be -1 !!
-      if(n_peaks > 10){
+      if(n_peaks <= 0){
+        cout << "Something wrong: npeaks = " << n_peaks << endl;
+        cout << "Changing to 5" << endl;
+        n_peaks = 5;
+      }
+      else if(n_peaks > 10){ // this value was 18 at some point
         n_peaks = 10;
-        xmax = n_peaks*(fPositionX[1]-fPositionX[0]) + fPositionX[0];
+        xmax = (n_peaks)*(fPositionX[1]-fPositionX[0]) + fPositionX[0];
       }
 
 
@@ -326,15 +333,7 @@ class Calibration
         cout << "npeaks = " << n_peaks << " lowest = " << lowestpt << " spe = " << (fPositionX[1]-fPositionX[0]) << endl;
       }
 
-      if(n_peaks <= 0){
-        cout << "Something wrong: npeaks = " << n_peaks << endl;
-        cout << "Changing to 5" << endl;
-        n_peaks = 5;
-      }
-      else if (n_peaks>18){
-        n_peaks = 18;
-      }
-      
+
 
       // delete f1, h, source, destVector;
     }
