@@ -940,6 +940,8 @@ class SPHE{
     Double_t mean = 0;
     Double_t stddev = 0;
     Double_t tolerance; // n sigmas
+    Double_t threshold;
+    Bool_t fix_threshold = false;
     Double_t baseLimit;
 
     Double_t filter = 0;
@@ -1411,6 +1413,8 @@ class SPHE{
       //       }
       //     }
 
+      threshold = tolerance*stddev;
+      if(fix_threshold) threshold = tolerance;
       if(check_selection && ch.selection!=0) return;
                               
       for(Int_t i = 0; i<n; i++){
@@ -1420,7 +1424,7 @@ class SPHE{
           // if(i>baselineTime/dtime){
           //   break;
           // }
-          if(peak_smooth[i]>(mean+tolerance*stddev) && peak_smooth[i-1]<(mean+tolerance*stddev) && (i<=gapstart || i>=gapend)){
+          if(peak_smooth[i]>(mean+threshold) && peak_smooth[i-1]<(mean+threshold) && (i<=gapstart || i>=gapend)){
             npeaks++;
           
             peakMax.push_back(peak_smooth.at(i));
@@ -1759,7 +1763,7 @@ class SPHE{
       g_smooth->Draw("L SAME");
     
       TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
-      TLine *ldev = new TLine(timeLimit,mean+tolerance*stddev,memorydepth*dtime,mean+tolerance*stddev);
+      TLine *ldev = new TLine(timeLimit,mean+threshold,memorydepth*dtime,mean+threshold);
     
       lmean->SetLineColor(kGreen);
       ldev->SetLineColor(kGreen);
