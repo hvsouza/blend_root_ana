@@ -18,7 +18,7 @@ class  MyFunctionObject{
       f = f+abs(par[3])*exp(-0.5*TMath::Power((xx-par[4])/par[5],2));
       f = f+abs(par[6])*exp(-0.5*TMath::Power((xx-par[7])/(TMath::Power((2),0.5)*par[5]),2));
       for(Int_t i = 1; i<n_peaks; i++){
-        f = f+ (par[i+7])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/(TMath::Power((i+2),0.5)*par[5]),2));
+        f = f+ abs(par[i+7])*exp(-0.5*TMath::Power((xx-(par[4]+(i+1)*(par[7]-par[4])))/(TMath::Power((i+2),0.5)*par[5]),2));
       }
       return f;
     }
@@ -539,15 +539,15 @@ class Calibration
       cout << "Fit status before free std dev: " << fit_status << endl;
 
       if(make_free_stddevs == false){
-        fu[0]->SetParameter(0,lastOne->GetParameter(0));
+        fu[0]->SetParameter(0,abs(lastOne->GetParameter(0)));
         fu[0]->SetParameter(1,lastOne->GetParameter(1));
         fu[0]->SetParameter(2,lastOne->GetParameter(2));
     
-        fu[1]->SetParameter(0,lastOne->GetParameter(3));
+        fu[1]->SetParameter(0,abs(lastOne->GetParameter(3)));
         fu[1]->SetParameter(1,lastOne->GetParameter(4));
         fu[1]->SetParameter(2,lastOne->GetParameter(5));
     
-        fu[2]->SetParameter(0,lastOne->GetParameter(6));
+        fu[2]->SetParameter(0,abs(lastOne->GetParameter(6)));
         fu[2]->SetParameter(1,lastOne->GetParameter(7));
         fu[2]->SetParameter(2,(TMath::Power((2),0.5)*lastOne->GetParameter(5)));
     
