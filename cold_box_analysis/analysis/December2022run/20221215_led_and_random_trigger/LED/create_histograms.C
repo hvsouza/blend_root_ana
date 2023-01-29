@@ -3,10 +3,10 @@
 
 void create_histograms(){
   gStyle->SetCanvasPreferGL(kFALSE);
-  string mychannel = "Ch2";
+  string mychannel = "Ch5";
   vector<string> devices = {"0","0","miniArapuca 37V (A1ch1)","miniArapuca 47V (Argon4)", "xArapuca v4 ch1 (DCemArgon4)", "xArapuca v4 ch2 (DCemArgon4)", "xArapuca v5 ch1 (DCemSimp3)", "xArapuca v5 ch2 (DCemSimp3)"};
   vector<Double_t> saturations = {0, 0, 12600, 12600, 12000, 12000, 12000, 100};
-  vector<Double_t> sphes = {0,0, 7000, 400, 441*6, 0, 0,};
+  vector<Double_t> sphes = {0,0, 7000, 400, 6500, 6500, 0,};
 
   vector<string> files = {"run0_all_devices_led_365nm_20ns_3V15", "run1_all_devices_led_365nm_20ns_3V20", "run2_all_devices_led_365nm_20ns_3V30", "run3_all_devices_led_365nm_20ns_3V50", "run4_all_devices_led_365nm_20ns_3V70", "run5_all_devices_led_365nm_20ns_3V90", "run6_all_devices_led_365nm_20ns_4V10", "run7_all_devices_led_365nm_20ns_4V30", "run8_all_devices_led_365nm_20ns_4V50", "run9_all_devices_led_365nm_20ns_4V70", "run10_all_devices_led_365nm_20ns_4V90", "run11_all_devices_led_365nm_20ns_5V20", "run12_all_devices_led_365nm_20ns_6V20", "run13_all_devices_led_365nm_20ns_7V50", "run14_all_devices_led_365nm_20ns_10V00", "run15_all_devices_led_365nm_20ns_12V50", "run16_all_devices_led_365nm_20ns_15V00", "run17_all_devices_led_365nm_20ns_17V50", "run18_all_devices_led_365nm_20ns_23V00", "run19_all_devices_led_365nm_20ns_30V00"};
   vector<Double_t> volts = {3.15, 3.20, 3.30, 3.50, 3.70, 3.90, 4.10, 4.30, 4.50, 4.70, 4.90, 5.20, 6.20, 7.50, 10.00, 12.50, 15.00, 17.50, 23.00, 30.00};
@@ -30,7 +30,7 @@ void create_histograms(){
 
   vector<TH1D*> h(n);
   vector<TH1D*> hpeak(n);
-  TH2D *h2p = new TH2D("h2p","h2p",4000,-5,4000,2000,-100,14000);
+  TH2D *h2p = new TH2D("h2p","h2p",4000,-5,4000,2000,-100,16000);
   TH2D *h2 = new TH2D("h2","h2",300,0,30,8000,-50,4000);
   TGraphErrors *gpeaks = new TGraphErrors();
   gStyle->SetPadTickX(0);
@@ -72,7 +72,6 @@ void create_histograms(){
     Int_t kch = z[i]->kch;
     saturation_level = saturations[z[i]->getIdx()];
     sphe = sphes[z[i]->getIdx()];
-    cout << sphe << endl;
 
     hpeak[i] = new TH1D(Form("hpeak%d",i),Form("hpeak%d",i),100,0,0);
     if(i<4){
@@ -103,6 +102,7 @@ void create_histograms(){
     Double_t maxInt = 11400;
     if(mychannel == "Ch2"){minInt = 10280; maxInt = 10700;}
     if(mychannel == "Ch3"){minInt = 10320; maxInt = 10500;}
+    if(mychannel == "Ch5"){minInt = 10320; maxInt = 12000;}
     for(Int_t j = 0; j<z[i]->t1->GetEntries(); j++){
     // for(Int_t j = 0; j<2000; j++){
       z[i]->getWaveform(j,kch);

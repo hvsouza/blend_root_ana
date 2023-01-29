@@ -1,0 +1,1 @@
+s.persistence_plot(5000,-1000,14000,0,"Ch7.charge/1600.>400 && Ch7.charge/1600<600 && Ch7.selection == 0 && Ch7.wvf[750]>150")

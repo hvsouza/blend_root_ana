@@ -13,7 +13,7 @@ for subruns in $(eval "/bin/ls -d  */ | grep run"); do
     # echo $x$subruns
     cd $subruns
     echo $(pwd)
-    eval "root -l -b -q ../adc_read_all_data_led.C"
+    eval "root -l -b -q ../../adc_read_all_data_led.C"
     cd ../
 done
 

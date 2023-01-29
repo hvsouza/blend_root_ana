@@ -5,7 +5,7 @@
 void adc_read_all_data_led(){
     
     system("rm files.log");
-    system("ls -1 *.dat | grep wave7 | sed -e 's/.dat$//' > files.log");
+    system("ls -1 *.dat | grep wave[3,7] | sed -e 's/.dat$//' > files.log");
     
     Read r;
         

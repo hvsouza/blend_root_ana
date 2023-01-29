@@ -51,6 +51,7 @@ void giveMeSphe_darkCount(){
     dark.sphe_charge2_ch0 = 814.757; // wave0
 
     dark.channel = 5;
+    // dark.check_selection = false;
         
     
     dark.giveMeSphe_darkCount("analyzed");

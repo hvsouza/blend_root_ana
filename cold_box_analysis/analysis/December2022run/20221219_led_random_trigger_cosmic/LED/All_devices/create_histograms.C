@@ -7,7 +7,7 @@ void create_histograms(){
   string mychannel = "Ch5";
   vector<string> devices = {"0","0","miniArapuca 37V (A1ch1)","miniArapuca 47V (Argon4)", "xArapuca v4 ch1 (DCemArgon4)", "xArapuca v4 ch2 (DCemArgon4)", "xArapuca v5 ch1 (DCemSimp3)", "xArapuca v5 ch2 (DCemSimp3)"};
   vector<Double_t> saturations = {0, 0, 12600, 12600, 12000, 12000, 12000, 100};
-  vector<Double_t> sphes = {0,0, 7000, 400, 441*6, 441, 0,};
+  vector<Double_t> sphes = {0,0, 7000, 400, 441*6, 1094., 0,};
 
   vector<string> files = {"run0_all_devices_led_365nm_20ns_3V2", "run1_all_devices_led_365nm_20ns_3V4", "run2_all_devices_led_365nm_20ns_3V6", "run3_all_devices_led_365nm_20ns_3V8", "run4_all_devices_led_365nm_20ns_4V0", "run5_all_devices_led_365nm_20ns_4V2", "run6_all_devices_led_365nm_20ns_4V4", "run7_all_devices_led_365nm_20ns_4V6", "run8_all_devices_led_365nm_20ns_4V8", "run9_all_devices_led_365nm_20ns_5V0", "run10_all_devices_led_365nm_20ns_5V2", "run11_all_devices_led_365nm_20ns_6V2", "run12_all_devices_led_365nm_20ns_7V5", "run13_all_devices_led_365nm_20ns_10V0", "run14_all_devices_led_365nm_20ns_12V5", "run15_all_devices_led_365nm_20ns_15V0", "run16_all_devices_led_365nm_20ns_17V5", "run17_all_devices_led_365nm_20ns_23V0", "run18_all_devices_led_365nm_20ns_30V0"};
 
@@ -105,7 +105,7 @@ void create_histograms(){
     Double_t maxInt = 11400;
     if(mychannel == "Ch2"){minInt = 10280; maxInt = 10700;}
     if(mychannel == "Ch3"){minInt = 10320; maxInt = 10700;}
-    if(mychannel == "Ch5"){minInt = 10320; maxInt = 12200;}
+    if(mychannel == "Ch5"){minInt = 10320; maxInt = 11700;}
     Int_t nentries = (just_a_test) ? 1000 : z[i]->nentries;
     // for(Int_t j = 0; j<z[i]->t1->GetEntries(); j++){
     for(Int_t j = 0; j<nentries; j++){

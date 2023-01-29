@@ -46,9 +46,9 @@ chi2 =  np.sum((diff/ersphes)**2)
 df = len(sphes)
 print(f"chisq = {chi2}/{df}")
 
-ax.errorbar(bias,sphes,yerr=ersphes,fmt='r.', label=f'Gain vs bias')
+ax.errorbar(bias,sphes,yerr=ersphes,fmt='.k', label=f'Gain vs bias', capsize=5)
 
-plt.plot(bias,yfit, label=f'Fit: y = a*x + b ($\chi^2$/ndf = {chi2:.2f}/{df})\na = {slope:.2f} $\pm$ {d_slope:.2f}\nb = {inter:.2f} $\pm$ {d_inter:.2f}')
+plt.plot(bias,yfit, label=f'Fit: y = a*x + b ($\chi^2$/ndf = {chi2:.2f}/{df})\na = {slope:.2f} $\pm$ {d_slope:.2f}\nb = {inter:.2f} $\pm$ {d_inter:.2f}', color="red")
 plt.legend(loc=2, fontsize=12)
 
 plt.xlabel("Bias (V)")

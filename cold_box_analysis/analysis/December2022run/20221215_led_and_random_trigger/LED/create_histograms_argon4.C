@@ -61,7 +61,7 @@ void create_histograms_argon4(){
 
 
   Double_t sphe = 6046; // V.ns
-  if(mychannel == "Ch3") sphe = 400;
+  if(mychannel == "Ch3") sphe = 670.;
   Double_t increase = 0;
   Int_t nbins_d = 100;
   Int_t gpts = 0;
@@ -99,7 +99,7 @@ void create_histograms_argon4(){
     Double_t minInt = 10320;
     Double_t maxInt = 10700;
     if(mychannel == "Ch3"){
-      minInt = 10320;
+      minInt = 10280;
       maxInt = 10700;
     }
     for(Int_t j = 0; j<t1[i]->GetEntries(); j++){
