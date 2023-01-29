@@ -1,0 +1,272 @@
+#define memorydepth 5000
+#include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
+
+bool just_a_test = false;
+Double_t threshold = 100;
+Double_t rebin = 8;
+Double_t filter = 16;
+// gStyle->SetCanvasPreferGL(kFALSE);
+string mychannel = "Ch3";
+vector<string> devices = {"0","0","miniArapuca 37V (A1ch1)","miniArapuca 47V (Argon4)", "xArapuca v4 ch1 (DCemArgon4)", "xArapuca v4 ch2 (DCemArgon4)", "xArapuca v5 ch1 (DCemSimp3)", "xArapuca v5 ch2 (DCemSimp3)"};
+vector<Double_t> saturations = {0, 0, 12600, 2000, 12000, 12000, 12000, 100};
+vector<Double_t> sphes = {0,0, 7100, 670, 441*6, 0, 0,};
+
+vector<string> files = {"run0_all_devices_led_365nm_20ns_3V15", "run1_all_devices_led_365nm_20ns_3V20", "run2_all_devices_led_365nm_20ns_3V30", "run3_all_devices_led_365nm_20ns_3V50", "run4_all_devices_led_365nm_20ns_3V70", "run5_all_devices_led_365nm_20ns_3V90", "run6_all_devices_led_365nm_20ns_4V10", "run7_all_devices_led_365nm_20ns_4V30", "run8_all_devices_led_365nm_20ns_4V50", "run9_all_devices_led_365nm_20ns_4V70", "run10_all_devices_led_365nm_20ns_4V90", "run11_all_devices_led_365nm_20ns_5V20", "run12_all_devices_led_365nm_20ns_6V20", "run13_all_devices_led_365nm_20ns_7V50", "run14_all_devices_led_365nm_20ns_10V00", "run15_all_devices_led_365nm_20ns_12V50", "run16_all_devices_led_365nm_20ns_15V00", "run17_all_devices_led_365nm_20ns_17V50", "run18_all_devices_led_365nm_20ns_23V00", "run19_all_devices_led_365nm_20ns_30V00"};
+vector<Double_t> volts = {3.15, 3.20, 3.30, 3.50, 3.70, 3.90, 4.10, 4.30, 4.50, 4.70, 4.90, 5.20, 6.20, 7.50, 10.00, 12.50, 15.00, 17.50, 23.00, 30.00};
+Double_t saturation_level;
+
+Int_t n = volts.size();
+
+string conc = "/analyzed.root";
+
+vector<ANALYZER*> z(n);
+TH2D *htot = new TH2D("htot","htot",1000,0,3000,1000,0,4000);
+TH2D *htot_sat = new TH2D("htot_sat","htot_sat",1000,0,3000,1000,0,4000);
+TH2D *htot_before_sat = new TH2D("htot_before_sat","htot_before_sat",1000,0,3000,1000,0,4000);
+TH2D *hshow_amp_vs_pe = new TH2D("hshow_amp_vs_pe","hshow_amp_vs_pe",4000,-5,4000,2000,-100,14000);
+Int_t nx = htot->GetNbinsX();
+Int_t ny = htot->GetNbinsY();
+Double_t hmin = htot->GetXaxis()->GetBinLowEdge(1);
+Double_t hmax = htot->GetXaxis()->GetBinLowEdge(nx) + htot->GetXaxis()->GetBinWidth(nx);
+TRandom3 *r3 = new TRandom3(3);
+
+TH1D *htot1 = new TH1D("htot1","htot1",nx/rebin,hmin,hmax);
+TH1D *htot1_sat = new TH1D("htot1_sat","htot1_sat",nx/rebin,hmin,hmax);
+TH1D *htot1_before_sat = new TH1D("htot1_before_sat","htot1_before_sat",nx/rebin,hmin,hmax);
+
+TH1D *hdev = new TH1D("hdev","hdev",200,-1,1);
+TH1D *hdev_sat = new TH1D("hdev_sat","hdev_sat",200,-1,1);
+ANALYZER a("a");
+
+
+Double_t minInt = 0;
+Double_t maxInt = 0;
+
+vector<Double_t> gpe;
+vector<Double_t> er_gpe;
+vector<Double_t> gtot;
+vector<Double_t> er_gtot;
+
+vector<Double_t> gpe_sat;
+vector<Double_t> er_gpe_sat;
+vector<Double_t> gtot_sat;
+vector<Double_t> er_gtot_sat;
+
+vector<Double_t> gpe_corr;
+vector<Double_t> er_gpe_corr;
+vector<Double_t> gtot_corr;
+vector<Double_t> er_gtot_corr;
+Double_t sphe = 6046; // V.ns
+void setup_histograms(TH2D *htot, TH1D *htot1){
+  Int_t nx = htot->GetNbinsX();
+  Int_t ny = htot->GetNbinsY();
+  Double_t sum = 0;
+  Double_t div = 0;
+  Double_t stddev = 0;
+  Double_t n = 0;
+  Int_t nrebins = 0;
+  int ndiv = 0;
+  for(Int_t i = 0; i < nx; i++) { // for loop in the X axis of the histogram;
+    for(Int_t j = 0; j < ny; j++) { // for loop in the Y axis of the histogram;
+      Double_t weight = htot->GetBinContent(i+1,j+1);
+      if (weight != 0){
+        Double_t bnpes = htot->GetYaxis()->GetBinCenter(j);
+        sum += weight*bnpes;
+        div += weight;
+      }
+    }
+    ndiv++;
+    if(ndiv == rebin){
+      if(div == 0){sum = 0; div = 1;}
+      for(Int_t j = 0; j < ny; j++) { // for loop in the Y axis of the histogram;
+        Double_t weight = htot->GetBinContent(i+1,j+1);
+        if (weight != 0){
+          Double_t bnpes = htot->GetYaxis()->GetBinCenter(j);
+          stddev += weight*(bnpes-sum/div)*(bnpes-sum/div);
+          n += 1;
+        }
+      }
+      if (n == 1){ n = 2;}
+      stddev = (stddev/div)*n/(n-1);
+      htot1->SetBinContent(nrebins+1, sum/div);
+      Double_t err = sqrt(abs(sum)/div);
+      htot1->SetBinError(nrebins+1,sqrt(stddev + err*err));
+      nrebins++;
+      
+      sum = 0;
+      div = 0;
+      stddev = 0;
+      n = 0;
+      ndiv = 0;
+    }
+
+
+  }
+}
+
+void configHisto(TH1D *h, Color_t color){
+  h->SetMarkerStyle(21);
+  h->SetMarkerSize(0.7);
+  h->SetLineWidth(2);
+  h->SetLineColor(color);
+  h->SetMarkerColor(color);
+  h->GetYaxis()->SetTitle("TOT (ns)");
+  h->GetYaxis()->SetRangeUser(10,800);
+  h->GetXaxis()->SetTitle("Photo-electrons");
+  h->GetXaxis()->SetRangeUser(0.5*threshold/4.,3000);
+}
+
+void configHisto2(TH2D *h){
+  h->GetYaxis()->SetTitle("TOT (ns)");
+  h->GetYaxis()->SetRangeUser(10,800);
+  h->GetXaxis()->SetTitle("Photo-electrons");
+  h->GetXaxis()->SetRangeUser(0.5*threshold/4.,3000);
+  h->SetStats(kFALSE);
+}
+
+
+void configGraphs(TGraph *g, Color_t c){
+  
+  g->SetMarkerStyle(21);
+  g->SetMarkerSize(0.7);
+  g->SetMarkerColor(c);
+  g->SetLineColor(c);
+  g->GetXaxis()->SetTitle("Photo-electrons (origial)");
+  g->GetXaxis()->SetRangeUser(500,2500);
+  g->GetYaxis()->SetTitle("Photo-electrons");
+  g->GetYaxis()->SetRangeUser(500,2500);
+}
+void reconstruct(TF1 *flog){
+  //flog = log([0]*x)*[1]
+  Int_t n = gtot_corr.size();
+  gpe_corr.resize(n);
+  er_gpe_corr.resize(n);
+  TF1 *fcorr = new TF1("fcorr", "exp(x/[1])/[0]",0,1000);
+  fcorr->SetParameters(flog->GetParameter(0),flog->GetParameter(1));
+  for (Int_t i = 0; i < n; i++) {
+    gpe_corr[i] = fcorr->Eval(r3->Gaus(gtot_corr[i],1));
+    er_gpe_corr[i] = sqrt(gpe_corr[i]);
+
+    hdev_sat->Fill((gpe_sat[i] - gpe[i])/gpe[i]);
+    hdev->Fill((gpe_corr[i] - gpe[i])/gpe[i]);
+  }
+  TCanvas *cc = new TCanvas("cc","cc",1920,0,1920,1080);
+  TGraph *gbad = new TGraph(n, &gpe[0], &gpe_sat[0]);//, &er_gpe[0], &er_gpe_sat[0]);
+  TGraph *gcorr = new TGraph(n, &gpe[0], &gpe_corr[0]);//, &er_gpe[0], &er_gpe_corr[0]);
+
+  
+  configGraphs(gbad,kRed);
+  configGraphs(gcorr,kBlack);
+
+  gbad->SetTitle("Saturated events");
+  gcorr->SetTitle("TOT Corrected events");
+
+  gbad->Draw("AP");
+  gcorr->Draw("SAME P");
+  cc->BuildLegend();
+  gStyle->SetOptTitle(0);
+  TCanvas *chdev = new TCanvas("chdev","chdev",1920,0,1920,1080);
+  hdev_sat->SetLineColor(kRed);
+  hdev_sat->GetXaxis()->SetTitle("Relative deviation");
+  hdev_sat->SetTitle("#frac{Saturated - original}{original}");
+  hdev->SetTitle("#frac{Corrected - original}{original}");
+  hdev_sat->Draw("");
+  hdev->Draw("SAMES");
+  chdev->BuildLegend();
+
+}
+void tot_test(){
+  if(mychannel == "Ch3"){minInt = 10280; maxInt = 10700;}
+  for(Int_t i = 0; i<n; i++){
+    files[i] = files[i]+conc;
+    z[i] = new ANALYZER(Form("z%.2f",volts[i]));
+    z[i]->setAnalyzer(files[i].c_str());
+    z[i]->setChannel(mychannel.c_str());
+    Int_t kch = z[i]->kch;
+    saturation_level = saturations[z[i]->getIdx()];
+    sphe = sphes[z[i]->getIdx()];
+
+    Int_t nentries = (just_a_test) ? 100 : z[i]->nentries;
+    for(Int_t j = 0; j < nentries; j++){
+      z[i]->getWaveform(j,kch);
+      z[i]->applyDenoise(filter);
+      if(z[i]->ch[kch].selection!=0) continue;
+      // z[i]->applyDenoise(16);
+      Double_t tot = z[i]->getTOT(kch, minInt, 15000, threshold, 12);
+      z[i]->integrate(kch, minInt-200, minInt);
+      if (z[i]->temp_max > 20 || tot <= 12){
+        continue;
+      }
+      z[i]->integrate(kch,minInt,maxInt);
+
+      Double_t pe = z[i]->temp_charge/sphe;
+      htot->Fill(pe, tot);
+      if (z[i]->temp_max >= saturation_level){
+        gpe.push_back(pe);
+        er_gpe.push_back(sqrt(pe));
+        gtot.push_back(tot);
+        er_gtot.push_back(8);
+
+        z[i]->getWaveform(j,kch);
+        for (Int_t k = 0; k < memorydepth; k++) {
+          z[i]->ch[kch].wvf[k] = (z[i]->ch[kch].wvf[k] >= saturation_level) ? r3->Gaus(saturation_level,0.5*sqrt(saturation_level)) : z[i]->ch[kch].wvf[k];
+        }
+        z[i]->applyDenoise(filter);
+        tot = z[i]->getTOT(kch, minInt, 15000, threshold, 12);
+        z[i]->integrate(kch,minInt,maxInt);
+        pe = z[i]->temp_charge/sphe;
+        gpe_sat.push_back(pe);
+        er_gpe_sat.push_back(sqrt(pe));
+        gtot_sat.push_back(tot);
+        er_gtot_sat.push_back(8);
+        gtot_corr.push_back(tot);
+        er_gtot_corr.push_back(8);
+      }
+      else{
+        htot_before_sat->Fill(pe, tot);
+      }
+      htot_sat->Fill(pe, tot);
+      hshow_amp_vs_pe->Fill(pe,z[i]->temp_max);
+    }
+
+  }
+
+  setup_histograms(htot,htot1);
+  setup_histograms(htot_sat,htot1_sat);
+  setup_histograms(htot_before_sat,htot1_before_sat);
+
+
+  TF1 *f = new TF1("f","log([0]*x)*[1]",100,1000);
+  f->SetParameters(0.02,100);
+
+  TCanvas *c1 = new TCanvas("c1","c1",1920,0,1920,1080);
+  configHisto2(htot);
+  htot->Draw("colz");
+  htot1->Draw("SAMES E0");
+  htot1->Fit("f","R","SAME",20,2500);
+  TF1 *fperf = (TF1*)f->Clone("fperf");
+  fperf->SetLineColor(kGreen);
+  configHisto(htot1,kBlack);
+
+  TCanvas *c2 = new TCanvas("c2","c2",1920,0,1920,1080);
+  configHisto2(htot_sat);
+  htot_sat->Draw("colz");
+  htot1_sat->Draw("SAMES E0");
+  configHisto(htot1_sat,kRed);
+
+  TCanvas *c3 = new TCanvas("c3","c3",1920,0,1920,1080);
+  hshow_amp_vs_pe->Draw("colz");
+
+  TCanvas *c4 = new TCanvas("c4","c4",1920,0,1920,1080);
+  configHisto2(htot_before_sat);
+  htot_before_sat->Draw("colz");
+  htot1_before_sat->Draw("SAMES E0");
+  htot1_before_sat->Fit("f","R","SAME",20,2500);
+  fperf->Draw("SAME");
+  configHisto(htot1_before_sat,kBlack);
+
+
+  reconstruct(f);
+
+
+}
