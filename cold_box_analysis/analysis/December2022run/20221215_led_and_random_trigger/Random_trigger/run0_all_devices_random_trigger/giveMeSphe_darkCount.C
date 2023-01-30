@@ -31,7 +31,7 @@ void giveMeSphe_darkCount(){
     dark.lowerThreshold = -7; // threshold to detect noise (normal waveform)
     dark.maxHits = 5; // maximum hit before discarding
     
-    dark.too_big = 200; // if there is a peak > "too_big" .. wait "waiting" ns
+    dark.too_big = 300; // if there is a peak > "too_big" .. wait "waiting" ns
     dark.waiting = 1000;
 
     dark.filter = 16;
