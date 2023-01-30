@@ -1,8 +1,8 @@
 #define memorydepth 5000
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
-bool just_a_test = false;
-Double_t threshold = 100;
+bool just_a_test = true;
+Double_t threshold = 600;
 Double_t rebin = 8;
 Double_t filter = 16;
 // gStyle->SetCanvasPreferGL(kFALSE);
@@ -20,10 +20,25 @@ Int_t n = volts.size();
 string conc = "/analyzed.root";
 
 vector<ANALYZER*> z(n);
-TH2D *htot = new TH2D("htot","htot",1000,0,3000,1000,0,4000);
-TH2D *htot_sat = new TH2D("htot_sat","htot_sat",1000,0,3000,1000,0,4000);
-TH2D *htot_before_sat = new TH2D("htot_before_sat","htot_before_sat",1000,0,3000,1000,0,4000);
+
+Int_t bins_pe = 1000;
+Int_t bins_tot = 1000;
+Double_t minpe = 0;
+Double_t mintot = 0;
+
+Double_t maxpe = 3000;
+Double_t maxtot = 4000;
+TH2D *htot = new TH2D("htot","htot", bins_pe, minpe, maxpe, bins_tot, mintot, maxtot);
+TH2D *htot_sat = new TH2D("htot_sat","htot_sat", bins_pe, minpe, maxpe, bins_tot, mintot, maxtot);
+TH2D *htot_before_sat = new TH2D("htot_before_sat","htot_before_sat", bins_pe, minpe, maxpe, bins_tot, mintot, maxtot);
+
+
+TH2D *hQ = new TH2D("hQ","hQ",bins_tot, mintot, maxtot, bins_pe, minpe, maxpe);
+TH2D *hQ_sat = new TH2D("hQ_sat","hQ_sat",bins_tot, mintot, maxtot, bins_pe, minpe, maxpe);
+TH2D *hQ_before_sat = new TH2D("hQ_before_sat","hQ_before_sat",bins_tot, mintot, maxtot, bins_pe, minpe, maxpe);
+
 TH2D *hshow_amp_vs_pe = new TH2D("hshow_amp_vs_pe","hshow_amp_vs_pe",4000,-5,4000,2000,-100,14000);
+
 Int_t nx = htot->GetNbinsX();
 Int_t ny = htot->GetNbinsY();
 Double_t hmin = htot->GetXaxis()->GetBinLowEdge(1);
@@ -34,6 +49,12 @@ TH1D *htot1 = new TH1D("htot1","htot1",nx/rebin,hmin,hmax);
 TH1D *htot1_sat = new TH1D("htot1_sat","htot1_sat",nx/rebin,hmin,hmax);
 TH1D *htot1_before_sat = new TH1D("htot1_before_sat","htot1_before_sat",nx/rebin,hmin,hmax);
 
+vector<vector<Double_t>> h1tot(2);
+vector<vector<Double_t>> h1tot_sat(2);
+vector<vector<Double_t>> h1tot_before_sat(2);
+vector<vector<Double_t>> hpe(2);
+vector<vector<Double_t>> hpe_sat(2);
+vector<vector<Double_t>> hpe_before_sat(2);
 TH1D *hdev = new TH1D("hdev","hdev",200,-1,1);
 TH1D *hdev_sat = new TH1D("hdev_sat","hdev_sat",200,-1,1);
 ANALYZER a("a");
@@ -57,7 +78,7 @@ vector<Double_t> er_gpe_corr;
 vector<Double_t> gtot_corr;
 vector<Double_t> er_gtot_corr;
 Double_t sphe = 6046; // V.ns
-void setup_histograms(TH2D *htot, TH1D *htot1){
+void setup_histograms(TH2D *htot, TH1D *htot1, vector<vector<Double_t>> &_h1tot, vector<vector<Double_t>> &_hpe){
   Int_t nx = htot->GetNbinsX();
   Int_t ny = htot->GetNbinsY();
   Double_t sum = 0;
@@ -89,10 +110,18 @@ void setup_histograms(TH2D *htot, TH1D *htot1){
       if (n == 1){ n = 2;}
       stddev = (stddev/div)*n/(n-1);
       htot1->SetBinContent(nrebins+1, sum/div);
+
       Double_t err = sqrt(abs(sum)/div);
       htot1->SetBinError(nrebins+1,sqrt(stddev + err*err));
+      if(sum!=0){
+        _h1tot[0].push_back(sum/div);
+        _h1tot[1].push_back(htot1->GetBinError(nrebins+1));
+        _hpe[0].push_back(htot1->GetBinCenter(nrebins+1));
+        _hpe[1].push_back(htot1->GetBinWidth(nrebins+1));
+      }
+
       nrebins++;
-      
+
       sum = 0;
       div = 0;
       stddev = 0;
@@ -125,16 +154,17 @@ void configHisto2(TH2D *h){
 }
 
 
-void configGraphs(TGraph *g, Color_t c){
+void configGraphs(TGraphErrors *g, Color_t c){
   
   g->SetMarkerStyle(21);
   g->SetMarkerSize(0.7);
   g->SetMarkerColor(c);
   g->SetLineColor(c);
-  g->GetXaxis()->SetTitle("Photo-electrons (origial)");
-  g->GetXaxis()->SetRangeUser(500,2500);
+  g->SetLineWidth(2);
+  g->GetXaxis()->SetTitle("TOT (ns)");
+  g->GetXaxis()->SetRangeUser(10,800);
   g->GetYaxis()->SetTitle("Photo-electrons");
-  g->GetYaxis()->SetRangeUser(500,2500);
+  g->GetYaxis()->SetRangeUser(0.5*threshold/4.,3000);
 }
 void reconstruct(TF1 *flog){
   //flog = log([0]*x)*[1]
@@ -149,30 +179,48 @@ void reconstruct(TF1 *flog){
 
     hdev_sat->Fill((gpe_sat[i] - gpe[i])/gpe[i]);
     hdev->Fill((gpe_corr[i] - gpe[i])/gpe[i]);
+    // htot_sat->Fill(gpe_corr[i], gtot_sat[i]);
   }
   TCanvas *cc = new TCanvas("cc","cc",1920,0,1920,1080);
-  TGraph *gbad = new TGraph(n, &gpe[0], &gpe_sat[0]);//, &er_gpe[0], &er_gpe_sat[0]);
-  TGraph *gcorr = new TGraph(n, &gpe[0], &gpe_corr[0]);//, &er_gpe[0], &er_gpe_corr[0]);
+  TGraphErrors *gbad = new TGraphErrors(n, &gpe[0], &gpe_sat[0], &er_gpe[0], &er_gpe_sat[0]);//, &er_gpe[0], &er_gpe_sat[0]);
+  TGraphErrors *gcorr = new TGraphErrors(n, &gpe[0], &gpe_corr[0], &er_gpe[0], &er_gpe_corr[0]);//, &er_gpe[0], &er_gpe_corr[0]);
 
   
   configGraphs(gbad,kRed);
   configGraphs(gcorr,kBlack);
 
+  gbad->GetXaxis()->SetTitle("Photo-electrons (origial)");
+  gbad->GetXaxis()->SetRangeUser(500,2500);
+  gbad->GetYaxis()->SetTitle("Photo-electrons");
+  gbad->GetYaxis()->SetRangeUser(500,2500);
   gbad->SetTitle("Saturated events");
   gcorr->SetTitle("TOT Corrected events");
 
-  gbad->Draw("AP");
-  gcorr->Draw("SAME P");
+  gbad->Draw("AP X");
+  gcorr->Draw("SAME P X");
+  TF1 *fx = new TF1("fx","[0]*x",500,3000);
+  fx->FixParameter(0,1);
+  fx->SetTitle("y = x");
+  gcorr->Fit("fx");
   cc->BuildLegend();
   gStyle->SetOptTitle(0);
+
+  cc->Print("graphs/TOT_graphs.root");
   TCanvas *chdev = new TCanvas("chdev","chdev",1920,0,1920,1080);
   hdev_sat->SetLineColor(kRed);
+  hdev_sat->SetLineWidth(2);
+  hdev->SetLineWidth(2);
+  hdev_sat->GetYaxis()->SetTitle("# of events");
   hdev_sat->GetXaxis()->SetTitle("Relative deviation");
   hdev_sat->SetTitle("#frac{Saturated - original}{original}");
   hdev->SetTitle("#frac{Corrected - original}{original}");
   hdev_sat->Draw("");
   hdev->Draw("SAMES");
+
   chdev->BuildLegend();
+  chdev->Print("graphs/TOT_relative.root");
+
+
 
 }
 void tot_test(){
@@ -201,6 +249,7 @@ void tot_test(){
 
       Double_t pe = z[i]->temp_charge/sphe;
       htot->Fill(pe, tot);
+      hQ->Fill(tot, pe);
       if (z[i]->temp_max >= saturation_level){
         gpe.push_back(pe);
         er_gpe.push_back(sqrt(pe));
@@ -224,49 +273,63 @@ void tot_test(){
       }
       else{
         htot_before_sat->Fill(pe, tot);
+        hQ_before_sat->Fill(tot, pe);
       }
       htot_sat->Fill(pe, tot);
+      hQ_sat->Fill(tot, pe);
       hshow_amp_vs_pe->Fill(pe,z[i]->temp_max);
     }
 
   }
 
-  setup_histograms(htot,htot1);
-  setup_histograms(htot_sat,htot1_sat);
-  setup_histograms(htot_before_sat,htot1_before_sat);
+  setup_histograms(htot, htot1, h1tot, hpe);
+  setup_histograms(htot_sat,htot1_sat, h1tot_sat, hpe_sat);
+  setup_histograms(htot_before_sat,htot1_before_sat, h1tot_before_sat, hpe_before_sat);
 
 
-  TF1 *f = new TF1("f","log([0]*x)*[1]",100,1000);
+
+  TF1 *f = new TF1("f","log([0]*x)*[1]",20,2500);
   f->SetParameters(0.02,100);
 
   TCanvas *c1 = new TCanvas("c1","c1",1920,0,1920,1080);
+  TGraphErrors *gfull = new TGraphErrors(hpe[0].size(), &h1tot[0][0], &hpe[0][0], &h1tot[1][0], &hpe[1][0]);
+  configGraphs(gfull, kBlack);
   configHisto2(htot);
-  htot->Draw("colz");
-  htot1->Draw("SAMES E0");
-  htot1->Fit("f","R","SAME",20,2500);
-  TF1 *fperf = (TF1*)f->Clone("fperf");
-  fperf->SetLineColor(kGreen);
-  configHisto(htot1,kBlack);
+  hQ->Draw("colz");
+  gfull->Draw("SAME ZP");
+  // htot1->Draw("SAMES E0");
+  // htot1->Fit("f","R","0",120,2500);
+  // TF1 *fperf = (TF1*)f->Clone("fperf");
+  // fperf->SetLineColor(kGreen);
+  // configHisto(htot1,kBlack);
+  // fperf->Draw("SAME");
+  // c1->Print("graphs/TOT_full.root");
 
-  TCanvas *c2 = new TCanvas("c2","c2",1920,0,1920,1080);
-  configHisto2(htot_sat);
-  htot_sat->Draw("colz");
-  htot1_sat->Draw("SAMES E0");
-  configHisto(htot1_sat,kRed);
+  // TCanvas *c2 = new TCanvas("c2","c2",1920,0,1920,1080);
+  // configHisto2(htot_sat);
+  // htot_sat->Draw("colz");
+  // htot1_sat->Draw("SAMES E0");
+  // configHisto(htot1_sat,kRed);
+  // c2->Print("graphs/TOT_sat.root");
 
-  TCanvas *c3 = new TCanvas("c3","c3",1920,0,1920,1080);
-  hshow_amp_vs_pe->Draw("colz");
+  // TCanvas *c3 = new TCanvas("c3","c3",1920,0,1920,1080);
+  // hshow_amp_vs_pe->Draw("colz");
 
-  TCanvas *c4 = new TCanvas("c4","c4",1920,0,1920,1080);
-  configHisto2(htot_before_sat);
-  htot_before_sat->Draw("colz");
-  htot1_before_sat->Draw("SAMES E0");
-  htot1_before_sat->Fit("f","R","SAME",20,2500);
-  fperf->Draw("SAME");
-  configHisto(htot1_before_sat,kBlack);
+  // TCanvas *c4 = new TCanvas("c4","c4",1920,0,1920,1080);
+  // configHisto2(htot_before_sat);
+  // htot_before_sat->Draw("colz");
+  // htot1_before_sat->Draw("SAMES E0");
+  // htot1_before_sat->Fit("f","R","SAME",300,2500);
+  // fperf->Draw("SAME");
+  // configHisto(htot1_before_sat,kBlack);
+  // TLegend *l4 = new TLegend(0.1,0.7,0.5,0.9);
+  // l4->AddEntry(f,"Fit: [1]*log([0]*x)", "l");
+  // l4->AddEntry(fperf,"Fit without saturation", "l");
+  // l4->Draw();
+  // c4->Print("graphs/TOT_before_sat.root");
 
 
-  reconstruct(f);
+  // reconstruct(f);
 
 
 }
