@@ -45,6 +45,7 @@ class ANALYZER{
     Double_t ymax = 0;
     Double_t temp_charge = 0;
     Double_t temp_max = 0;
+    Double_t temp_pos = 0;
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
@@ -200,6 +201,7 @@ class ANALYZER{
         if(ch[channel].wvf[i]>time_trigger && triggered == false){
           triggered = true;
           time_mark = i*dtime;
+          temp_pos = time_mark;
           // break;
         }
         else if(triggered==true && ch[channel].wvf[i]<time_trigger && (i*dtime-time_mark)>=minimum_gap_ns){
@@ -222,6 +224,18 @@ class ANALYZER{
       }
       temp_charge = res*dtime;
       temp_max = max;
+    }
+    void getIntegral(TH1D *_htemp = nullptr, Double_t from = 0, Double_t to = 0, string selection = "", Double_t filter = 0, Double_t sphe = 1.){
+      getSelection(selection);
+      Int_t nev = lev->GetN();
+      Int_t iev = 0;
+      for(Int_t i = 0; i < nev; i++){
+        iev = lev->GetEntry(i);
+        getWaveform(iev,kch);
+        applyDenoise(filter);
+        integrate(kch, from, to);
+        _htemp->Fill(temp_charge/sphe);
+      }
     }
 
     void getWaveFromHistogram(TH1D *htemp){
