@@ -288,7 +288,7 @@ void tot_test(){
 
 
 
-  TF1 *f = new TF1("f","log([0]*x)*[1]",20,2500);
+  TF1 *f = new TF1("f","expo(0)+expo(1)",0,2500);
   f->SetParameters(0.02,100);
 
   TCanvas *c1 = new TCanvas("c1","c1",1920,0,1920,1080);
@@ -297,13 +297,11 @@ void tot_test(){
   configHisto2(htot);
   hQ->Draw("colz");
   gfull->Draw("SAME ZP");
-  // htot1->Draw("SAMES E0");
-  // htot1->Fit("f","R","0",120,2500);
-  // TF1 *fperf = (TF1*)f->Clone("fperf");
-  // fperf->SetLineColor(kGreen);
-  // configHisto(htot1,kBlack);
-  // fperf->Draw("SAME");
-  // c1->Print("graphs/TOT_full.root");
+  htot1->Fit("f","R","0",120,2500);
+  TF1 *fperf = (TF1*)f->Clone("fperf");
+  fperf->SetLineColor(kGreen);
+  fperf->Draw("SAME");
+  c1->Print("graphs/TOT_full.root");
 
   // TCanvas *c2 = new TCanvas("c2","c2",1920,0,1920,1080);
   // configHisto2(htot_sat);
