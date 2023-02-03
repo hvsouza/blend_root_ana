@@ -945,6 +945,7 @@ class SPHE{
     Double_t baseLimit;
 
     Double_t filter = 0;
+    Bool_t withfilter = true;
   
     Double_t timeLimit; // time after LED signal
     Double_t timeLow ; // integration time before peak
@@ -1161,7 +1162,11 @@ class SPHE{
 
       Int_t aux_sample = 0;
     
-    
+
+      sphe_charge = sphe_charge_ch0; // wave0
+      sphe_charge2 = sphe_charge2_ch0; // wave0
+      delta = sphe_charge2 - sphe_charge;
+      sphe_std = sphe_std_ch0;
       if(channel==1){
         sphe_charge = sphe_charge_ch0; // wave0
         sphe_charge2 = sphe_charge2_ch0; // wave0
@@ -1245,7 +1250,8 @@ class SPHE{
         // integration for the back part
         for(Int_t j = (peakPosition.at(i))/dtime; j>= (peakPosition[i]-timeLow)/dtime; j--){
           charge += temp_peak.at(j);
-          statcharge[i]+= temp_peak.at(j);
+          if(withfilter) statcharge[i]+= temp_peak.at(j);
+          else statcharge[i]+= ch.wvf[j];
           if(temp_peak.at(j)>=statpeak[i]){
             statpeak[i] = temp_peak.at(j);
           }
@@ -1263,7 +1269,8 @@ class SPHE{
         for(Int_t j = (peakPosition.at(i))/dtime + 1; j<=(peakPosition[i]+timeHigh)/dtime; j++){
           charge += temp_peak.at(j);
         
-          statcharge[i]+= temp_peak.at(j);
+          if(withfilter) statcharge[i]+= temp_peak.at(j);
+          else statcharge[i]+= ch.wvf[j];
           if(temp_peak.at(j)>=statpeak[i]){
             statpeak[i] = temp_peak.at(j);
           }
@@ -1372,6 +1379,8 @@ class SPHE{
                   
               }
               wvfcharge = statcharge[i];
+              sample.charge = statcharge[i];
+              sample.selection = valid;
               twvf->Fill();
                 
               //gwaveforms[i] = new TGraph(waveforms.size(),&timeg[0],&waveforms[0]);
@@ -1891,7 +1900,8 @@ class SPHE{
         noise = false;
         max = -1e12;
         for(Int_t j = start/dtime; j<finish/dtime; j++){
-          charge += temp_peak[j];
+          if(withfilter) charge += temp_peak.at(j);
+          else charge += ch.wvf[j];
           if(temp_peak[j]>=max){
             max = temp_peak[j];
           }
