@@ -5,14 +5,14 @@
 bool just_a_test = false;
 Double_t threshold = 300;
 Double_t minFit = 100; // changed later
-Double_t rebin = 10;
+Double_t rebin = 8;
 // Double_t rebin = 8; // lower than 600
 Double_t filter = 16;
 // gStyle->SetCanvasPreferGL(kFALSE);
 string mychannel = "Ch3";
 vector<string> devices = {"0","0","miniArapuca 37V (A1ch1)","miniArapuca 47V (Argon4)", "xArapuca v4 ch1 (DCemArgon4)", "xArapuca v4 ch2 (DCemArgon4)", "xArapuca v5 ch1 (DCemSimp3)", "xArapuca v5 ch2 (DCemSimp3)"};
 vector<Double_t> saturations = {0, 0, 12600, 2000, 12000, 12000, 12000, 100};
-vector<Double_t> sphes = {0,0, 7100, 670, 441*6, 0, 0,};
+vector<Double_t> sphes = {0,0, 7100, 3.8, 441*6, 0, 0,};
 
 vector<string> files = {"run0_all_devices_led_365nm_20ns_3V15", "run1_all_devices_led_365nm_20ns_3V20", "run2_all_devices_led_365nm_20ns_3V30", "run3_all_devices_led_365nm_20ns_3V50", "run4_all_devices_led_365nm_20ns_3V70", "run5_all_devices_led_365nm_20ns_3V90", "run6_all_devices_led_365nm_20ns_4V10", "run7_all_devices_led_365nm_20ns_4V30", "run8_all_devices_led_365nm_20ns_4V50", "run9_all_devices_led_365nm_20ns_4V70", "run10_all_devices_led_365nm_20ns_4V90", "run11_all_devices_led_365nm_20ns_5V20", "run12_all_devices_led_365nm_20ns_6V20", "run13_all_devices_led_365nm_20ns_7V50", "run14_all_devices_led_365nm_20ns_10V00", "run15_all_devices_led_365nm_20ns_12V50", "run16_all_devices_led_365nm_20ns_15V00", "run17_all_devices_led_365nm_20ns_17V50", "run18_all_devices_led_365nm_20ns_23V00", "run19_all_devices_led_365nm_20ns_30V00"};
 vector<Double_t> volts = {3.15, 3.20, 3.30, 3.50, 3.70, 3.90, 4.10, 4.30, 4.50, 4.70, 4.90, 5.20, 6.20, 7.50, 10.00, 12.50, 15.00, 17.50, 23.00, 30.00};
@@ -118,7 +118,7 @@ void setup_histograms(TH2D *htot, TH1D *htot1, vector<vector<Double_t>> &_h1tot,
 
       Double_t err = sqrt(abs(sum)/div);
       htot1->SetBinError(nrebins+1,sqrt(stddev + err*err));
-      if(sum!=0 && htot1->GetBinCenter(nrebins+1)>threshold/3.4){
+      if(sum!=0 && htot1->GetBinCenter(nrebins+1)>threshold/3.8){
         _h1tot[0].push_back(sum/div);
         _h1tot[1].push_back(htot1->GetBinError(nrebins+1));
         _hpe[0].push_back(htot1->GetBinCenter(nrebins+1));
@@ -263,20 +263,20 @@ void reconstruct(TF1 *fcorr){
 
   chdev->BuildLegend();
   // cc->Print("graphs/TOT_graphs.root");
-  chdev->Print(Form("graphs/TOT_relative_th%d.root", (int)threshold));
+  chdev->Print(Form("graphs/TOT_relative_amp_th%d.root", (int)threshold));
 
 
 
 }
-void tot_test(){
+void tot_test_amp(){
   gStyle->SetOptTitle(0);
-  if(mychannel == "Ch3"){minInt = 10280; maxInt = 10700;}
   if(threshold == 200) minFit = 200;
-  if(threshold == 300) minFit = 130;
-  if(threshold == 400) minFit = 130;
-  if(threshold == 600) minFit = 100;
-  if(threshold == 800) minFit = 130;
+  if(threshold == 300) minFit = 120;
+  if(threshold == 400) minFit = 100;
+  if(threshold == 600) minFit = 80;
+  if(threshold == 800) minFit = 80;
   if(threshold == 1000) minFit = 100;
+  if(mychannel == "Ch3"){minInt = 10280; maxInt = 10700;}
   for(Int_t i = 0; i<n; i++){
     files[i] = files[i]+conc;
     z[i] = new ANALYZER(Form("z%.2f",volts[i]));
@@ -299,7 +299,7 @@ void tot_test(){
       }
       z[i]->integrate(kch,minInt,maxInt);
 
-      Double_t pe = z[i]->temp_charge/sphe;
+      Double_t pe = z[i]->temp_max/sphe;
       htot->Fill(pe, tot);
       hQ->Fill(tot, pe);
       if (z[i]->temp_max >= saturation_level){
@@ -316,7 +316,7 @@ void tot_test(){
         tot = z[i]->getTOT(kch, minInt, 15000, threshold, 12);
         z[i]->integrate(kch,minInt,maxInt);
         Double_t prev_pe = pe;
-        pe = z[i]->temp_charge/sphe;
+        pe = z[i]->temp_max/sphe;
         gpe_sat.push_back(pe);
         gpe_sat_r.push_back((pe - prev_pe)/prev_pe);
         er_gpe_sat.push_back(sqrt(pe));
@@ -350,7 +350,8 @@ void tot_test(){
 
   TF1 *f = new TF1("f","expo(0)",0,2500);
   TF1 *fexpo0 = new TF1("fexpo0","expo(0)",0,2500);
-  Double_t param[4] = {3.3, 0.007, 3.4, -0.004};
+  // Double_t param[4] = {3.3, 0.007, 3.4, -0.004};
+  Double_t param[4] = {2.8, 0.007, 3.4, -0.006};
 
 
   f->SetParameters(param[0],param[1],param[2],param[3]);
@@ -365,7 +366,7 @@ void tot_test(){
   gfull->Fit("fexpo0","0", "", minFit,3000);
   f->SetParameters(fexpo0->GetParameter(0), fexpo0->GetParameter(1));
   // gfull->Fit("f","W");
-  gfull->Fit("f","", "", minFit,3000);
+  gfull->Fit("f","");
   TF1 *fperf = (TF1*)f->Clone("fperf");
   for(Int_t l = 0; l < 4; l++){
     cout << fperf->GetParameter(l) << " ";
