@@ -27,7 +27,7 @@ void adc_read_all_data(){
     r.fast = 200; // fprompt fast integration time
     r.slow = 1700; //fprompt slow integration time
     r.exclusion_baseline = 35; // filtered waveform, anything above here will do +exclusion window while evaluating the baseline
-    // r.exclusion_baseline = {35,15};
+    // r.exclusion_baselines = {35,15};
     r.exclusion_window = 1000; // time in ns that it will jump for baseline
     r.filter = 14; // denoise filter.. if filter = 0, no denoise is done.
     r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely (you can set stopEvent)

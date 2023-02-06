@@ -1079,10 +1079,8 @@ class SPHE{
     Double_t sphe_std;
 
     Double_t sphe_charge_ch0;
-    Double_t sphe_charge_ch1;
 
     Double_t sphe_charge2_ch0;
-    Double_t sphe_charge2_ch1;
 
     Double_t sphe_std_ch0;
     Double_t sphe_std_ch1;
@@ -1167,18 +1165,6 @@ class SPHE{
       sphe_charge2 = sphe_charge2_ch0; // wave0
       delta = sphe_charge2 - sphe_charge;
       sphe_std = sphe_std_ch0;
-      if(channel==1){
-        sphe_charge = sphe_charge_ch0; // wave0
-        sphe_charge2 = sphe_charge2_ch0; // wave0
-        delta = sphe_charge2 - sphe_charge;
-        sphe_std = sphe_std_ch0;
-      }
-      if(channel==2){
-        sphe_charge = sphe_charge_ch1; // wave0
-        sphe_charge2 = sphe_charge2_ch1; // wave0
-        delta = sphe_charge2 - sphe_charge;
-        sphe_std = sphe_std_ch1;
-      }
 
       Double_t statcharge[npeaks];
       Double_t statpeak[npeaks];
