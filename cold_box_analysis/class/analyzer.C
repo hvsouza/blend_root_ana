@@ -200,18 +200,31 @@ class ANALYZER{
     }
 
 
+    Double_t linear_interpole_tot(Int_t i, Double_t th){
+      if (i - 1 < 0) {
+        return i;
+      }
+      Double_t t1 = i-1;
+      Double_t t2 = i;
+      Double_t A1 = ch[kch].wvf[i-1];
+      Double_t A2 = ch[kch].wvf[i];
+
+      return ((t2-t1)*th - (A1*t2- A2*t1))/(A2-A1);
+    }
+
     Double_t getTOT(Int_t channel = 0, Double_t from = 0, Double_t to = 0, Double_t time_trigger = 20, Double_t minimum_gap_ns = 12){
+      kch = channel;
       Bool_t triggered = false;
       Double_t time_mark = 0;
       for(Int_t i = from/dtime; i<to/dtime; i++){
         if(ch[channel].wvf[i]>time_trigger && triggered == false){
           triggered = true;
-          time_mark = i*dtime;
+          time_mark = linear_interpole_tot(i, time_trigger)*dtime;
           temp_pos = time_mark;
           // break;
         }
         else if(triggered==true && ch[channel].wvf[i]<time_trigger && (i*dtime-time_mark)>=minimum_gap_ns){
-          time_mark = i*dtime - time_mark;
+          time_mark = linear_interpole_tot(i, time_trigger)*dtime - time_mark;
           return time_mark;
         }
       }
