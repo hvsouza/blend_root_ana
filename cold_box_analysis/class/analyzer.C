@@ -39,13 +39,17 @@ class ANALYZER{
     TGraph *gwvf;
     string xlabel = "Time (ns)";
     string ylabel = "Amplitude (ADC Channels)";
-    TH2D *hpers;
+    TH2D *hpers = nullptr;
 
     Double_t ymin = 0;
     Double_t ymax = 0;
+    Double_t xmin = 0;
+    Double_t xmax = 0;
     Double_t temp_charge = 0;
     Double_t temp_max = 0;
     Double_t temp_pos = 0;
+
+    TCanvas *cpers = nullptr;
 
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
@@ -80,6 +84,8 @@ class ANALYZER{
         time[j] = j*dtime;
       }
       nentries = t1->GetEntries();
+      xmin = 0;
+      xmax = memorydepth*dtime;
     }
 
     Int_t getIdx(){
@@ -391,6 +397,7 @@ class ANALYZER{
       if(ymax!=0 && ymin!=0){
         gwvf->GetYaxis()->SetRangeUser(ymin,ymax);
       }
+      gwvf->GetXaxis()->SetRangeUser(xmin,xmax);
       gwvf->SetEditable(kFALSE);
     }
 
@@ -490,8 +497,16 @@ class ANALYZER{
 
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
 
-      hpers = new TH2D("hpers","hpers",n_points,0,n_points*dtime,nbins,ymin,ymax);
-      TCanvas *c1 = new TCanvas();
+      Int_t nbinsx = (xmax-xmin)/dtime;
+      if(!hpers) hpers = new TH2D("hpers","hpers",nbinsx,xmin,xmax,nbins,ymin,ymax);
+      else{
+        hpers->Reset();
+        hpers->SetBins(nbinsx, xmin, xmax, nbins, ymin, ymax);
+      }
+      if(!cpers) cpers = new TCanvas(Form("cpers_%s", myname.c_str()), Form("cpers_%s", myname.c_str()),1920,0,1920,1080);
+      else{cpers->cd();}
+
+
 
       getSelection(cut);
       Int_t nev = lev->GetN();
