@@ -1365,6 +1365,7 @@ class SPHE{
                   
               }
               wvfcharge = statcharge[i];
+              sample.event = eventNow;
               sample.charge = statcharge[i];
               sample.selection = valid;
               twvf->Fill();
