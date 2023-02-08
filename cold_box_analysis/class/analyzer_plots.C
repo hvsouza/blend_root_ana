@@ -19,7 +19,8 @@ void ANALYZER::sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0,
 
   drawGraph(opt,n_points,&time[0],&ch[kch].wvf[0]);
 }
-void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0){
+
+void ANALYZER::showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0){
 
   if (maxevent==0) {
     maxevent = nentries;
@@ -37,7 +38,8 @@ void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0){
     if(dt!=0) this_thread::sleep_for(chrono::milliseconds(dt));
   }
 }
-void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
+
+void ANALYZER::persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
 
   Int_t nbinsx = (xmax-xmin)/dtime;
   if(!hpers) hpers = new TH2D("hpers","hpers",nbinsx,xmin,xmax,nbins,ymin,ymax);
@@ -71,7 +73,7 @@ void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 5
 }
 
 
-void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
+void ANALYZER::drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
   if (opt == "") opt = plot_opt;
   if (x == nullptr) x = time;
   if (y == nullptr) y = ch[kch].wvf;
@@ -160,9 +162,9 @@ void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0, bo
     k++;
     if(naverage == 1) k = 0;
   }
-  void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Int_t shift, vector<Double_t> xrange, vector<Double_t> yrange){
 
+}
 
-  }
+void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Int_t shift, vector<Double_t> xrange, vector<Double_t> yrange){
 
 }

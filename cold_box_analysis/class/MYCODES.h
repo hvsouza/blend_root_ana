@@ -68,6 +68,7 @@ using namespace std;
 #include "readingCodes.C"
 #include "wiener_filter.C"
 #include "analyzer.C"
+#include "analyzer_plots.C"
 #include "SignalProcessing.C"
 #include "calibrationCodes.C"
 #include "alpha_analysis.C"
