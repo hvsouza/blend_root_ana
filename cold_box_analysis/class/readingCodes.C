@@ -139,7 +139,7 @@ class DENOISE{
 
 
     template<class T>
-    void movingAverage(T* v, T* res, Int_t myinte = 10){
+    void movingAverage(T* v, T* res, Int_t myinte = 10, Double_t start = 0, Double_t finish = memorydepth){
 
       Int_t n = memorydepth;
       Int_t midpoint = 0;
@@ -155,25 +155,22 @@ class DENOISE{
         width = myinte;
       }
 
-
       for(Int_t i = 0; i < n; i++){
 
         if(i<midpoint || i>(n-midpoint)){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
           res[i] = v[i];
         }
-        else{
+        else if (i > start && i < finish){
           for(Int_t j = (i-midpoint); j < (i+midpoint); j++) { //first one: from j = (5-5); j<(5+5)
             sum = sum+v[j];
             //                 cout << sum << endl;
           }
           res[i] = (sum/width);
         }
-
-
-        // }
-
+        else{
+          res[i] = 0;
+        }
         sum=0;
-
       }
 
     }
