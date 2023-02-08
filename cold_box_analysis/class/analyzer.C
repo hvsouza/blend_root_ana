@@ -123,6 +123,12 @@ class ANALYZER{
       return res/totalev;
     }
 
+    void scaleWvf(Double_t factor){
+      for (Int_t i = 0; i < memorydepth; i++) {
+        ch[kch].wvf[i] = ch[kch].wvf[i]*factor;
+      }
+    }
+
     Double_t getMaximum(Double_t from, Double_t to){
       Double_t max = -1e12;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
@@ -260,6 +266,32 @@ class ANALYZER{
       }
     }
 
+    Double_t computeSNR_simple(Double_t xmin, Double_t xmax, vector<Double_t> signal_range){
+      Double_t snr = 0;
+      Double_t avg = 0;
+      Double_t sum = 0;
+      Double_t navg = 0;
+      Double_t stddev = 0;
+
+      for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
+        if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
+          sum += ch[kch].wvf[i];
+          navg += 1;
+        }
+      }
+      avg = sum/navg;
+      for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
+        if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
+          Double_t diff = (ch[kch].wvf[i] - avg);
+          stddev += diff*diff;
+        }
+      }
+      stddev = sqrt(stddev/(navg-1));
+      Double_t max = getMaximum(signal_range[0], signal_range[1]);
+      snr = max/stddev;
+      return snr;
+    }
+
     void getWaveFromHistogram(TH1D *htemp){
       if (htemp->GetNbinsX() != memorydepth){
         cout << "Not same amount of samples! Graph has " << htemp->GetNbinsX() << endl;
@@ -306,8 +338,27 @@ class ANALYZER{
 
     }
 
+    void differenciate(Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
+      Double_t *_temp = new Double_t[memorydepth];
+      if (_raw == _shifted){
+        _raw = ch[kch].wvf;
+        _shifted = ch[kch].wvf;
+          _raw = _temp;
+          _shifted = ch[kch].wvf;
+          for (Int_t i = 0; i < memorydepth; i++) {
+            _raw[i] = _shifted[i];
+          }
+      }
+      _shifted[0] = 0;
+      _shifted[memorydepth-1] = 0;
+      for(int i=1; i<memorydepth-1; i++){
+        _shifted[i] = (_raw[i+1] - _raw[i-1])/(2*dtime);
+        // _shifted[i]=_raw[i] - (i-delay_time>=0 ? _raw[i-delay_time] : 0);
+      }
+    }
 
-    void applyMovingAverage(Int_t mafilter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+    void applyMovingAverage(Int_t mafilter = 0, Double_t start = 0, Double_t finish = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+      if (finish == 0) finish = memorydepth*dtime;
       Double_t *_temp = new Double_t[memorydepth];
       if(mafilter!=0) {
         if (_raw == _filtered) {
@@ -317,7 +368,7 @@ class ANALYZER{
             _raw[i] = _filtered[i];
           }
         }
-        dn.movingAverage(_raw,_filtered,mafilter);
+        dn.movingAverage(_raw,_filtered,mafilter,start/dtime,finish/dtime);
       }
     }
 
@@ -507,11 +558,12 @@ class ANALYZER{
 
     void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
     void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
-    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Int_t shift, vector<Double_t> xrange, vector<Double_t> yrange);
+    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs);
     void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
     void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1);
-    void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
+    TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
+    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range);
     ANALYZER(string m_myname = "z") : myname{m_myname}{
     }
 
