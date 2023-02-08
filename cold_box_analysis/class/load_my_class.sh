@@ -27,5 +27,6 @@ fi
 if [ $file == 'no' ]; then
     eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"'
 else
-    eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h" -e "SAMPLE s(\"s\",\"$file\")"'
+    eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h" -e "ANALYZER s(\"s\")" -e "s.setAnalyzer(\"$file\")"'
+    # eval 'root -e "#define memorydepth $npts" -e ".L /home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h" -e "SAMPLE s(\"s\",\"$file\")"'
 fi

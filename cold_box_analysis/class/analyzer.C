@@ -91,6 +91,9 @@ class ANALYZER{
     Int_t getIdx(){
       return channels[kch];
     }
+    void print(){
+      t1->Print();
+    }
 
     void setAnalyzerExt(TFile *&ft, TTree *&tr, vector<TBranch *> &bt){
       f = ft;
@@ -398,25 +401,6 @@ class ANALYZER{
       delete htemp;
     }
 
-    void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
-      if (opt == "") opt = plot_opt;
-      if (x == nullptr) x = time;
-      if (y == nullptr) y = ch[kch].wvf;
-      gwvf = new TGraph(n,x,y);
-      gwvf->Draw(opt.c_str());
-      gwvf->GetXaxis()->SetTitle(xlabel.c_str());
-      gwvf->GetYaxis()->SetTitle(ylabel.c_str());
-
-      if(ymax!=0 && ymin!=0){
-        gwvf->GetYaxis()->SetRangeUser(ymin,ymax);
-      }
-      gwvf->GetXaxis()->SetRangeUser(xmin,xmax);
-      gwvf->SetEditable(kFALSE);
-    }
-
-    ANALYZER(string m_myname = "z") : myname{m_myname}{
-
-    }
 
     bool checkHigher(Double_t a, Double_t b){
       if (a > b){return true;}
@@ -503,44 +487,10 @@ class ANALYZER{
         }
 
       }
-
       haverage[kch]->Scale(1./total);
       haverage[kch]->SetEntries(total);
     }
 
-    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
-
-      Int_t nbinsx = (xmax-xmin)/dtime;
-      if(!hpers) hpers = new TH2D("hpers","hpers",nbinsx,xmin,xmax,nbins,ymin,ymax);
-      else{
-        hpers->Reset();
-        hpers->SetBins(nbinsx, xmin, xmax, nbins, ymin, ymax);
-      }
-      if(!cpers) cpers = new TCanvas(Form("cpers_%s", myname.c_str()), Form("cpers_%s", myname.c_str()),1920,0,1920,1080);
-      else{cpers->cd();}
-
-
-
-      getSelection(cut);
-      Int_t nev = lev->GetN();
-      Int_t iev = 0;
-      for(Int_t i = 0; i < nev; i++){
-        iev = lev->GetEntry(i);
-        getWaveform(iev,kch);
-        applyDenoise(filter);
-
-        for (int j = 0; j < n_points; j++) {
-          hpers->Fill(j*dtime,ch[kch].wvf[j]*factor);
-        }
-
-      }
-
-
-      hpers->Draw("colz");
-      hpers->GetXaxis()->SetTitle("Time (ns)");
-      hpers->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
-
-    }
 
     void setChannel(string mych = "Ch1"){
       for(Int_t i = 0; i < nchannels; i++){
@@ -557,83 +507,15 @@ class ANALYZER{
 
     void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
     void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
-
+    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Int_t shift, vector<Double_t> xrange, vector<Double_t> yrange);
+    void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
+    void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);
+    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1);
+    void drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
+    ANALYZER(string m_myname = "z") : myname{m_myname}{
+    }
 
 };
 
 
 
-void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = false, Double_t filter = 0){
-  if (maxevent==0) {
-    maxevent = nentries;
-  }
-  getSelection(selection);
-  Int_t nev = lev->GetN();
-  if (maxevent < nev) {
-    nev = maxevent;
-  }
-  Int_t iev = 0;
-  hfft[kch] = (TH1D*)w->hfft->Clone(Form("hfft_%s_ch%d",myname.c_str(),kch));
-  hfft[kch]->Reset();
-  Int_t total = 0;
-  for(Int_t i = 0; i < nev; i++){
-    iev = lev->GetEntry(i);
-    getWaveform(iev,kch);
-    applyDenoise(filter);
-    getFFT();
-    for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
-    total++;
-  }
-  hfft[kch]->Scale(1./total);
-  hfft[kch]->SetEntries(total);
-
-  if (inDecibel){
-    w->convertDecibel(hfft[kch]);
-    hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
-  }
-}
-void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0, bool inDecibel = false){
-
-  if (maxevent==0) {
-    maxevent = nentries;
-  }
-  TH1D *h = (TH1D*)w->hfft->Clone("h");
-  vector<TH1D *> hfft(naverage);
-  Int_t k = 0;
-  TCanvas *c1 = new TCanvas("c1");
-  for(Int_t i = 0; i < maxevent; i++){
-    getWaveform(i,kch);
-    getFFT();
-    if (inDecibel) w->convertDecibel();
-    if (i < naverage) {
-      hfft[k] = (TH1D*)w->hfft->Clone(Form("h%d",k));
-      for (Int_t j = 0; j < memorydepth/2; j++) h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
-      if (naverage == 1) h->Draw();
-    }
-    else{
-      if (k < naverage) {
-        for (Int_t j = 0; j < memorydepth/2; j++) {
-          h->AddBinContent(j+1,-hfft[k]->GetBinContent(j+1));
-          hfft[k]->SetBinContent(j+1,w->hfft->GetBinContent(j+1));
-          h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
-        }
-        printf("\rEvent %d", i);
-        fflush(stdout);
-        c1->Modified();
-        c1->Update();
-        if (gSystem->ProcessEvents())
-          break;
-        if(dt!=0) this_thread::sleep_for(chrono::milliseconds(dt));
-      }
-      else{
-        if (i == naverage){
-          h->Draw();
-        }
-        k = 0;
-      }
-    }
-
-    k++;
-    if(naverage == 1) k = 0;
-  }
-}
