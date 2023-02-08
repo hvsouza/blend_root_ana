@@ -878,6 +878,282 @@ class Calibration
 
 
 
+class SPHE2{
+
+  public:
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //                      Variables to be changed by user                      //
+    ///////////////////////////////////////////////////////////////////////////////
+
+    Bool_t led_calibration = true;
+
+    Bool_t just_a_test = false;
+    Int_t just_this = 200;
+    Int_t channel = 1;
+    string rootfile = "analyzed.root";
+
+
+    Double_t tolerance = 5; // n sigmas (smoothed) (not used for led)
+                            // if `method` is set to `fix`, the threshold will be the absolute value of tolerance, no baseline is calculated
+    Double_t baselineTime = 5000; // is the time to compute the baseline (not used for led)
+                                  // If the `method` is set to `dynamic` the baseline is calculated over the range of baselineTime
+                                  // and it is updated depending on the next point with a weigth of `influece`
+                                  // If `method` is set to `static`, baseline is calculated once using baseLimit as cut
+    Double_t baseLimit = 3; // higher then this wont contribute to the baseline abs(baseLimit) (not used for led)
+
+    Double_t start = 0; // start the search for peaks or start the integration (led)
+    Double_t finish = 10250; // fisish the search or finish the integration (led)
+
+    Double_t timeLow = 60; // integration time before peak (not used for led)
+    Double_t timeHigh = 400; // integration time after peak (not used for led)
+    Double_t lowerThreshold = -1; // threshold to detect noise (normal waveform) (not used for led)
+    Double_t maxHits = 1; // maximum hit before discarding   (not used for led)
+    Double_t too_big = 1000; // if there is a peak > "too_big" .. wait "waiting" ns
+    Double_t waiting = 1000;
+    Double_t filter = 14; // one dimentional denoise filter (0 equal no filder)
+    Double_t pre_filter = 0; // to apply moving average before shifting (not used on led)
+    Double_t interactions = 45; // for moving avarage filter (not used on led)
+    Double_t shifter = 20; // shift of moving average to compute derivative
+
+    Double_t dtime = 4.; // time step in ns
+
+
+    Double_t get_wave_form = false; // for getting spe waveforms
+    Double_t mean_before = 120; // time recorded before and after the peak found
+    Double_t mean_after = 1000;
+    Double_t sphe_charge = 1809.52;  // charge of 1 and 2 p.e.
+    Double_t sphe_charge2 = 3425.95;
+    Double_t sphe_std = 500;
+
+    // coeficients to surround gaussian of 1 spe.
+    // Gain = (sphe_charge2 - sphe_charge)
+    // spe's get events where charge < Gain*deltaplus  and charge < Gain/deltaminus
+    // If deltaminus is set to zero, sphe_std*deltaplus will be used instead
+    Double_t deltaplus = 1.3;
+    Double_t deltaminus = 1.5;
+
+
+    // Not so common to change
+    Double_t social_distance = 2; // demands that there is a minimum distance of social_distance * timeHigh between 2 consecutive peaks found
+    string method = "dynamic"; // `dynamic` or `static` evaluation of the baseline
+                               // `fix` will not evaluate baseline and use raw threshold
+                               // See tolerance, baselineTime and baselineLimit above
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //                         Finish variables for user                         //
+    ///////////////////////////////////////////////////////////////////////////////
+
+
+    ANALYZER *z = nullptr;
+    TFile *fout = nullptr;
+    TFile *fwvf = nullptr;
+    TTree *twvf = nullptr;
+
+    string myname;
+
+
+    // ____________________ Variables to calculate and reset ____________________ //
+
+    TH1D *hbase        = nullptr;
+    TH1D *hbase_smooth = nullptr;
+    TH1D *hcharge      = nullptr;
+
+    Double_t mean = 0;
+    Double_t stddev = 0;
+
+    vector<Double_t> peakPosition;
+    vector<Double_t> peakMax;
+
+    vector<Double_t> smooted_wvf; // not needed to reset this
+    vector<Double_t> denoise_wvf;
+    // ____________________ ________________________________ ____________________ //
+
+    SPHE2(string m_name) : myname{m_name}{
+      hbase        = new TH1D(Form("hbase_sphe_%s",myname.c_str()),"histogram for baseline",5*800,-400,400);
+      hbase_smooth = new TH1D(Form("hbase_smooth_sphe_%s",myname.c_str()),"histogram for baseline smoothed",5*800,-400,400);
+      hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),50000,0,0);
+
+      smooted_wvf.resize(memorydepth);
+      denoise_wvf.resize(memorydepth);
+
+    }
+
+
+    void searchForPeaks(){
+    }
+
+
+    void processData(){
+
+    }
+    /**
+     * This function searches and integrate peaks, used for sphe
+     * If `led_calibration` is set to true, integration is made between `start` and `finish`
+     * Load everything
+     * Create TTree/Histograms necessary
+     * Reset area, clean vectors, histograms, etc. for next waveform
+     * Process data: moving average, denoise filters, etc.
+     * Search for peaks
+     * Integrate peaks and store the waveform
+     * Plot graphs for debugging
+     * Save histogram
+     */
+    void giveMeSphe(){
+      gROOT->SetBatch(kTRUE);
+
+      if(!z){ // load analyzer in case it is nullptr
+        z = new ANALYZER(myname.c_str());
+        z->dtime = dtime;
+        z->setAnalyzer(rootfile);
+      }
+      if(!z->t1){ // otherwise, check if the ttree was loaded
+        z->dtime = dtime;
+        z->setAnalyzer(rootfile);
+      }
+
+      z->kch = channel;
+      fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",channel),"RECREATE");
+      fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+      twvf = new TTree("t1","mean waveforms");
+
+      // ____________________ Setting up what need to set ____________________ //
+
+      if(led_calibration==false){
+      }
+      else{
+      }
+
+      Bool_t getstaticbase = false;
+      if(method == "static") getstaticbase = true;
+      else if(method == "fix"){
+        pre_filter = 0;
+        interactions = 0;
+      }
+      // ____________________ ___________________________ ____________________ //
+
+
+
+
+      for(Int_t i = 0; i < z->nentries; i++){
+        theGreatReset();
+        z->getWaveform(i,channel); // get waveform by memory
+        z->applyDenoise(filter, z->ch[channel].wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
+
+
+        /**
+         * From https://terpconnect.umd.edu/~toh/spectrum/Differentiation.html
+         *It makes no difference whether the smooth operation is applied before or after the differentiation. What is important, however,
+         *is the nature of the smooth, its smooth ratio (ratio of the smooth width to the width of the original peak), and the number of
+         *times the signal is smoothed. The optimum values of smooth ratio for derivative signals is approximately 0.5 to 1.0. For a first
+         *derivative, two applications of a simple rectangular smooth (or one application of a triangular smooth) is adequate. For a second
+         *derivative, three applications of a simple rectangular smooth or two applications of a triangular smooth is adequate. The general rule is:
+         *for the nth derivative, use at least n+1 applications of a rectangular smooth. (The Matlab signal processing program iSignal automatically
+         *provides the desired type of smooth for each derivative order).
+         **/
+        vector<Double_t> ma_to_shift = movingAverage(z->ch[channel].wvf, pre_filter, false);
+        vector<Double_t> shifted=delay_line(ma_to_shift, shifter);//cusp(MIN[i], h);
+        smooted_wvf = movingAverage(&denoise_wvf[0], pre_filter, getstaticbase);
+        processData();
+        searchForPeaks();
+      }
+
+
+      if(get_wave_form==false){
+        fwvf->Close();
+        system(Form("rm sphe_waveforms_Ch%i.root",channel));
+      }
+      else{
+        fwvf->WriteObject(twvf,"t1","TObject::kOverwrite");
+      }
+
+
+    }
+
+    void theGreatReset(){
+        hbase->Reset();
+        hbase_smooth->Reset();
+      
+        denoise_wvf.clear();
+        smooted_wvf.clear();
+        peakPosition.clear();
+        peakMax.clear();
+        // selected_peaks.clear();
+        // selected_time.clear();
+        // matched.clear();
+    }
+
+    vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
+      if(delay_time==0) return v;
+      vector<Double_t> res(v.size());
+      for(int i=0; i<v.size(); i++){
+        res[i]=v[i] - (i-delay_time>=0 ? v[i-delay_time] : 0);
+      }
+      return res;
+    }
+
+    template<class T>
+    vector<Double_t> movingAverage(T* v, Int_t myinte, Bool_t eval_baseline){
+      Int_t midpoint = 0;
+      Int_t interactions = 0;
+      Double_t width = 0;
+      Double_t sum = 0;
+      Int_t n = memorydepth;
+
+      vector<Double_t> res(n,0);
+      if(myinte==0) { // nothing to do
+        for (Int_t i = 0; i < n; i++) {
+          res[i] = v[i];
+        }
+        return res;
+      }
+
+      if(interactions%2==0){ // if it is even, we insert the middle point, e.g. 8 interactions takes 4 before, mid, 4 later
+        midpoint = interactions/2+1;    //midpoint will be 5 here
+        width = interactions+1;
+      }
+      else{
+        midpoint = (interactions-1)/2 + 1; // e.g. 9 interactions the midpoint will be 5
+        width = interactions;
+      }
+
+      for(Int_t i = 0; i < n; i++){
+        if(i<midpoint || i>(n-midpoint) || interactions == 0){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
+          res[i] = v[i];
+        }
+        else if(i*dtime > start && i*dtime < finish){
+          for(Int_t j = (i-midpoint); j < (i+midpoint); j++) { //first one: from j = (5-5); j<(5+5)
+            sum = sum+v[j];
+          }
+         res[i] = (sum/width);
+
+         if(eval_baseline){ // in case we are computing the baseline
+           if(i*dtime<=baselineTime && abs(res[i])<baseLimit){
+             hbase_smooth->Fill(res[i]);
+           }
+         }
+        }
+        else{
+          res[i] = 0;
+        }
+        sum=0;
+      }
+      if(eval_baseline){ // in case we are computing the baseline
+        mean = hbase_smooth->GetMean();
+        stddev = hbase_smooth->GetStdDev();
+      }
+      return res;
+    }
+
+
+
+
+};
+
+
+
 
 
 
