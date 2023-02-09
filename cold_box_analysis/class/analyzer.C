@@ -338,45 +338,43 @@ class ANALYZER{
 
     }
 
-    void differenciate(Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
+    void checkSignals(Double_t **_raw, Double_t **_filtered){
       Double_t *_temp = new Double_t[memorydepth];
-      if (_raw == _shifted){
-        _raw = ch[kch].wvf;
-        _shifted = ch[kch].wvf;
-          _raw = _temp;
-          _shifted = ch[kch].wvf;
+      if (*_raw == nullptr  && *_filtered == nullptr){
+        *_filtered = ch[kch].wvf;
+        *_raw = _temp;
           for (Int_t i = 0; i < memorydepth; i++) {
-            _raw[i] = _shifted[i];
+            (*_raw)[i] = ch[kch].wvf[i];
           }
       }
+      else if(*_raw == *_filtered){
+          for (Int_t i = 0; i < memorydepth; i++) {
+            _temp[i] = *_raw[i];
+          }
+          *_raw = _temp;
+      }
+    }
+    void differenciate(Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
+      checkSignals(&_raw,&_shifted);
       _shifted[0] = 0;
       _shifted[memorydepth-1] = 0;
       for(int i=1; i<memorydepth-1; i++){
         _shifted[i] = (_raw[i+1] - _raw[i-1])/(2*dtime);
         // _shifted[i]=_raw[i] - (i-delay_time>=0 ? _raw[i-delay_time] : 0);
       }
+      _shifted = ch[kch].wvf;
     }
 
     void applyMovingAverage(Int_t mafilter = 0, Double_t start = 0, Double_t finish = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       if (finish == 0) finish = memorydepth*dtime;
-      Double_t *_temp = new Double_t[memorydepth];
       if(mafilter!=0) {
-        if (_raw == _filtered) {
-          _raw = _temp;
-          _filtered = ch[kch].wvf;
-          for (Int_t i = 0; i < memorydepth; i++) {
-            _raw[i] = _filtered[i];
-          }
-        }
+        checkSignals(&_raw,&_filtered);
         dn.movingAverage(_raw,_filtered,mafilter,start/dtime,finish/dtime);
       }
     }
 
     void applyDenoise(Int_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
-      if (_raw == nullptr){
-        _raw = ch[kch].wvf;
-        _filtered = ch[kch].wvf;
-      }
+      checkSignals(&_raw,&_filtered);
       if (filter == 0) return;
       dn.TV1D_denoise(_raw,_filtered,n_points,filter);
     }
@@ -399,9 +397,7 @@ class ANALYZER{
     }
 
     void getBackFFT(Double_t *_filtered = nullptr){
-      if (_filtered == nullptr){
-        _filtered = ch[kch].wvf;
-      }
+      if (_filtered == nullptr){_filtered = ch[kch].wvf;}
       w->backfft(*w);
       for(Int_t i = 0; i < memorydepth; i++){
         _filtered[i] = w->hwvf->GetBinContent(i+1);
