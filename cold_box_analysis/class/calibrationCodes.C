@@ -887,9 +887,10 @@ class SPHE2{
     //                      Variables to be changed by user                      //
     ///////////////////////////////////////////////////////////////////////////////
 
-    Bool_t led_calibration = true;
+    Bool_t led_calibration = true; // if external trigger + led was used, set true
+                                   // start and finish will be the time of integration
 
-    Bool_t just_a_test = false;
+    Bool_t just_a_test = false; // well.. it is just a test, so `just_this` is the total waveforms analysed
     Int_t  just_this   = 200;
     Int_t  channel     = 1;
     string rootfile    = "analyzed.root";
@@ -922,7 +923,7 @@ class SPHE2{
     Double_t get_wave_form = false; // for getting spe waveforms
     Double_t mean_before   = 120; // time recorded before and after the peak found
     Double_t mean_after    = 1000;
-    Double_t sphe_charge   = 1809.52; // charge of 1 and 2 p.e.
+    Double_t sphe_charge   = 1809.52; // charge of 1 and 2 p.e. (use fit_sphe.C)
     Double_t sphe_charge2  = 3425.95;
     Double_t sphe_std      = 500;
 
@@ -930,6 +931,7 @@ class SPHE2{
     // Gain             = (sphe_charge2 - sphe_charge)
     // spe's get events where charge < Gain*deltaplus  and charge < Gain/deltaminus
     // If deltaminus is set to zero, sphe_std*deltaplus will be used instead
+    // This value can be checked with fit_sphe.C
     Double_t deltaplus  = 1.3;
     Double_t deltaminus = 1.5;
 
@@ -939,6 +941,7 @@ class SPHE2{
     string   method          = "static"; // `dynamic` or `derivative` evaluation of the baseline
                                // `fix` will not evaluate baseline and use raw threshold
                                // See tolerance, baselineTime and baselineLimit above
+    bool check_selection = true;
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -954,6 +957,8 @@ class SPHE2{
     string myname;
     Bool_t derivate = false;
     Int_t kch;
+    Int_t nshow = 100;
+    Int_t nshow_start = 0;
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -967,7 +972,7 @@ class SPHE2{
 
     vector<Double_t> peakPosition;
     vector<Double_t> peakMax;
-    vector<vector<Int_t>> peaksCross;
+    vector<Int_t> peaksCross;
 
     vector<Double_t> smooted_wvf; // not needed to reset this
     vector<Double_t> denoise_wvf;
@@ -987,10 +992,6 @@ class SPHE2{
     void searchForPeaks(){
     }
 
-
-    void processData(){
-
-    }
     /**
      * This function searches and integrate peaks, used for sphe
      * If `led_calibration` is set to true, integration is made between `start` and `finish`
@@ -1043,34 +1044,23 @@ class SPHE2{
 
 
 
-
-      for(Int_t i = 0; i < z->nentries; i++){
+      Int_t nentries = z->nentries;
+      if(just_a_test){nentries = just_this;}
+      for(Int_t i = 0; i<nentries; i++){
         theGreatReset();
         z->getWaveform(i,kch); // get waveform by memory
-        z->applyDenoise(filter, z->ch[kch].wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
+        if(check_selection && z->ch[kch].selection != 0) continue;
 
-
-        /**
-         * From https://terpconnect.umd.edu/~toh/spectrum/Differentiation.html
-         *It makes no difference whether the smooth operation is applied before or after the differentiation. What is important, however,
-         *is the nature of the smooth, its smooth ratio (ratio of the smooth width to the width of the original peak), and the number of
-         *times the signal is smoothed. The optimum values of smooth ratio for derivative signals is approximately 0.5 to 1.0. For a first
-         *derivative, two applications of a simple rectangular smooth (or one application of a triangular smooth) is adequate. For a second
-         *derivative, three applications of a simple rectangular smooth or two applications of a triangular smooth is adequate. The general rule is:
-         *for the nth derivative, use at least n+1 applications of a rectangular smooth. (The Matlab signal processing program iSignal automatically
-         *provides the desired type of smooth for each derivative order).
-         *Use z->minimizeParamSPE to check the best option
-         **/
-        if(derivate){
-          z->differenciate(1e3,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
-        }
-        for(Int_t i = 0; i < interactions; i++){
-          if (i == interactions-1 && method == "static") getstaticbase = true;
-          smooted_wvf = movingAverage(&smooted_wvf[0], interactions, getstaticbase);
-        }
         processData();
-        if(method == "static") searchForPeaks();
-        else if(derivate) z->zeroCrossSearch(&smooted_wvf[0], peaksCross, start, finish);
+
+        if(method == "static"){
+          searchForPeaks();
+        }
+        else if(derivate){
+          z->zeroCrossSearch(&smooted_wvf[0], peaksCross, start, finish);
+          cleanPeaks();
+        }
+        integrate();
       }
 
 
@@ -1084,7 +1074,6 @@ class SPHE2{
 
 
     }
-
     void theGreatReset(){
         hbase->Reset();
         hbase_smooth->Reset();
@@ -1093,10 +1082,50 @@ class SPHE2{
         smooted_wvf.clear();
         peakPosition.clear();
         peakMax.clear();
-        // selected_peaks.clear();
-        // selected_time.clear();
-        // matched.clear();
+        peaksCross.clear();
     }
+
+    void processData(){
+      z->applyDenoise(filter, z->ch[kch].wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
+
+      /**
+       * From https://terpconnect.umd.edu/~toh/spectrum/Differentiation.html
+       *It makes no difference whether the smooth operation is applied before or after the differentiation. What is important, however,
+       *is the nature of the smooth, its smooth ratio (ratio of the smooth width to the width of the original peak), and the number of
+       *times the signal is smoothed. The optimum values of smooth ratio for derivative signals is approximately 0.5 to 1.0. For a first
+       *derivative, two applications of a simple rectangular smooth (or one application of a triangular smooth) is adequate. For a second
+       *derivative, three applications of a simple rectangular smooth or two applications of a triangular smooth is adequate. The general rule is:
+       *for the nth derivative, use at least n+1 applications of a rectangular smooth. (The Matlab signal processing program iSignal automatically
+       *provides the desired type of smooth for each derivative order).
+       *Use z->minimizeParamSPE to check the best option
+       **/
+      if(derivate){
+        z->differenciate(1e3,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
+      }
+      for(Int_t i = 0; i < interactions; i++){
+        if (i == interactions-1 && method == "static") getstaticbase = true;
+        smooted_wvf = movingAverage(&smooted_wvf[0], interactions, getstaticbase);
+      }
+
+    }
+
+    void cleanPeaks(){
+      Int_t ntotal = peaksCross.size();
+      if (ntotal % 2 != 0) ntotal+=-1; // I only want pairs :)
+      for(Int_t i = 0; i < ntotal-1; i++){
+        Double_t min_to_search = peaksCross[i];
+        Double_t max_to_search = peaksCross[i+1];
+        if(min_to_search*dtime > social_distance*timeHigh){
+          min_to_search = social_distance*timeHigh/dtime;
+        }
+        z->getMaximum(min_to_search*dtime, max_to_search*dtime);
+        if(z->temp_max >= tolerance) {
+          peakPosition.push_back(peaksCross[i+1][1]);
+        }
+        i+=1;
+      }
+    }
+
 
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
       if(delay_time==0) return v;
