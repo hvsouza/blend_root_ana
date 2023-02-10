@@ -51,6 +51,9 @@ class ANALYZER{
 
     TCanvas *cpers = nullptr;
 
+
+    // _________________________ Methods related to the class maintenance _________________________ //
+
     // This allows to create a file, a tree and a branch outside the class
     // The reference type will allow us to change the pointer address
     void setAnalyzer(string m_filename = "analyzed.root"){
@@ -94,6 +97,18 @@ class ANALYZER{
     void print(){
       t1->Print();
     }
+    void setChannel(string mych = "Ch1"){
+      for(Int_t i = 0; i < nchannels; i++){
+        if(mych == schannel[i])
+        {
+          kch = i;
+          return;
+        }
+      }
+
+      printf("%s not found, run s.print() to check the branches\n",mych.c_str());
+    }
+
 
     void setAnalyzerExt(TFile *&ft, TTree *&tr, vector<TBranch *> &bt){
       f = ft;
@@ -104,6 +119,11 @@ class ANALYZER{
       for (Int_t i = 0; i < nchannels; i++) bt[i] = b[i];
     }
 
+    // _________________________ ________________________________________ _________________________ //
+
+
+    // _________________________ Methods that get me something _________________________ //
+    
     void getFFT(Double_t *_v = nullptr){
       if(_v == nullptr) _v = ch[kch].wvf;
       for(Int_t i = 0; i < memorydepth; i++){
@@ -123,12 +143,6 @@ class ANALYZER{
       return res/totalev;
     }
 
-    void scaleWvf(Double_t factor){
-      for (Int_t i = 0; i < memorydepth; i++) {
-        ch[kch].wvf[i] = ch[kch].wvf[i]*factor;
-      }
-    }
-
     Double_t getMaximum(Double_t from, Double_t to){
       Double_t max = -1e12;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
@@ -137,61 +151,6 @@ class ANALYZER{
         }
       }
       return max;
-    }
-
-    void set_up_lines(TLine *l, Color_t color){
-      l->SetLineColorAlpha(color,0.6);
-      l->SetLineStyle(9);
-      l->Draw("SAME");
-
-    }
-
-    void draw_rise_lines(Double_t start, Double_t finish, Double_t baseline_level, Double_t peak_level){
-      TLine *lbase = new TLine(0, baseline_level, dtime*memorydepth, baseline_level);
-      TLine *lpeak = new TLine(0, peak_level, dtime*memorydepth, peak_level);
-      TLine *l90 = new TLine(0, 0.9*(peak_level-baseline_level)+baseline_level, dtime*memorydepth, 0.9*(peak_level-baseline_level)+baseline_level);
-      TLine *l10 = new TLine(0, 0.1*(peak_level-baseline_level)+baseline_level, dtime*memorydepth, 0.1*(peak_level-baseline_level)+baseline_level);
-
-      TLine *lstart = new TLine(start, baseline_level, start, peak_level);
-      TLine *lfinish = new TLine(finish, baseline_level, finish, peak_level);
-
-      set_up_lines(lbase,kGreen+2);
-      set_up_lines(lpeak,kGreen+2);
-      set_up_lines(l90, kRed);
-      set_up_lines(l10, kRed);
-      set_up_lines(lstart, kRed);
-      set_up_lines(lfinish, kRed);
-
-    }
-    Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, bool debug = false){
-      kch = channel;
-      Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
-
-      Double_t peak_level = 0;
-      if (ispulse){
-        peak_level = getMaximum(peak_range[0],peak_range[1]);
-      }
-      else{
-        peak_level = getMean(peak_range[0],peak_range[1]);
-      }
-      Int_t startpoint = baseline_range[1]/dtime;
-      Int_t endpoint = peak_range[1]/dtime;
-      Bool_t triggered = false;
-      Double_t time_mark = 0;
-
-      for(Int_t i = startpoint; i < endpoint; i++){
-        if (ch[kch].wvf[i] >= 0.1*(peak_level-baseline_level)+baseline_level && triggered==false) {
-          triggered = true;
-          time_mark = i*dtime;
-        }
-        else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)+baseline_level){
-          if(debug) draw_rise_lines(time_mark, i*dtime, baseline_level, peak_level);
-          time_mark = i*dtime - time_mark;
-          return time_mark;
-        }
-      }
-      if(debug) draw_rise_lines(time_mark, 0, baseline_level, peak_level);
-      return 0;
     }
 
     void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr, string selection = ""){
@@ -207,7 +166,6 @@ class ANALYZER{
         htemp->Fill(val);
       }
     }
-
 
     Double_t linear_interpole_tot(Int_t i, Double_t th){
       if (i - 1 < 0) {
@@ -266,32 +224,6 @@ class ANALYZER{
       }
     }
 
-    Double_t computeSNR_simple(Double_t xmin, Double_t xmax, vector<Double_t> signal_range){
-      Double_t snr = 0;
-      Double_t avg = 0;
-      Double_t sum = 0;
-      Double_t navg = 0;
-      Double_t stddev = 0;
-
-      for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
-        if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
-          sum += ch[kch].wvf[i];
-          navg += 1;
-        }
-      }
-      avg = sum/navg;
-      for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
-        if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
-          Double_t diff = (ch[kch].wvf[i] - avg);
-          stddev += diff*diff;
-        }
-      }
-      stddev = sqrt(stddev/(navg-1));
-      Double_t max = getMaximum(signal_range[0], signal_range[1]);
-      snr = max/stddev;
-      return snr;
-    }
-
     void getWaveFromHistogram(TH1D *htemp){
       if (htemp->GetNbinsX() != memorydepth){
         cout << "Not same amount of samples! Graph has " << htemp->GetNbinsX() << endl;
@@ -338,6 +270,103 @@ class ANALYZER{
 
     }
 
+    void draw_rise_lines(Double_t start, Double_t finish, Double_t baseline_level, Double_t peak_level){
+      TLine *lbase = new TLine(0, baseline_level, dtime*memorydepth, baseline_level);
+      TLine *lpeak = new TLine(0, peak_level, dtime*memorydepth, peak_level);
+      TLine *l90 = new TLine(0, 0.9*(peak_level-baseline_level)+baseline_level, dtime*memorydepth, 0.9*(peak_level-baseline_level)+baseline_level);
+      TLine *l10 = new TLine(0, 0.1*(peak_level-baseline_level)+baseline_level, dtime*memorydepth, 0.1*(peak_level-baseline_level)+baseline_level);
+
+      TLine *lstart = new TLine(start, baseline_level, start, peak_level);
+      TLine *lfinish = new TLine(finish, baseline_level, finish, peak_level);
+
+      set_up_lines(lbase,kGreen+2);
+      set_up_lines(lpeak,kGreen+2);
+      set_up_lines(l90, kRed);
+      set_up_lines(l10, kRed);
+      set_up_lines(lstart, kRed);
+      set_up_lines(lfinish, kRed);
+
+    }
+    Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, bool debug = false){
+      kch = channel;
+      Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
+
+      Double_t peak_level = 0;
+      if (ispulse){
+        peak_level = getMaximum(peak_range[0],peak_range[1]);
+      }
+      else{
+        peak_level = getMean(peak_range[0],peak_range[1]);
+      }
+      Int_t startpoint = baseline_range[1]/dtime;
+      Int_t endpoint = peak_range[1]/dtime;
+      Bool_t triggered = false;
+      Double_t time_mark = 0;
+
+      for(Int_t i = startpoint; i < endpoint; i++){
+        if (ch[kch].wvf[i] >= 0.1*(peak_level-baseline_level)+baseline_level && triggered==false) {
+          triggered = true;
+          time_mark = i*dtime;
+        }
+        else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)+baseline_level){
+          if(debug) draw_rise_lines(time_mark, i*dtime, baseline_level, peak_level);
+          time_mark = i*dtime - time_mark;
+          return time_mark;
+        }
+      }
+      if(debug) draw_rise_lines(time_mark, 0, baseline_level, peak_level);
+      return 0;
+    }
+
+    void getBackFFT(Double_t *_filtered = nullptr){
+      if (_filtered == nullptr){_filtered = ch[kch].wvf;}
+      w->backfft(*w);
+      for(Int_t i = 0; i < memorydepth; i++){
+        _filtered[i] = w->hwvf->GetBinContent(i+1);
+      }
+
+    }
+
+    void averageWaveform(Int_t maxevent = 0, string selection = "", Double_t filter =  0){
+      if (maxevent==0) {
+        maxevent = nentries;
+      }
+      haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",memorydepth,0,memorydepth*dtime);
+      haverage[kch]->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
+      haverage[kch]->GetXaxis()->SetTitle("Time (ns)");
+      Int_t total = 0;
+      getSelection(selection);
+      Int_t nev = lev->GetN();
+      if (maxevent < nev) {
+        nev = maxevent;
+      }
+      Int_t iev = 0;
+      for(Int_t i = 0; i < nev; i++){
+        iev = lev->GetEntry(i);
+        getWaveform(iev,kch);
+        applyDenoise(filter);
+        total += 1;
+        for (Int_t j = 0; j < memorydepth; j++){
+          haverage[kch]->AddBinContent(j+1,ch[kch].wvf[j]);
+        }
+
+      }
+      haverage[kch]->Scale(1./total);
+      haverage[kch]->SetEntries(total);
+    }
+
+
+    // _________________________ _____________________________ _________________________ //
+
+    void scaleWvf(Double_t factor, Double_t *_filtered = nullptr){
+      if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      for (Int_t i = 0; i < memorydepth; i++) {
+        _filtered[i] = _filtered[i]*factor;
+      }
+    }
+
+
+    // _________________________ Filters and processing _________________________ //
     void checkSignals(Double_t **_raw, Double_t **_filtered){
       Double_t *_temp = new Double_t[memorydepth];
       if (*_raw == nullptr  && *_filtered == nullptr){
@@ -349,12 +378,12 @@ class ANALYZER{
       }
       else if(*_raw == *_filtered){
           for (Int_t i = 0; i < memorydepth; i++) {
-            _temp[i] = *_raw[i];
+            _temp[i] = (*_raw)[i];
           }
           *_raw = _temp;
       }
     }
-    void differenciate(Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
+    void differenciate(Double_t factor = 1, Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
       checkSignals(&_raw,&_shifted);
       _shifted[0] = 0;
       _shifted[memorydepth-1] = 0;
@@ -396,14 +425,6 @@ class ANALYZER{
       // w->hwvf->Draw("");
     }
 
-    void getBackFFT(Double_t *_filtered = nullptr){
-      if (_filtered == nullptr){_filtered = ch[kch].wvf;}
-      w->backfft(*w);
-      for(Int_t i = 0; i < memorydepth; i++){
-        _filtered[i] = w->hwvf->GetBinContent(i+1);
-      }
-
-    }
 
     void applyBandCut(WIENER *_temp = nullptr, Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch].wvf;
@@ -448,7 +469,9 @@ class ANALYZER{
       delete htemp;
     }
 
+    // _________________________ ______________________ _________________________ //
 
+    // _________________________ Methods for selection _________________________ //
     bool checkHigher(Double_t a, Double_t b){
       if (a > b){return true;}
       else{return false;}
@@ -509,47 +532,43 @@ class ANALYZER{
         }
       }
     }
+    // _________________________ _____________________ _________________________ //
 
-    void averageWaveform(Int_t maxevent = 0, string selection = "", Double_t filter =  0){
-      if (maxevent==0) {
-        maxevent = nentries;
-      }
-      haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",memorydepth,0,memorydepth*dtime);
-      haverage[kch]->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
-      haverage[kch]->GetXaxis()->SetTitle("Time (ns)");
-      Int_t total = 0;
-      getSelection(selection);
-      Int_t nev = lev->GetN();
-      if (maxevent < nev) {
-        nev = maxevent;
-      }
-      Int_t iev = 0;
-      for(Int_t i = 0; i < nev; i++){
-        iev = lev->GetEntry(i);
-        getWaveform(iev,kch);
-        applyDenoise(filter);
-        total += 1;
-        for (Int_t j = 0; j < memorydepth; j++){
-          haverage[kch]->AddBinContent(j+1,ch[kch].wvf[j]);
-        }
+    void set_up_lines(TLine *l, Color_t color){
+      l->SetLineColorAlpha(color,0.6);
+      l->SetLineStyle(9);
+      l->Draw("SAME");
 
-      }
-      haverage[kch]->Scale(1./total);
-      haverage[kch]->SetEntries(total);
     }
 
 
-    void setChannel(string mych = "Ch1"){
-      for(Int_t i = 0; i < nchannels; i++){
-        if(mych == schannel[i])
-        {
-          kch = i;
-          return;
+    Double_t computeSNR_simple(Double_t xmin, Double_t xmax, vector<Double_t> signal_range){
+      Double_t snr = 0;
+      Double_t avg = 0;
+      Double_t sum = 0;
+      Double_t navg = 0;
+      Double_t stddev = 0;
+
+      for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
+        if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
+          sum += ch[kch].wvf[i];
+          navg += 1;
         }
       }
-
-      printf("%s not found, run s.print() to check the branches\n",mych.c_str());
+      avg = sum/navg;
+      for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
+        if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
+          Double_t diff = (ch[kch].wvf[i] - avg);
+          stddev += diff*diff;
+        }
+      }
+      stddev = sqrt(stddev/(navg-1));
+      Double_t max = getMaximum(signal_range[0], signal_range[1]);
+      snr = max/stddev;
+      return snr;
     }
+
+
 
 
     void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
