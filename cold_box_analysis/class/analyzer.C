@@ -355,20 +355,17 @@ class ANALYZER{
       haverage[kch]->SetEntries(total);
     }
 
-    void zeroCrossSearch(Double_t *derwvf, vector<vector<Int_t>> &peaksCross, Int_t start, Int_t finish){
+    void zeroCrossSearch(Double_t *derwvf, vector<Int_t> &peaksCross, Int_t start, Int_t finish){
       if(start == 0) start = 4;
       bool lastIsPositive = false; // I want to always start with a positive crossing
-      vector<Int_t> type_and_pos(2);
       for(Int_t i = start/4; i < finish/4-1; i++){
         if(lastIsPositive==false && derwvf[i] >= 0 && derwvf[i-1] <=0 && derwvf[i+1]>0){
-          type_and_pos = {1, i};
-          peaksCross.push_back(type_and_pos);
+          peaksCross.push_back(i);
           lastIsPositive = true;
           i = i+1;
         }
         else if(lastIsPositive && derwvf[i] <= 0 && derwvf[i-1] >=0 && derwvf[i+1] < 0){
-          type_and_pos = {-1, i};
-          peaksCross.push_back(type_and_pos);
+          peaksCross.push_back(i);
           lastIsPositive = false;
         }
       }
@@ -598,7 +595,7 @@ class ANALYZER{
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1);
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
     void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
-    void drawZeroCrossingLines(vector<vector<Int_t>> &peaksCross);
+    void drawZeroCrossingLines(vector<Int_t> &peaksCross);
     ANALYZER(string m_myname = "z") : myname{m_myname}{
     }
 

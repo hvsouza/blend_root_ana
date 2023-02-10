@@ -321,7 +321,7 @@ void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vect
 }
 
 
-void ANALYZER::drawZeroCrossingLines(vector<vector<Int_t>> &peaksCross){
+void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross){
   if(!gPad){
     cout << "We need a Canvas :)" << endl;
     return;
@@ -331,7 +331,7 @@ void ANALYZER::drawZeroCrossingLines(vector<vector<Int_t>> &peaksCross){
   Int_t nlines = peaksCross.size();
   vector<TLine *> lns(nlines);
   for(Int_t i = 0; i < nlines; i++){
-    Int_t lnx = peaksCross[i][1]*dtime;
+    Int_t lnx = peaksCross[i]*dtime;
     lns[i] = new TLine(lnx, ymin, lnx, ymax);
     lns[i]->Draw("SAME");
   }

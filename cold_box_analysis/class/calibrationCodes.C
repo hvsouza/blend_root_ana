@@ -2035,7 +2035,7 @@ class SPHE{
     // ____________________________________________________________________________________________________ //
     void drawMySamples(){
 
-      string sampleName = to_string(static_cast<Int_t>(my_events[aux_events]))+"_"+to_string(channel);
+      string sampleName = "ev_" + to_string(static_cast<Int_t>(my_events[aux_events]))+"_"+to_string(channel);
   
       // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
       // this is not working when saving
