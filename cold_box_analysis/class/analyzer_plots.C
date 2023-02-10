@@ -10,7 +10,7 @@
 /**
  *
  * This class holds the methods for ploting for analyzer */
-void ANALYZER::sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0){
+void ANALYZER::sample_plot(Int_t myevent, string opt, Int_t filter, Double_t factor, Int_t mafilter){
   if (opt == "") opt = plot_opt;
   bool state = getWaveformHard(myevent,factor);
   if (!state) return;
@@ -20,7 +20,7 @@ void ANALYZER::sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0,
   drawGraph(opt,n_points,&time[0],&ch[kch].wvf[0]);
 }
 
-void ANALYZER::showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0){
+void ANALYZER::showWaveform(Int_t maxevent, Int_t filter, Int_t dt){
 
   if (maxevent==0) {
     maxevent = nentries;
@@ -39,7 +39,7 @@ void ANALYZER::showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0){
   }
 }
 
-void ANALYZER::persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1){
+void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t filter, string cut, Double_t factor){
 
   Int_t nbinsx = (xmax-xmin)/dtime;
   if(!hpers) hpers = new TH2D("hpers","hpers",nbinsx,xmin,xmax,nbins,ymin,ymax);
@@ -73,7 +73,7 @@ void ANALYZER::persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_
 }
 
 
-TGraph ANALYZER::drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr){
+TGraph ANALYZER::drawGraph(string opt, Int_t n, Double_t* x, Double_t* y){
   if (opt == "") opt = plot_opt;
   if (x == nullptr) x = time;
   if (y == nullptr) y = ch[kch].wvf;
@@ -90,7 +90,7 @@ TGraph ANALYZER::drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x =
   return *gwvf;
 }
 
-void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = false, Double_t filter = 0){
+void ANALYZER::averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter){
   if (maxevent==0) {
     maxevent = nentries;
   }
@@ -119,7 +119,7 @@ void ANALYZER::averageFFT(Int_t maxevent = 0, string selection = "", bool inDeci
     hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
   }
 }
-void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0, bool inDecibel = false){
+void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel){
 
   if (maxevent==0) {
     maxevent = nentries;
@@ -166,7 +166,7 @@ void ANALYZER::showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 0, bo
 
 }
 
-void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs = nullptr){
+void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs){
 
   if(!SNRs){
     SNRs = new Double_t[2];
@@ -209,14 +209,22 @@ void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Doubl
  * Set the range of the signal in ns, ex: 6200 to 6700 ns
  * call the function as minimizeParamsSPE(3, 5000, 10000, {6200, 6700})
  **/
-void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range){
+void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter){
+
+
 
   // Creating parameters to be tested
   // The moving average window will between 50% to 100% of the signal window
   Double_t signal_min = signal_range[0];
   Double_t signal_max = signal_range[1];
-  Int_t ma_max = (signal_max - signal_min)/4.;
-  Int_t ma_min = 0.2*ma_max;
+  if(rangeInter[0]==0){
+    rangeInter[1] = (signal_range[1] - signal_range[0])/dtime;
+    rangeInter[0] = 0.2*rangeInter[1];
+  }
+  else
+    cout << rangeInter[1] << endl;
+  Int_t ma_max = rangeInter[1];
+  Int_t ma_min = rangeInter[0];
   Int_t nwindows = (ma_max-ma_min)+1;
   vector<Double_t> ma_interactions(nwindows); // compute the number of different m.a. window
 
@@ -310,4 +318,21 @@ void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vect
   c3->BuildLegend();
 
 
+}
+
+
+void ANALYZER::drawZeroCrossingLines(vector<vector<Int_t>> &peaksCross){
+  if(!gPad){
+    cout << "We need a Canvas :)" << endl;
+    return;
+  }
+  Double_t ymin = gPad->GetUymin();
+  Double_t ymax = gPad->GetUymax();
+  Int_t nlines = peaksCross.size();
+  vector<TLine *> lns(nlines);
+  for(Int_t i = 0; i < nlines; i++){
+    Int_t lnx = peaksCross[i][1]*dtime;
+    lns[i] = new TLine(lnx, ymin, lnx, ymax);
+    lns[i]->Draw("SAME");
+  }
 }
