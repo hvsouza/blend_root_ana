@@ -355,6 +355,25 @@ class ANALYZER{
       haverage[kch]->SetEntries(total);
     }
 
+    void zeroCrossSearch(Double_t *derwvf, vector<vector<Int_t>> &peaksCross, Int_t start, Int_t finish){
+      if(start == 0) start = 4;
+      bool lastIsPositive = false; // I want to always start with a positive crossing
+      vector<Int_t> type_and_pos(2);
+      for(Int_t i = start/4; i < finish/4-1; i++){
+        if(lastIsPositive==false && derwvf[i] >= 0 && derwvf[i-1] <=0 && derwvf[i+1]>0){
+          type_and_pos = {1, i};
+          peaksCross.push_back(type_and_pos);
+          lastIsPositive = true;
+          i = i+1;
+        }
+        else if(lastIsPositive && derwvf[i] <= 0 && derwvf[i-1] >=0 && derwvf[i+1] < 0){
+          type_and_pos = {-1, i};
+          peaksCross.push_back(type_and_pos);
+          lastIsPositive = false;
+        }
+      }
+    }
+
 
     // _________________________ _____________________________ _________________________ //
 
@@ -574,11 +593,12 @@ class ANALYZER{
     void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
     void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
     void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs);
-    void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
-    void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);
-    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1);
-    TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
-    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range);
+    void sample_plot(Int_t myevent, string opt, Int_t filter, Double_t factor, Int_t mafilter);
+    void showWaveform(Int_t maxevent, Int_t filter, Int_t dt);
+    void persistence_plot(Int_t nbins, Double_t ymi, Double_t ymax, Int_t filter, string cut, Double_t factor);
+    TGraph drawGraph(string opt, Int_t n, Double_t* x, Double_t* y);
+    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter);
+    void drawZeroCrossingLines(vector<vector<Int_t>> &peaksCross);
     ANALYZER(string m_myname = "z") : myname{m_myname}{
     }
 
