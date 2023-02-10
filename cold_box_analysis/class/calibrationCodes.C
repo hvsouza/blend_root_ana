@@ -1052,18 +1052,24 @@ class SPHE2{
          *derivative, three applications of a simple rectangular smooth or two applications of a triangular smooth is adequate. The general rule is:
          *for the nth derivative, use at least n+1 applications of a rectangular smooth. (The Matlab signal processing program iSignal automatically
          *provides the desired type of smooth for each derivative order).
+         *Use z->minimizeParamSPE to check the best option
          **/
-        vector<Double_t> ma_to_shift = movingAverage(z->ch[channel].wvf, pre_filter, false);
-        vector<Double_t> shifted=delay_line(ma_to_shift, shifter);//cusp(MIN[i], h);
-        smooted_wvf = movingAverage(&denoise_wvf[0], pre_filter, getstaticbase);
+        if(derivate){
+          z->differenciate(1e3,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
+        }
+        for(Int_t i = 0; i < interactions; i++){
+          if (i == interactions-1 && method == "static") getstaticbase = true;
+          smooted_wvf = movingAverage(&smooted_wvf[0], interactions, getstaticbase);
+        }
         processData();
-        searchForPeaks();
+        if(method == "static") searchForPeaks();
+        else if(derivate) z->zeroCrossSearch(&smooted_wvf[0], peaksCross, start, finish);
       }
 
 
       if(get_wave_form==false){
         fwvf->Close();
-        system(Form("rm sphe_waveforms_Ch%i.root",channel));
+        system(Form("rm sphe_waveforms_Ch%i.root",kch));
       }
       else{
         fwvf->WriteObject(twvf,"t1","TObject::kOverwrite");
@@ -1378,9 +1384,11 @@ class SPHE{
       fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",channel),"RECREATE");
       tout = new TTree("t1","baseline info");
       darkNoise = true;
-      fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+      if(get_wave_form==true){
+        fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+      }
       twvf = new TTree("t1","mean waveforms");
-  
+
       if(led_calibration==false){
         makeHistogram(name);
         fout->WriteObject(tout,"t1","TObject::kOverwrite");
@@ -1392,7 +1400,7 @@ class SPHE{
       }
       if(get_wave_form==false){
         fwvf->Close();
-        system(Form("rm sphe_waveforms_Ch%i.root",channel));
+        // system(Form("rm sphe_waveforms_Ch%i.root",channel));
       }
       else{
         fwvf->WriteObject(twvf,"t1","TObject::kOverwrite");
@@ -1408,7 +1416,9 @@ class SPHE{
       fout = new TFile("sphe_histograms.root","RECREATE");
       tout = new TTree("t1","baseline info");
       darkNoise = false;
-      fwvf = new TFile("sphe_waveforms.root","RECREATE");
+      if(get_wave_form==true){
+        fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+      }
       twvf = new TTree("t1","mean waveforms");
   
       makeHistogram(name);
@@ -1417,7 +1427,7 @@ class SPHE{
       fout->Close();
       if(get_wave_form==false){
         fwvf->Close();
-        system(Form("rm sphe_waveforms_Ch%i.root",channel));
+        // system(Form("rm sphe_waveforms_Ch%i.root",channel));
       }
       else{
         fwvf->WriteObject(twvf,"t1","TObject::kOverwrite");

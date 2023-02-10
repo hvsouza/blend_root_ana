@@ -158,7 +158,8 @@ class DENOISE{
       for(Int_t i = 0; i < n; i++){
 
         if(i<midpoint || i>(n-midpoint)){ // make it to start at i = 5 and finish at i = (3000-5) = 2995
-          res[i] = v[i];
+          // res[i] = v[i];
+          res[i] = 0;
         }
         else if (i > start && i < finish){
           for(Int_t j = (i-midpoint); j < (i+midpoint); j++) { //first one: from j = (5-5); j<(5+5)
