@@ -890,54 +890,53 @@ class SPHE2{
     Bool_t led_calibration = true;
 
     Bool_t just_a_test = false;
-    Int_t just_this = 200;
-    Int_t channel = 1;
-    string rootfile = "analyzed.root";
+    Int_t  just_this   = 200;
+    Int_t  channel     = 1;
+    string rootfile    = "analyzed.root";
 
 
-    Double_t tolerance = 5; // n sigmas (smoothed) (not used for led)
-                            // if `method` is set to `fix`, the threshold will be the absolute value of tolerance, no baseline is calculated
+    Double_t tolerance    = 5;  // n sigmas (smoothed) (not used for led)
+                                // if `method` is set to `fix`, the threshold will be the absolute value of tolerance, no baseline is calculated
     Double_t baselineTime = 5000; // is the time to compute the baseline (not used for led)
                                   // If the `method` is set to `dynamic` the baseline is calculated over the range of baselineTime
                                   // and it is updated depending on the next point with a weigth of `influece`
                                   // If `method` is set to `static`, baseline is calculated once using baseLimit as cut
-    Double_t baseLimit = 3; // higher then this wont contribute to the baseline abs(baseLimit) (not used for led)
+    Double_t baseLimit    = 3;  // higher then this wont contribute to the baseline abs(baseLimit) (not used for led)
 
-    Double_t start = 0; // start the search for peaks or start the integration (led)
-    Double_t finish = 10250; // fisish the search or finish the integration (led)
+    Double_t start  = 0;        // start the search for peaks or start the integration (led)
+    Double_t finish = 10250;    // fisish the search or finish the integration (led)
 
-    Double_t timeLow = 60; // integration time before peak (not used for led)
-    Double_t timeHigh = 400; // integration time after peak (not used for led)
+    Double_t timeLow        = 60; // integration time before peak (not used for led)
+    Double_t timeHigh       = 400; // integration time after peak (not used for led)
     Double_t lowerThreshold = -1; // threshold to detect noise (normal waveform) (not used for led)
-    Double_t maxHits = 1; // maximum hit before discarding   (not used for led)
-    Double_t too_big = 1000; // if there is a peak > "too_big" .. wait "waiting" ns
-    Double_t waiting = 1000;
-    Double_t filter = 14; // one dimentional denoise filter (0 equal no filder)
-    Double_t pre_filter = 0; // to apply moving average before shifting (not used on led)
-    Double_t interactions = 45; // for moving avarage filter (not used on led)
-    Double_t shifter = 20; // shift of moving average to compute derivative
+    Double_t maxHits        = 1; // maximum hit before discarding   (not used for led)
+    Double_t too_big        = 1000; // if there is a peak > "too_big" .. wait "waiting" ns for next peak
+    Double_t waiting        = 1000;
+    Double_t filter         = 14; // one dimentional denoise filter (0 equal no filder)
+    Double_t interactions   = 45; // for moving avarage filter (not used on led)
+    Int_t    ninter         = 2; // N times that moving average is applied
 
-    Double_t dtime = 4.; // time step in ns
+    Double_t dtime = 4.;        // time step in ns
 
 
     Double_t get_wave_form = false; // for getting spe waveforms
-    Double_t mean_before = 120; // time recorded before and after the peak found
-    Double_t mean_after = 1000;
-    Double_t sphe_charge = 1809.52;  // charge of 1 and 2 p.e.
-    Double_t sphe_charge2 = 3425.95;
-    Double_t sphe_std = 500;
+    Double_t mean_before   = 120; // time recorded before and after the peak found
+    Double_t mean_after    = 1000;
+    Double_t sphe_charge   = 1809.52; // charge of 1 and 2 p.e.
+    Double_t sphe_charge2  = 3425.95;
+    Double_t sphe_std      = 500;
 
     // coeficients to surround gaussian of 1 spe.
-    // Gain = (sphe_charge2 - sphe_charge)
+    // Gain             = (sphe_charge2 - sphe_charge)
     // spe's get events where charge < Gain*deltaplus  and charge < Gain/deltaminus
     // If deltaminus is set to zero, sphe_std*deltaplus will be used instead
-    Double_t deltaplus = 1.3;
+    Double_t deltaplus  = 1.3;
     Double_t deltaminus = 1.5;
 
 
     // Not so common to change
     Double_t social_distance = 2; // demands that there is a minimum distance of social_distance * timeHigh between 2 consecutive peaks found
-    string method = "dynamic"; // `dynamic` or `static` evaluation of the baseline
+    string   method          = "static"; // `dynamic` or `derivative` evaluation of the baseline
                                // `fix` will not evaluate baseline and use raw threshold
                                // See tolerance, baselineTime and baselineLimit above
 
@@ -953,6 +952,8 @@ class SPHE2{
     TTree *twvf = nullptr;
 
     string myname;
+    Bool_t derivate = false;
+    Int_t kch;
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -966,6 +967,7 @@ class SPHE2{
 
     vector<Double_t> peakPosition;
     vector<Double_t> peakMax;
+    vector<vector<Int_t>> peaksCross;
 
     vector<Double_t> smooted_wvf; // not needed to reset this
     vector<Double_t> denoise_wvf;
@@ -1015,8 +1017,11 @@ class SPHE2{
       }
 
       z->kch = channel;
-      fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",channel),"RECREATE");
-      fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+      kch = channel;
+      fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",kch),"RECREATE");
+      if(get_wave_form==true){
+        fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",kch),"RECREATE");
+      }
       twvf = new TTree("t1","mean waveforms");
 
       // ____________________ Setting up what need to set ____________________ //
@@ -1029,8 +1034,10 @@ class SPHE2{
       Bool_t getstaticbase = false;
       if(method == "static") getstaticbase = true;
       else if(method == "fix"){
-        pre_filter = 0;
-        interactions = 0;
+      }
+      else if(method == "derivative"){
+        derivate = true;
+        peaksCross.reserve(2000);
       }
       // ____________________ ___________________________ ____________________ //
 
@@ -1039,8 +1046,8 @@ class SPHE2{
 
       for(Int_t i = 0; i < z->nentries; i++){
         theGreatReset();
-        z->getWaveform(i,channel); // get waveform by memory
-        z->applyDenoise(filter, z->ch[channel].wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
+        z->getWaveform(i,kch); // get waveform by memory
+        z->applyDenoise(filter, z->ch[kch].wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
 
 
         /**
@@ -1068,8 +1075,8 @@ class SPHE2{
 
 
       if(get_wave_form==false){
-        fwvf->Close();
-        system(Form("rm sphe_waveforms_Ch%i.root",kch));
+        // fwvf->Close();
+        // system(Form("rm sphe_waveforms_Ch%i.root",kch));
       }
       else{
         fwvf->WriteObject(twvf,"t1","TObject::kOverwrite");
@@ -1399,7 +1406,7 @@ class SPHE{
         // get_wave_form = false;
       }
       if(get_wave_form==false){
-        fwvf->Close();
+        // fwvf->Close();
         // system(Form("rm sphe_waveforms_Ch%i.root",channel));
       }
       else{
@@ -1426,7 +1433,7 @@ class SPHE{
       fout->WriteObject(tout,"t1","TObject::kOverwrite");
       fout->Close();
       if(get_wave_form==false){
-        fwvf->Close();
+        // fwvf->Close();
         // system(Form("rm sphe_waveforms_Ch%i.root",channel));
       }
       else{
