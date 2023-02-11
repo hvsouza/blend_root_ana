@@ -21,8 +21,8 @@ public:
 
   Double_t timeRead(string date, string time, string format_date="dd-mmm-yyyy", string format_time="hh:mm:ss"){
 
-    Int_t n_dates = format_date.size();
-    Int_t n_times = format_time.size();
+    Int_t n_dates = (int)format_date.size();
+    Int_t n_times = (int)format_time.size();
     char *dateFragment = new char[n_dates];
     char *timeFragment = new char[n_times];
 
@@ -70,7 +70,7 @@ public:
     // cout << year << " " << month << " " << day << " " << hour << " " << minute << " " << second << endl;
 
     if(month.size()>2){
-      for(int i = 0; i < month.size(); i++){
+      for(int i = 0; i < (int)month.size(); i++){
         // cout << "..." << endl;
 	month[i] = (char)(tolower(month[i]));
       }

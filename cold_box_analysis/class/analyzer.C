@@ -25,6 +25,7 @@ class ANALYZER{
     TEventList *lev = nullptr;
 
     Int_t kch = 0;
+    Int_t currentEvent = 0;
     DENOISE dn;
     WIENER *w;
 
@@ -252,6 +253,7 @@ class ANALYZER{
         return;
       }
       b[k]->GetEvent(myevent);
+      currentEvent = ch[k].event;
     }
 
     bool getWaveformHard(Int_t myevent = 0, Double_t factor = 1){

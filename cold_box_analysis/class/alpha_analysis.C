@@ -190,7 +190,7 @@ void takeCharge(string filename){
   TTree *t1 = (TTree*)f1->Get("t1");
   vector<ADC_DATA> ch(channels.size());
   vector<TBranch*> bch(channels.size());
-  for(Int_t k = 0; k<channels.size();k++){
+  for(Int_t k = 0; k<(int)channels.size();k++){
     bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
     bch[k]->SetAddress(&ch[k]);
   }
@@ -199,10 +199,10 @@ void takeCharge(string filename){
   
   TFile *fout = new TFile("charges.root","RECREATE");
   vector<TH1D*> hcharge(channels.size());
-  for(Int_t k = 0; k<channels.size();k++) hcharge[k] = new TH1D(Form("hcharge_%i",channels[k]),Form("hcharge_%d",channels[k]),nbins,hmin,hmax);
+  for(Int_t k = 0; k<(int)channels.size();k++) hcharge[k] = new TH1D(Form("hcharge_%i",channels[k]),Form("hcharge_%d",channels[k]),nbins,hmin,hmax);
   
   for(Int_t i = 0; i<nentries; i++){
-    for(Int_t k = 0; k<channels.size();k++){
+    for(Int_t k = 0; k<(int)channels.size();k++){
       bch[k]->GetEvent(i);
       for(Int_t j = integration_start/dtime; j<integration_end/dtime; j++){
         charge[k] += dtime*ch[k].wvf[j];
@@ -217,7 +217,7 @@ void takeCharge(string filename){
   
   f1->Close();
   
-  for(Int_t k = 0; k<channels.size();k++) fout->WriteObject(hcharge[k],Form("hcharge_%i",channels[k]),"TObject::kOverwrite");
+  for(Int_t k = 0; k<(int)channels.size();k++) fout->WriteObject(hcharge[k],Form("hcharge_%i",channels[k]),"TObject::kOverwrite");
   fout->Close();
   
 }

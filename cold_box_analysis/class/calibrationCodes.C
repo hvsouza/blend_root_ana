@@ -1109,20 +1109,49 @@ class SPHE2{
 
     }
 
+    bool goodSocialDistance(Int_t id2, Int_t id1){
+      if(abs(id2-id1)<= social_distance*timeHigh){
+        return false;
+      }
+      else{
+        return true;
+      }
+    }
+
     void cleanPeaks(){
-      Int_t ntotal = peaksCross.size();
+      Int_t ntotal = (int)peaksCross.size();
       if (ntotal % 2 != 0) ntotal+=-1; // I only want pairs :)
       for(Int_t i = 0; i < ntotal-1; i++){
-        Double_t min_to_search = peaksCross[i];
-        Double_t max_to_search = peaksCross[i+1];
-        if(min_to_search*dtime > social_distance*timeHigh){
-          min_to_search = social_distance*timeHigh/dtime;
+
+        // if if next peak or previous peak is closer than the minimum distance, I will discard it with
+
+        Double_t crossPositive = peaksCross[i];
+        Double_t crossNegative = peaksCross[i+1];
+        if(crossPositive*dtime > social_distance*timeHigh){
+          crossPositive = social_distance*timeHigh/dtime;
         }
-        z->getMaximum(min_to_search*dtime, max_to_search*dtime);
+        z->getMaximum(crossPositive*dtime, crossNegative*dtime);
         if(z->temp_max >= tolerance) {
-          peakPosition.push_back(peaksCross[i+1][1]);
+          //request social distance after
+          if(!goodSocialDistance(peaksCross[i+3],crossNegative)){
+            if(snap()){
+              discardedPosition.push_back(crossNegative);
+              discarded_idx.push_back(0);
+            }
+            i++;
+            continue;
+          } // and before
+          else if(i != 0 && !goodSocialDistance(peaksCross[i-1], crossNegative)){
+            if(snap()){
+              discardedPosition.push_back(crossNegative);
+              discarded_idx.push_back(0);
+            }
+            i++;
+            continue;
+          }
+          peakPosition.push_back(peaksCross[i+1]);
         }
-        i+=1;
+        i++;
       }
     }
 
@@ -1130,7 +1159,7 @@ class SPHE2{
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
       if(delay_time==0) return v;
       vector<Double_t> res(v.size());
-      for(int i=0; i<v.size(); i++){
+      for(int i=0; i<(int)v.size(); i++){
         res[i]=v[i] - (i-delay_time>=0 ? v[i-delay_time] : 0);
       }
       return res;
@@ -1474,7 +1503,7 @@ class SPHE{
     // ____________________________________________________________________________________________________ //
     void integrateSignal(){
       charge = 0;
-      Int_t npeaks = peakPosition.size();
+      Int_t npeaks = (int)peakPosition.size();
       value = 0;
       desv = 0;
 
@@ -1671,8 +1700,8 @@ class SPHE{
               else{
                 valid = false;
               }
-              for(Int_t j = 0; j<waveforms.size(); j++){
-                if(j<temp_waveforms[i].size()){
+              for(Int_t j = 0; j<(int)waveforms.size(); j++){
+                if(j<(int)temp_waveforms[i].size()){
                     
                   // waveforms[j] = temp_waveforms[i][j];
                   waveforms[j] = temp_waveforms[i][j];
@@ -1715,7 +1744,7 @@ class SPHE{
     // ____________________________________________________________________________________________________ //
     void searchForPeaks(){
       // For each peak found, we i am looking for the maximum above tolerance
-      Int_t n = peak_smooth.size();
+      Int_t n = (int)peak_smooth.size();
       Int_t npeaks = 0;
    
       higherValue = 0;
@@ -1787,7 +1816,7 @@ class SPHE{
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
       if(delay_time==0) return v;
       vector<Double_t> res(v.size());
-      for(int i=0; i<v.size(); i++){
+      for(int i=0; i<(int)v.size(); i++){
         res[i]=v[i] - (i-delay_time>=0 ? v[i-delay_time] : 0);
       }
       return res;
@@ -1916,7 +1945,7 @@ class SPHE{
       ymean.resize(nsample);
       ynormal.resize(nsample);
       xmean.resize(nsample);
-      for(Int_t i = 0; i<ymean.size(); i++){
+      for(Int_t i = 0; i<(int)ymean.size(); i++){
         ymean.at(i) = 0;
         xmean.at(i) = 0;
       }
@@ -2381,7 +2410,7 @@ class MeanSignal{
       TTree *t1 = (TTree*)f1->Get("t1");
       vector<ADC_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
-      for(Int_t k = 0; k<channels.size();k++){
+      for(Int_t k = 0; k<(int)channels.size();k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
         bch[k]->SetAddress(&ch[k]);
       }
@@ -2397,10 +2426,10 @@ class MeanSignal{
   
       TFile *fout = new TFile("averaged_waveforms.root","RECREATE");
       vector<TH2D*> hpersistence(channels.size());
-      for(Int_t k = 0; k<channels.size();k++) hpersistence[k] = new TH2D(Form("hpersistence_%i",channels[k]),Form("hpersistence_%d",channels[k]),5000,0,20000,500,-500,avoid_saturation);
+      for(Int_t k = 0; k<(int)channels.size();k++) hpersistence[k] = new TH2D(Form("hpersistence_%i",channels[k]),Form("hpersistence_%d",channels[k]),5000,0,20000,500,-500,avoid_saturation);
 
       for(Int_t i = 0; i<nentries; i++){
-        for(Int_t k = 0; k<channels.size();k++){
+        for(Int_t k = 0; k<(int)channels.size();k++){
           bch[k]->GetEvent(i);
       
           if(ch[k].charge>minval && ch[k].charge<maxval && ch[k].peak<avoid_saturation){
@@ -2418,7 +2447,7 @@ class MeanSignal{
       vector<TGraph*> gavg(channels.size());
       vector<TGraph*> gavgn(channels.size());
       vector<Double_t> maxvalue(channels.size());
-      for(Int_t k = 0; k<channels.size(); k++){
+      for(Int_t k = 0; k<(int)channels.size(); k++){
         maxvalue[k] = *std::max_element(begin(avg[k]),end(avg[k]))/norm[k];
         for(Int_t j = 0; j<memorydepth; j++){
           avg[k][j]=avg[k][j]/norm[k];
@@ -2483,7 +2512,7 @@ class Resolution{
       TTree *t1 = (TTree*)f1->Get("t1");
       vector<ADC_DATA> ch(channels.size());
       vector<TBranch *> bch(channels.size());
-      for(Int_t k = 0; k<channels.size(); k++){
+      for(Int_t k = 0; k<(int)channels.size(); k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
         bch[k]->SetAddress(&ch[k]);
       }
@@ -2514,7 +2543,7 @@ class Resolution{
       fsphe.open("sphe.txt",ios::in);
       Double_t temp;
       vector<Double_t> sphes(channels.size());
-      for(Int_t k = 0; k<channels.size(); k++){
+      for(Int_t k = 0; k<(int)channels.size(); k++){
         fsphe >> temp >> temp >> temp;
         sphes[k] = temp;
       }
@@ -2527,13 +2556,13 @@ class Resolution{
         //   for(Int_t i = 0; i<1; i++){
         cout << "reading event " << i << "\r" << flush;
         photoelec = 0;
-        for(Int_t k = 0; k<channels.size(); k++){
+        for(Int_t k = 0; k<(int)channels.size(); k++){
           bch[k]->GetEvent(i);
           integrate(ch[k].wvf,resCharge[k]);
         }
         if(ch[0].fprompt>0.5 && ch[1].fprompt>0.5 && ch[0].peak<2800 && ch[1].peak<2800){
           for(Int_t j = 0; j<nints; j++){
-            for(Int_t k = 0; k<channels.size(); k++){
+            for(Int_t k = 0; k<(int)channels.size(); k++){
               photoelec += resCharge[k][j]/sphes[k];
             }
             hspecs[j]->Fill(photoelec);
@@ -2758,14 +2787,14 @@ class TimeDistribuction{
       cout << "\n";
       Int_t aux = 0;
   
-      for(Int_t k = 0; k<channels.size(); k++){
-        for(Int_t i = 0; i<position[k].size();i++){
+      for(Int_t k = 0; k<(int)channels.size(); k++){
+        for(Int_t i = 0; i<(int)position[k].size();i++){
           htd[k]->Fill(position[k][i]);
         }
         fout->WriteObject(htd[k],Form("h_ch%i",channels[k]),"TObject::kOverwrite");
       }
 
-      for(Int_t k = 0; k<channels.size(); k++){
+      for(Int_t k = 0; k<(int)channels.size(); k++){
         aux=0;
         for(Int_t i = 0; i<nshow; i++){
           //       cout << "scanning event: " << channels.size()*i+k << "\r" << flush;
@@ -2800,7 +2829,7 @@ class TimeDistribuction{
     // ____________________________________________________________________________________________________ //
     void smoothWithMovingAvarage(vector<Double_t> &shifted){
       vector<Double_t> peak_smooth;
-      Int_t n = shifted.size();
+      Int_t n = (int)shifted.size();
       Double_t sum = 0;
       Int_t midpoint;
       Double_t width;
@@ -2934,7 +2963,7 @@ class TimeDistribuction{
 
 // if(statcharge[i]>=delta/2. && statcharge[i]<=delta*1.5 && notAGoodWaveform[i]==false){
 //   naverages++;
-//   for(Int_t j = 0; j<waveforms.size(); j++){
+//   for(Int_t j = 0; j<(int)waveforms.size(); j++){
 //     if(j<temp_waveforms[i].size()){
 //       if(j<=50){
 //         newbase += temp_waveforms[i][j];

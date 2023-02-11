@@ -263,8 +263,8 @@ class Read{
     string format_date = "dd-mmm-yyyy";
 
     void reset_double_vector(vector<vector<Double_t>> val){
-      Int_t nchannels = channels.size();
-      Int_t noriginal = val.size();
+      Int_t nchannels = (int)channels.size();
+      Int_t noriginal = (int)val.size();
       if (noriginal > nchannels){
         if (noriginal-1 >= channels[nchannels-1]){
           for (Int_t j = 0; j < nchannels; j++) {
@@ -275,14 +275,14 @@ class Read{
       }
       else if (noriginal < nchannels && noriginal != 1) {
         val.resize(nchannels);
-        for(Int_t j = noriginal; j < val.size(); j++){
+        for(Int_t j = noriginal; j < (int)val.size(); j++){
           val[j] = val[0];
         }
       }
     }
     void reset_vector(vector<Double_t> val){
-      Int_t nchannels = channels.size();
-      Int_t noriginal = val.size();
+      Int_t nchannels = (int)channels.size();
+      Int_t noriginal = (int)val.size();
       if (noriginal > nchannels){
         if (noriginal-1 >= channels[nchannels-1]){
           for (Int_t j = 0; j < nchannels; j++) {
@@ -293,7 +293,7 @@ class Read{
       }
       else if (noriginal < nchannels && noriginal != 1) {
         val.resize(nchannels);
-        for(Int_t j = noriginal; j < val.size(); j++){
+        for(Int_t j = noriginal; j < (int)val.size(); j++){
           val[j] = val[0];
         }
       }
@@ -371,14 +371,14 @@ class Read{
       vector<TBranch*> bch(channels.size());
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         avg[i].resize(memorydepth,0);
       }
     
     
       f1 = new TFile(rootfile.c_str(),"RECREATE");
       t1 = new TTree("t1","ADC processed waveform");
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i< (int)channels.size(); i++){
         bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
       }
     
@@ -395,15 +395,15 @@ class Read{
       for(Int_t i = 0; i<memorydepth; i++){
         time[i] = i*dtime;
       }
-      for(Int_t i = 0; i<channels.size(); i++){
-        for(Int_t j = 0; j<memorydepth; j++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
+        for(Int_t j = 0; j < (int)memorydepth; j++){
           avg[i][j] = avg[i][j]/navg[i];
         }
       }
     
       f1 = new TFile(rootfile.c_str(),"UPDATE");
       vector<TGraph*> gavg(channels.size());
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
         f1->WriteObject(gavg[i],Form("average_ch%i",channels[i]),"TObject::kOverwrite");
       }
@@ -429,7 +429,7 @@ class Read{
       Bool_t first_file = true;
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         avg[i].resize(memorydepth,0);
       }
 
@@ -446,7 +446,7 @@ class Read{
       string temp = "";
       // While for read the entire file
       while(!filesdata.fail()){
-        for(Int_t i = 0; i<channels.size(); i++){
+        for(Int_t i = 0; i < (int)channels.size(); i++){
           filesdata >> temp;
           file_ch[i] = temp;
         }
@@ -466,7 +466,7 @@ class Read{
         
           f1 = new TFile(rootfile.c_str(),"RECREATE");
           t1 = new TTree("t1","ADC processed waveform");
-          for(Int_t i = 0; i<channels.size(); i++){
+          for(Int_t i = 0; i < (int)channels.size(); i++){
             bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
           }
         
@@ -484,7 +484,7 @@ class Read{
       for(Int_t i = 0; i<memorydepth; i++){
         time[i] = i*dtime;
       }
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         for(Int_t j = 0; j<memorydepth; j++){
           avg[i][j] = avg[i][j]/navg[i];
         }
@@ -492,7 +492,7 @@ class Read{
     
       f1 = new TFile(rootfile.c_str(),"UPDATE");
       vector<TGraph*> gavg(channels.size());
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
         f1->WriteObject(gavg[i],Form("average_ch%i",channels[i]),"TObject::kOverwrite");
       }
@@ -530,7 +530,7 @@ class Read{
       vector<Double_t> raw(memorydepth);
       Double_t filtered[memorydepth];
     
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         bch[i] = t1->GetBranch(Form("Ch%i",channels[i]));
         bch[i]->SetAddress(&ch[i]);
         filename_ch[i] = file_ch[i] + file_extension;
@@ -538,7 +538,7 @@ class Read{
 
     
       vector<ifstream> fin(channels.size());
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         if(!isBinary) fin[i].open(filename_ch[i].c_str(),ios::in);
         else          fin[i].open(filename_ch[i].c_str(),ios::in | ios::binary);
         // here i check if the data file is open (or exist), if not, I remove the .root files and close the program.
@@ -570,7 +570,7 @@ class Read{
       Double_t starting_time = 0;
       Int_t aux_time = 0;
       event_time.resize(memorydepth);
-      for(Int_t i = 0; i<channels.size(); i++){
+      for(Int_t i = 0; i < (int)channels.size(); i++){
         if(isBinary==false){
           // LECROYWR104MXi-A/� 49455 Waveform
           // Segments 2000 SegmentSize 2502
@@ -634,7 +634,7 @@ class Read{
       while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
         Int_t n_reads = 0;
     
-        for(Int_t i = 0; i<channels.size(); i++){
+        for(Int_t i = 0; i < (int)channels.size(); i++){
           if(isBinary==false){
 
           
