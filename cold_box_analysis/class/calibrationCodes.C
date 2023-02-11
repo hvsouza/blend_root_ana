@@ -949,6 +949,8 @@ class SPHE2{
     ///////////////////////////////////////////////////////////////////////////////
 
 
+    // Here are more general ones
+
     ANALYZER *z = nullptr;
     TFile *fout = nullptr;
     TFile *fwvf = nullptr;
@@ -959,23 +961,32 @@ class SPHE2{
     Int_t kch;
     Int_t nshow = 100;
     Int_t nshow_start = 0;
+    Bool_t getstaticbase = false;
+    vector<string> discard_reason = {"Social distance", "Negative hits", "Something else"};
 
 
     // ____________________ Variables to calculate and reset ____________________ //
 
-    TH1D *hbase        = nullptr;
-    TH1D *hbase_smooth = nullptr;
-    TH1D *hcharge      = nullptr;
+    TH1D *hbase        = nullptr; // not used now
+    TH1D *hbase_smooth = nullptr; // compute smoothed baseline
+    TH1D *hcharge      = nullptr; // final spe histogram
 
-    Double_t mean = 0;
+    Double_t mean = 0; //mean and stddev for hbase
     Double_t stddev = 0;
 
-    vector<Double_t> peakPosition;
-    vector<Double_t> peakMax;
-    vector<Int_t> peaksCross;
+    vector<Double_t> peakPosition; //store position of the peaks
+    vector<Double_t> peakMax; // store peak maximum
+    vector<Int_t> peaksCross; // initial peaks when using derivative
 
     vector<Double_t> smooted_wvf; // not needed to reset this
     vector<Double_t> denoise_wvf;
+
+    vector<Double_t> selected_peaks; // these are for plotting
+    vector<Double_t> selected_time;
+
+
+    vector<Double_t> discardedPosition; //store position of thed
+    vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
     // ____________________ ________________________________ ____________________ //
 
     SPHE2(string m_name) : myname{m_name}{
@@ -985,6 +996,7 @@ class SPHE2{
 
       smooted_wvf.resize(memorydepth);
       denoise_wvf.resize(memorydepth);
+
 
     }
 
@@ -1032,7 +1044,6 @@ class SPHE2{
       else{
       }
 
-      Bool_t getstaticbase = false;
       if(method == "static") getstaticbase = true;
       else if(method == "fix"){
       }
@@ -1057,7 +1068,7 @@ class SPHE2{
           searchForPeaks();
         }
         else if(derivate){
-          z->zeroCrossSearch(&smooted_wvf[0], peaksCross, start, finish);
+          z->zeroCrossSearch(&smooted_wvf[0], peaksCross, start+timeLow, finish-timeHigh);
           cleanPeaks();
         }
         integrate();
@@ -1076,13 +1087,18 @@ class SPHE2{
     }
     void theGreatReset(){
         hbase->Reset();
-        hbase_smooth->Reset();
+        if(!derivate) hbase_smooth->Reset();
       
         denoise_wvf.clear();
         smooted_wvf.clear();
         peakPosition.clear();
         peakMax.clear();
-        peaksCross.clear();
+        selected_peaks.clear();
+        selected_time.clear();
+        discardedPosition.clear();
+        discarded_idx.clear();
+
+        if(derivate) peaksCross.clear();
     }
 
     void processData(){
@@ -1097,7 +1113,7 @@ class SPHE2{
        *derivative, three applications of a simple rectangular smooth or two applications of a triangular smooth is adequate. The general rule is:
        *for the nth derivative, use at least n+1 applications of a rectangular smooth. (The Matlab signal processing program iSignal automatically
        *provides the desired type of smooth for each derivative order).
-       *Use z->minimizeParamSPE to check the best option
+       *Usediscarded_idx to check the best option
        **/
       if(derivate){
         z->differenciate(1e3,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
@@ -1218,6 +1234,83 @@ class SPHE2{
       return res;
     }
 
+    void integrate(){
+
+      unsigned int npeaks = peakPosition.size();
+      for(unsigned int i = 0; i < npeaks; i++){
+
+      }
+
+    }
+
+    // ____________________________________________________________________________________________________ //
+    Bool_t snap(){
+      if(z->currentEvent >= nshow_start && z->currentEvent < nshow){
+        return true;
+      }
+      else{
+        return false;
+      }
+      return false; // just to be sure oO
+    }
+    void drawMySamples(){
+
+      // string sampleName = "ev_" + to_string(static_cast<Int_t>(my_events[aux_events]))+"_"+to_string(channel);
+
+      // // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
+      // // this is not working when saving
+      // TCanvas *c1 = new TCanvas();
+
+      // c1->cd(1);
+      // g_smooth->SetLineColor(kRed);
+      // g_smooth->SetLineWidth(3);
+
+      // g_normal->SetLineColor(kBlue);
+      // g_normal->SetTitle(charge_status.c_str());
+
+      // g_normal->Draw("AL");
+      // g_smooth->Draw("L SAME");
+
+      // TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
+      // TLine *ldev = new TLine(timeLimit,mean+threshold,memorydepth*dtime,mean+threshold);
+
+      // lmean->SetLineColor(kGreen);
+      // ldev->SetLineColor(kGreen);
+
+      // lmean->SetLineWidth(2);
+      // ldev->SetLineWidth(2);
+
+      // lmean->Draw();
+      // ldev->Draw();
+      // Int_t n = selected_peaks.size();
+      // if(n!=0){
+      //   g_points = new TGraph(n,&selected_time[0],&selected_peaks[0]);
+      //   g_points->SetMarkerColor(kBlack);
+      //   g_points->Draw("P* SAME");
+      // }
+
+
+
+
+      // // Some fancy drawing now;
+      // if(matchingAreas.size()!=0){
+      //   Int_t nAreas = matchingAreas.size(); //always two points per area of course
+      //   TLine *larea;
+      //   Double_t max = g_normal->GetYaxis()->GetXmax();
+      //   for(Int_t i = 0; i<nAreas; i++){
+      //     larea = new TLine(matchingAreas[i],0,matchingAreas[i],max);
+      //     cout << "\t\t\t" << matchingAreas[i] << " ";
+      //     if((i+1)%2==0)cout << "\n" << endl;
+      //     larea->SetLineColor(kRed);
+      //     larea->SetLineWidth(2);
+      //     larea->Draw();
+      //   }
+      // }
+
+      // fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
+
+
+    }
 
 
 
