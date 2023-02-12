@@ -941,7 +941,9 @@ class SPHE2{
     string   method          = "static"; // `dynamic` or `derivative` evaluation of the baseline
                                // `fix` will not evaluate baseline and use raw threshold
                                // See tolerance, baselineTime and baselineLimit above
-    bool check_selection = true;
+
+    bool check_selection = true; // uses(or not) variable `selection` to discard wvfs
+    Bool_t withfilter = true; // Integrate in the filtered waveform
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -962,7 +964,6 @@ class SPHE2{
     Int_t nshow = 100;
     Int_t nshow_start = 0;
     Bool_t getstaticbase = false;
-    vector<string> discard_reason = {"Social distance", "Negative hits", "Something else"};
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -976,7 +977,9 @@ class SPHE2{
 
     vector<Double_t> peakPosition; //store position of the peaks
     vector<Double_t> peakMax; // store peak maximum
-    vector<Int_t> peaksCross; // initial peaks when using derivative
+    vector<Int_t> peaksFound; // peaks found (threshold apply)
+    vector<Int_t> peaksRise; // Rising derivative
+    vector<Int_t> peaksCross; // Falling derivative
 
     vector<Double_t> smooted_wvf; // not needed to reset this
     vector<Double_t> denoise_wvf;
@@ -988,6 +991,8 @@ class SPHE2{
     vector<Double_t> discardedPosition; //store position of thed
     vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
     // ____________________ ________________________________ ____________________ //
+
+    vector<string> discard_reason = {"Social distance", "Negative hits", "Too big"};
 
     SPHE2(string m_name) : myname{m_name}{
       hbase        = new TH1D(Form("hbase_sphe_%s",myname.c_str()),"histogram for baseline",5*800,-400,400);
@@ -1040,8 +1045,10 @@ class SPHE2{
       // ____________________ Setting up what need to set ____________________ //
 
       if(led_calibration==false){
+        method = "led";
       }
       else{
+        peaksFound.reserve(memorydepth);
       }
 
       if(method == "static") getstaticbase = true;
@@ -1049,7 +1056,8 @@ class SPHE2{
       }
       else if(method == "derivative"){
         derivate = true;
-        peaksCross.reserve(2000);
+        peaksRise.reserve(memorydepth);
+        peaksCross.reserve(memorydepth);
       }
       // ____________________ ___________________________ ____________________ //
 
@@ -1068,10 +1076,11 @@ class SPHE2{
           searchForPeaks();
         }
         else if(derivate){
-          z->zeroCrossSearch(&smooted_wvf[0], peaksCross, start+timeLow, finish-timeHigh);
-          cleanPeaks();
+          z->zeroCrossSearch(&smooted_wvf[0], peaksRise, peaksCross, start+timeLow, finish-timeHigh);
+          derivateApplyThreshold();
         }
-        integrate();
+        cleanPeaks();
+        integrateSignals();
       }
 
 
@@ -1087,18 +1096,25 @@ class SPHE2{
     }
     void theGreatReset(){
         hbase->Reset();
-        if(!derivate) hbase_smooth->Reset();
+        if(method != "led"){
+          if(derivate){
+            peaksRise.clear();
+            peaksCross.clear();
+          }
+          else{
+            hbase_smooth->Reset();
+          }
+          peakPosition.clear();
+          peakMax.clear();
+          selected_peaks.clear();
+          selected_time.clear();
+          discardedPosition.clear();
+          discarded_idx.clear();
+          peaksFound.clear();
+        }
       
         denoise_wvf.clear();
         smooted_wvf.clear();
-        peakPosition.clear();
-        peakMax.clear();
-        selected_peaks.clear();
-        selected_time.clear();
-        discardedPosition.clear();
-        discarded_idx.clear();
-
-        if(derivate) peaksCross.clear();
     }
 
     void processData(){
@@ -1133,44 +1149,113 @@ class SPHE2{
         return true;
       }
     }
+    bool checkTooBig(Bool_t &wait_now, Double_t &refWait, Int_t pos){
+      Double_t peakmax;
+      if(derivate){
+        peakmax = denoise_wvf[pos];
+      }
+      else{
+        peakmax = peakMax[pos];
+      }
+      if(peakmax > too_big){
+        wait_now = true;
+        refWait = pos*dtime;
+        return true;
+      }
+      else{
+        wait_now = false;
+        return false;
+      }
 
-    void cleanPeaks(){
+    }
+
+    void derivateApplyThreshold(){
       Int_t ntotal = (int)peaksCross.size();
-      if (ntotal % 2 != 0) ntotal+=-1; // I only want pairs :)
-      for(Int_t i = 0; i < ntotal-1; i++){
+      if(peaksRise.size() < ntotal){ // there should be only pairs
+        cout << "@@@@@@@@@@@@@@@@@@@@ THIS SHOULD NOT HAPPEN @@@@@@@@@@@@@@@@@@@@" << endl;
+        cout << "\n\n\n\n\n\n\n\n\n\n" << endl;
+        cout << "@@@@@@@@@@@@@@@@@@@@ THIS SHOULD NOT HAPPEN @@@@@@@@@@@@@@@@@@@@" << endl;
+        ntotal = peaksRise.size();
+      }
 
-        // if if next peak or previous peak is closer than the minimum distance, I will discard it with
-
-        Double_t crossPositive = peaksCross[i];
-        Double_t crossNegative = peaksCross[i+1];
+      for(Int_t i = 0; i < ntotal; i++){
+        Double_t crossPositive = peaksRise[i];
+        Double_t candidatePosition = peaksCross[i]; // peaks previously selected
         if(crossPositive*dtime > social_distance*timeHigh){
           crossPositive = social_distance*timeHigh/dtime;
         }
-        z->getMaximum(crossPositive*dtime, crossNegative*dtime);
-        if(z->temp_max >= tolerance) {
-          //request social distance after
-          if(!goodSocialDistance(peaksCross[i+3],crossNegative)){
+        z->getMaximum(crossPositive*dtime, candidatePosition*dtime);
+        if(z->temp_max < tolerance) {
+          continue;
+        }
+        peaksFound.push_back(peaksCross[i]) ;
+      }
+
+    }
+    void cleanPeaks(){
+      Int_t ntotal = (int)peaksFound.size();
+      Bool_t wait_now = false;
+      Double_t refWait = 0;
+
+      for(Int_t i = 0; i < ntotal; i++){
+        Double_t candidatePosition = peaksFound[i]; // peaks previously selected
+        if(wait_now){ // I am waiting for a big pulse to finish
+          if(candidatePosition*dtime >= (refWait+waiting)){
+            wait_now = false;
+          }
+          else{
             if(snap()){
-              discardedPosition.push_back(crossNegative);
-              discarded_idx.push_back(0);
+              discardedPosition.push_back(candidatePosition);
+              discarded_idx.push_back(2);
             }
-            i++;
             continue;
-          } // and before
-          else if(i != 0 && !goodSocialDistance(peaksCross[i-1], crossNegative)){
+          }
+        }
+
+        //request social distance
+        if(!goodSocialDistance(peaksFound[i+1],candidatePosition)){
+          if(snap()){ // discarding current peak
+            discardedPosition.push_back(candidatePosition);
+            discarded_idx.push_back(0);
+          }
+
+          // discarding  next peak
+          // But first! Check if it is not too big =3
+          if(checkTooBig(wait_now, refWait, candidatePosition)){
             if(snap()){
-              discardedPosition.push_back(crossNegative);
-              discarded_idx.push_back(0);
+              discardedPosition.push_back(candidatePosition);
+              discarded_idx.push_back(2);
             }
             i++;
             continue;
           }
-          peakPosition.push_back(peaksCross[i+1]);
+          if(snap()){
+            discardedPosition.push_back(peaksFound[i+1]);
+            discarded_idx.push_back(0);
+          }
+          i++;
+          continue;
+        } // and before
+        else if(i != 0 && !goodSocialDistance(peaksFound[i-1], candidatePosition)){
+          if(snap()){
+            discardedPosition.push_back(candidatePosition);
+            discarded_idx.push_back(0);
+          }
+          continue;
         }
-        i++;
+        // social distance all good
+        // Now, checking for big pulses
+        if(checkTooBig(wait_now, refWait, candidatePosition)){
+          if(snap()){
+            discardedPosition.push_back(candidatePosition);
+            discarded_idx.push_back(2);
+          }
+          continue;
+        }
+
+        peakPosition.push_back(peaksFound[i]);
       }
     }
-
 
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
       if(delay_time==0) return v;
@@ -1234,13 +1319,27 @@ class SPHE2{
       return res;
     }
 
-    void integrate(){
-
+    void integrateSignals(){
       unsigned int npeaks = peakPosition.size();
       for(unsigned int i = 0; i < npeaks; i++){
 
       }
+    }
 
+    void getIntegral(Double_t from = 0, Double_t to = 0){
+      Double_t res = 0;
+      if (to == 0) to = memorydepth*dtime;
+      Double_t max = -1e12;
+      for(Int_t i = from/dtime; i < to/dtime; i++){
+        Double_t val = denoise_wvf[i];
+        if(withfilter == false){ val = z->ch[kch].wvf[i]; }
+        res += val;
+        if(val>=max){
+          max = val;
+        }
+      }
+      z->temp_charge = res*dtime;
+      z->temp_max = max;
     }
 
     // ____________________________________________________________________________________________________ //

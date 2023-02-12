@@ -357,12 +357,12 @@ class ANALYZER{
       haverage[kch]->SetEntries(total);
     }
 
-    void zeroCrossSearch(Double_t *derwvf, vector<Int_t> &peaksCross, Int_t start, Int_t finish){
+    void zeroCrossSearch(Double_t *derwvf, vector<Int_t> &peaksRise, vector<Int_t> &peaksCross, Int_t start, Int_t finish){
       if(start == 0) start = 4;
       bool lastIsPositive = false; // I want to always start with a positive crossing
       for(Int_t i = start/4; i < finish/4-1; i++){
         if(lastIsPositive==false && derwvf[i] >= 0 && derwvf[i-1] <=0 && derwvf[i+1]>0){
-          peaksCross.push_back(i);
+          peaksRise.push_back(i);
           lastIsPositive = true;
           i = i+1;
         }
