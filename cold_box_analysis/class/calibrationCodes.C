@@ -953,17 +953,21 @@ class SPHE2{
 
     // Here are more general ones
 
-    ANALYZER *z = nullptr;
-    TFile *fout = nullptr;
-    TFile *fwvf = nullptr;
-    TTree *twvf = nullptr;
+    ANALYZER *z      = nullptr; // Main analyser
+    TFile    *fout   = nullptr; // File to save histogram
+    TFile    *fwvf   = nullptr; // File to save waveforms
+    TTree    *twvf   = nullptr; // tree of waveforms
+    ADC_DATA *sample = nullptr; // For saving waveforms
 
-    string myname;
-    Bool_t derivate = false;
-    Int_t kch;
-    Int_t nshow = 100;
-    Int_t nshow_start = 0;
-    Bool_t getstaticbase = false;
+    string myname; // name of the declared class
+    Bool_t derivate = false; // control if user has set to derivate
+    Int_t kch; // current channel used
+    Int_t nshow = 100; // will show `nshow` debugging waveforms up
+    Int_t nshow_start = 0; // starting from here
+    Bool_t getstaticbase = false; // control if `static` method was set
+
+    Bool_t get_this_wvf = true;
+    Bool_t get_this_charge = true;
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -986,9 +990,12 @@ class SPHE2{
 
     vector<Double_t> selected_peaks; // these are for plotting
     vector<Double_t> selected_time;
+    vector<Double_t> selected_charge;
+    vector<Double_t> selected_charge_time;
 
 
     vector<Double_t> discardedPosition; //store position of thed
+    vector<Double_t> discardedPeak; //store position of thed
     vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
     // ____________________ ________________________________ ____________________ //
 
@@ -1037,12 +1044,25 @@ class SPHE2{
       z->kch = channel;
       kch = channel;
       fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",kch),"RECREATE");
+
+      // ____________________ Setting up what needs to be set ____________________ //
+
       if(get_wave_form==true){
         fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",kch),"RECREATE");
       }
+      else{ // in the case we are not taking waveform, I change this values for the same setup of integration
+        mean_before = timeLow;
+        mean_after = timeHigh;
+      }
       twvf = new TTree("t1","mean waveforms");
-
-      // ____________________ Setting up what need to set ____________________ //
+      // if the user set mean_before = 24 and mea50n_after = 100
+      // we need to get  6 + 25 points + 1 = 32  (+1 because of the peak start)
+      // if I found a point in around 100 ns, that is i = 25, I perform a while that goes
+      // from i-mean_before = 19 up to i+mean_after = 50 (included) = 32 pts
+      sample = new ADC_DATA();
+      Int_t npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
+      sample->setBranchName(npts_wvf);
+      twvf->Branch(Form("Ch%i",channel),&sample,sample->tobranch.c_str());
 
       if(led_calibration==false){
         method = "led";
@@ -1059,6 +1079,24 @@ class SPHE2{
         peaksRise.reserve(memorydepth);
         peaksCross.reserve(memorydepth);
       }
+
+      Double_t delta = sphe_charge2 - sphe_charge;
+      if(deltaminus == 0){
+        deltaminus = sphe_charge - deltaplus*sphe_std;
+        deltaplus = sphe_charge + deltaplus*sphe_std;
+      }
+      else{
+        deltaminus = delta/deltaminus;
+        deltaplus = delta*deltaplus;
+      }
+
+
+      // this might be too much, time will tell. Keep an eye in the RAM memory
+      selected_peaks.reserve(memorydepth);
+      selected_time.reserve(memorydepth);
+      selected_charge.reserve(memorydepth);
+      selected_charge_time.reserve(memorydepth);
+
       // ____________________ ___________________________ ____________________ //
 
 
@@ -1076,11 +1114,22 @@ class SPHE2{
           searchForPeaks();
         }
         else if(derivate){
-          z->zeroCrossSearch(&smooted_wvf[0], peaksRise, peaksCross, start+timeLow, finish-timeHigh);
+          // Search for crossing points in the derivated waveform
+          // positive crossing stored in peaksRise
+          // negative crossing stored in peaksCross
+          // from start to finish, discounting what was for getting integral with an extra point (not waveform, this filter is done later)
+          z->zeroCrossSearch(&smooted_wvf[0], peaksRise, peaksCross, start+abs(timeLow)+dtime, finish-abs(mean_after)-dtime);
           derivateApplyThreshold();
         }
         cleanPeaks();
         integrateSignals();
+        if(snap()){
+          drawMySamples();
+          cout << "Event " << z->ch[kch].event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
+          for(unsigned int j = 0; j < selected_charge.size(); j++){
+            cout << "\t\t Charge = " << selected_charge[j] << " at " << selected_charge_time[j] << end;
+          }
+        } // draw sample graphs
       }
 
 
@@ -1108,7 +1157,10 @@ class SPHE2{
           peakMax.clear();
           selected_peaks.clear();
           selected_time.clear();
+          selected_charge.clear();
+          selected_charge_time.clear();
           discardedPosition.clear();
+          discardedPeak.clear();
           discarded_idx.clear();
           peaksFound.clear();
         }
@@ -1205,7 +1257,8 @@ class SPHE2{
           }
           else{
             if(snap()){
-              discardedPosition.push_back(candidatePosition);
+              discardedPosition.push_back(candidatePosition*dtime);
+              discardedPeak.push_back(smooted_wvf[candidatePosition]);
               discarded_idx.push_back(2);
             }
             continue;
@@ -1215,7 +1268,8 @@ class SPHE2{
         //request social distance
         if(!goodSocialDistance(peaksFound[i+1],candidatePosition)){
           if(snap()){ // discarding current peak
-            discardedPosition.push_back(candidatePosition);
+            discardedPosition.push_back(candidatePosition*dtime);
+            discardedPeak.push_back(smooted_wvf[candidatePosition]);
             discarded_idx.push_back(0);
           }
 
@@ -1223,14 +1277,16 @@ class SPHE2{
           // But first! Check if it is not too big =3
           if(checkTooBig(wait_now, refWait, candidatePosition)){
             if(snap()){
-              discardedPosition.push_back(candidatePosition);
+              discardedPosition.push_back(candidatePosition*dtime);
+              discardedPeak.push_back(smooted_wvf[candidatePosition]);
               discarded_idx.push_back(2);
             }
             i++;
             continue;
           }
           if(snap()){
-            discardedPosition.push_back(peaksFound[i+1]);
+            discardedPosition.push_back(peaksFound[i+1]*dtime);
+            discardedPeak.push_back(smooted_wvf[peaksFound[i+1]]);
             discarded_idx.push_back(0);
           }
           i++;
@@ -1238,7 +1294,8 @@ class SPHE2{
         } // and before
         else if(i != 0 && !goodSocialDistance(peaksFound[i-1], candidatePosition)){
           if(snap()){
-            discardedPosition.push_back(candidatePosition);
+            discardedPosition.push_back(candidatePosition*dtime);
+            discardedPeak.push_back(smooted_wvf[candidatePosition]);
             discarded_idx.push_back(0);
           }
           continue;
@@ -1247,7 +1304,8 @@ class SPHE2{
         // Now, checking for big pulses
         if(checkTooBig(wait_now, refWait, candidatePosition)){
           if(snap()){
-            discardedPosition.push_back(candidatePosition);
+            discardedPosition.push_back(candidatePosition*dtime);
+            discardedPeak.push_back(smooted_wvf[candidatePosition]);
             discarded_idx.push_back(2);
           }
           continue;
@@ -1322,29 +1380,98 @@ class SPHE2{
     void integrateSignals(){
       unsigned int npeaks = peakPosition.size();
       for(unsigned int i = 0; i < npeaks; i++){
-
+        Int_t peakIdx = 0;
+        if(!led_calibration) peakIdx = peakPosition[i];
+        getIntegral(peakIdx); // If get_mean_wvf is set to false, there is no problem!
+        Double_t charge = z->temp_charge;
+        Double_t peak = z->temp_max;
+        if(get_this_charge){
+          hcharge->Fill(charge);
+          if(snap())
+          {
+            selected_charge.push_back(charge);
+            selected_charge_time.push_back(peakIdx*dtime);
+          }
+        }
+        else{
+          continue; // If I didn't get the charge, I will not take the waveform
+        }
+        if(get_this_wvf && get_this_wvf){
+          if(charge>=deltaminus && charge <= deltaplus){
+            sample->selection = 1;
+          }
+          sample->peak = peak;
+          sample->charge = charge;
+          twvf->Fill();
+        }
       }
     }
 
-    void getIntegral(Double_t from = 0, Double_t to = 0){
+    void getIntegral(Int_t peakIdx){
+      get_this_charge = true;
+      get_this_wvf = true;
+      Double_t from = peakIdx - mean_before/dtime;
+      Double_t to = peakIdx + mean_after/dtime;
+      if(from < 0 || to >= memorydepth){ // check if boundaries are being respected
+        from = peakIdx - timeLow/dtime;
+        to = peakIdx + timeHigh/dtime;
+        if(get_wave_form) get_this_wvf = false; // in the case not, I dont take the waveform
+      }
+      Int_t iwvf = 0;
+
       Double_t res = 0;
-      if (to == 0) to = memorydepth*dtime;
       Double_t max = -1e12;
-      for(Int_t i = from/dtime; i < to/dtime; i++){
-        Double_t val = denoise_wvf[i];
-        if(withfilter == false){ val = z->ch[kch].wvf[i]; }
-        res += val;
-        if(val>=max){
-          max = val;
+      Int_t negativeHits = 0;
+      Double_t integralfrom = peakIdx - timeLow/dtime;
+      Double_t integralto = peakIdx - timeHigh/dtime;
+
+      if(led_calibration){
+        from = 0;
+        to = memorydepth-1;
+        integralfrom = start/dtime;
+        integralto = finish/dtime;
+        get_this_wvf = true;
+      }
+      for(Int_t i = from; i <= to; i++, iwvf++){
+      Double_t val = denoise_wvf[i];
+        if(get_wave_form && get_this_wvf){
+          sample->wvf[iwvf] = z->ch[kch].wvf[i];
+        }
+        if(i >= integralfrom && i <= integralto){
+          if (val < lowerThreshold){
+            negativeHits++;
+          }
+          if(negativeHits >= maxHits){
+            get_this_wvf = false;
+            get_this_charge = false;
+            if(snap()){
+              discardedPosition.push_back(peakIdx*dtime);
+              discardedPeak.push_back(smooted_wvf[peakIdx]);
+              discarded_idx.push_back(1);
+            }
+            break;
+          }
+          if(snap())
+          {
+            selected_peaks.push_back(val);
+            selected_time.push_back(i*dtime);
+          }
+          if(withfilter == false){ val = z->ch[kch].wvf[i]; }
+          res += val;
+          if(val>=max){
+            max = val;
+          }
         }
       }
+      // store values here because of lazyness
       z->temp_charge = res*dtime;
       z->temp_max = max;
+
     }
 
     // ____________________________________________________________________________________________________ //
     Bool_t snap(){
-      if(z->currentEvent >= nshow_start && z->currentEvent < nshow){
+      if(z->currentEvent >= nshow_start && z->currentEvent < nshow_start + nshow && !led_calibration){
         return true;
       }
       else{
@@ -1353,40 +1480,39 @@ class SPHE2{
       return false; // just to be sure oO
     }
     void drawMySamples(){
+      string sampleName = "ev_" + to_string(z->ch[kch].event)+"_"+to_string(kch);
 
-      // string sampleName = "ev_" + to_string(static_cast<Int_t>(my_events[aux_events]))+"_"+to_string(channel);
+      // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
+      // this is not working when saving
+      TCanvas *c1 = new TCanvas();
 
-      // // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
-      // // this is not working when saving
-      // TCanvas *c1 = new TCanvas();
+      c1->cd(1);
+      g_smooth->SetLineColor(kRed);
+      g_smooth->SetLineWidth(3);
 
-      // c1->cd(1);
-      // g_smooth->SetLineColor(kRed);
-      // g_smooth->SetLineWidth(3);
+      g_normal->SetLineColor(kBlue);
+      g_normal->SetTitle(charge_status.c_str());
 
-      // g_normal->SetLineColor(kBlue);
-      // g_normal->SetTitle(charge_status.c_str());
+      g_normal->Draw("AL");
+      g_smooth->Draw("L SAME");
 
-      // g_normal->Draw("AL");
-      // g_smooth->Draw("L SAME");
+      TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
+      TLine *ldev = new TLine(timeLimit,mean+threshold,memorydepth*dtime,mean+threshold);
 
-      // TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
-      // TLine *ldev = new TLine(timeLimit,mean+threshold,memorydepth*dtime,mean+threshold);
+      lmean->SetLineColor(kGreen);
+      ldev->SetLineColor(kGreen);
 
-      // lmean->SetLineColor(kGreen);
-      // ldev->SetLineColor(kGreen);
+      lmean->SetLineWidth(2);
+      ldev->SetLineWidth(2);
 
-      // lmean->SetLineWidth(2);
-      // ldev->SetLineWidth(2);
-
-      // lmean->Draw();
-      // ldev->Draw();
-      // Int_t n = selected_peaks.size();
-      // if(n!=0){
-      //   g_points = new TGraph(n,&selected_time[0],&selected_peaks[0]);
-      //   g_points->SetMarkerColor(kBlack);
-      //   g_points->Draw("P* SAME");
-      // }
+      lmean->Draw();
+      ldev->Draw();
+      Int_t n = selected_peaks.size();
+      if(n!=0){
+        g_points = new TGraph(n,&selected_time[0],&selected_peaks[0]);
+        g_points->SetMarkerColor(kBlack);
+        g_points->Draw("P* SAME");
+      }
 
 
 
