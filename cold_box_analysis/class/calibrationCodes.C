@@ -965,9 +965,16 @@ class SPHE2{
     Int_t nshow = 100; // will show `nshow` debugging waveforms up
     Int_t nshow_start = 0; // starting from here
     Bool_t getstaticbase = false; // control if `static` method was set
+    Double_t threshold = 0;
 
     Bool_t get_this_wvf = true;
     Bool_t get_this_charge = true;
+
+    TGraph *g_smooth   = nullptr; // for the nshow sample plots
+    TGraph *g_normal   = nullptr;
+    TGraph *g_selected = nullptr;
+    TGraph *g_discarded = nullptr;
+    Double_t *timeg = new Double_t[memorydepth];
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -994,7 +1001,7 @@ class SPHE2{
     vector<Double_t> selected_charge_time;
 
 
-    vector<Double_t> discardedPosition; //store position of thed
+    vector<Double_t> discardedTime; //store position of thed
     vector<Double_t> discardedPeak; //store position of thed
     vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
     // ____________________ ________________________________ ____________________ //
@@ -1068,7 +1075,16 @@ class SPHE2{
         method = "led";
       }
       else{
+
+        for(int i = 0; i < memorydepth; i++){
+          timeg[i] = i*dtime;
+        }
         peaksFound.reserve(memorydepth);
+        // this might be too much, time will tell. Keep an eye in the RAM memory
+        selected_peaks.reserve(memorydepth);
+        selected_time.reserve(memorydepth);
+        selected_charge.reserve(memorydepth);
+        selected_charge_time.reserve(memorydepth);
       }
 
       if(method == "static") getstaticbase = true;
@@ -1091,11 +1107,6 @@ class SPHE2{
       }
 
 
-      // this might be too much, time will tell. Keep an eye in the RAM memory
-      selected_peaks.reserve(memorydepth);
-      selected_time.reserve(memorydepth);
-      selected_charge.reserve(memorydepth);
-      selected_charge_time.reserve(memorydepth);
 
       // ____________________ ___________________________ ____________________ //
 
@@ -1127,7 +1138,7 @@ class SPHE2{
           drawMySamples();
           cout << "Event " << z->ch[kch].event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
           for(unsigned int j = 0; j < selected_charge.size(); j++){
-            cout << "\t\t Charge = " << selected_charge[j] << " at " << selected_charge_time[j] << end;
+            cout << "\t\t Charge = " << selected_charge[j] << " at " << selected_charge_time[j] << endl;
           }
         } // draw sample graphs
       }
@@ -1159,7 +1170,7 @@ class SPHE2{
           selected_time.clear();
           selected_charge.clear();
           selected_charge_time.clear();
-          discardedPosition.clear();
+          discardedTime.clear();
           discardedPeak.clear();
           discarded_idx.clear();
           peaksFound.clear();
@@ -1257,7 +1268,7 @@ class SPHE2{
           }
           else{
             if(snap()){
-              discardedPosition.push_back(candidatePosition*dtime);
+              discardedTime.push_back(candidatePosition*dtime);
               discardedPeak.push_back(smooted_wvf[candidatePosition]);
               discarded_idx.push_back(2);
             }
@@ -1268,7 +1279,7 @@ class SPHE2{
         //request social distance
         if(!goodSocialDistance(peaksFound[i+1],candidatePosition)){
           if(snap()){ // discarding current peak
-            discardedPosition.push_back(candidatePosition*dtime);
+            discardedTime.push_back(candidatePosition*dtime);
             discardedPeak.push_back(smooted_wvf[candidatePosition]);
             discarded_idx.push_back(0);
           }
@@ -1277,7 +1288,7 @@ class SPHE2{
           // But first! Check if it is not too big =3
           if(checkTooBig(wait_now, refWait, candidatePosition)){
             if(snap()){
-              discardedPosition.push_back(candidatePosition*dtime);
+              discardedTime.push_back(candidatePosition*dtime);
               discardedPeak.push_back(smooted_wvf[candidatePosition]);
               discarded_idx.push_back(2);
             }
@@ -1285,7 +1296,7 @@ class SPHE2{
             continue;
           }
           if(snap()){
-            discardedPosition.push_back(peaksFound[i+1]*dtime);
+            discardedTime.push_back(peaksFound[i+1]*dtime);
             discardedPeak.push_back(smooted_wvf[peaksFound[i+1]]);
             discarded_idx.push_back(0);
           }
@@ -1294,7 +1305,7 @@ class SPHE2{
         } // and before
         else if(i != 0 && !goodSocialDistance(peaksFound[i-1], candidatePosition)){
           if(snap()){
-            discardedPosition.push_back(candidatePosition*dtime);
+            discardedTime.push_back(candidatePosition*dtime);
             discardedPeak.push_back(smooted_wvf[candidatePosition]);
             discarded_idx.push_back(0);
           }
@@ -1304,7 +1315,7 @@ class SPHE2{
         // Now, checking for big pulses
         if(checkTooBig(wait_now, refWait, candidatePosition)){
           if(snap()){
-            discardedPosition.push_back(candidatePosition*dtime);
+            discardedTime.push_back(candidatePosition*dtime);
             discardedPeak.push_back(smooted_wvf[candidatePosition]);
             discarded_idx.push_back(2);
           }
@@ -1445,7 +1456,7 @@ class SPHE2{
             get_this_wvf = false;
             get_this_charge = false;
             if(snap()){
-              discardedPosition.push_back(peakIdx*dtime);
+              discardedTime.push_back(peakIdx*dtime);
               discardedPeak.push_back(smooted_wvf[peakIdx]);
               discarded_idx.push_back(1);
             }
@@ -1482,6 +1493,8 @@ class SPHE2{
     void drawMySamples(){
       string sampleName = "ev_" + to_string(z->ch[kch].event)+"_"+to_string(kch);
 
+      g_smooth = new TGraph(memorydepth, timeg, &smooted_wvf[0]);
+      g_normal = new TGraph(memorydepth, timeg, &denoise_wvf[0]);
       // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
       // this is not working when saving
       TCanvas *c1 = new TCanvas();
@@ -1491,13 +1504,18 @@ class SPHE2{
       g_smooth->SetLineWidth(3);
 
       g_normal->SetLineColor(kBlue);
-      g_normal->SetTitle(charge_status.c_str());
+      g_normal->SetTitle(" ");
 
       g_normal->Draw("AL");
       g_smooth->Draw("L SAME");
 
-      TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
-      TLine *ldev = new TLine(timeLimit,mean+threshold,memorydepth*dtime,mean+threshold);
+      if (derivate) {
+        threshold = tolerance;
+        mean = 0;
+      }
+
+      TLine *lmean = new TLine(start,mean,memorydepth*dtime,mean);
+      TLine *ldev = new TLine(finish,mean+threshold,memorydepth*dtime,mean+threshold);
 
       lmean->SetLineColor(kGreen);
       ldev->SetLineColor(kGreen);
@@ -1509,28 +1527,19 @@ class SPHE2{
       ldev->Draw();
       Int_t n = selected_peaks.size();
       if(n!=0){
-        g_points = new TGraph(n,&selected_time[0],&selected_peaks[0]);
-        g_points->SetMarkerColor(kBlack);
-        g_points->Draw("P* SAME");
+        g_selected = new TGraph(n, &selected_time[0], &selected_peaks[0]);
+        g_selected->SetMarkerColor(kBlack);
+        g_selected->Draw("P* SAME");
+      }
+
+      Int_t ndis = discardedPeak.size();
+      if(ndis != 0){
+        g_discarded = new TGraph(ndis, &discardedTime[0], &discardedPeak[0]);
+        g_discarded->SetMarkerColor(kRed);
+        g_discarded->Draw("P* SAME");
       }
 
 
-
-
-      // // Some fancy drawing now;
-      // if(matchingAreas.size()!=0){
-      //   Int_t nAreas = matchingAreas.size(); //always two points per area of course
-      //   TLine *larea;
-      //   Double_t max = g_normal->GetYaxis()->GetXmax();
-      //   for(Int_t i = 0; i<nAreas; i++){
-      //     larea = new TLine(matchingAreas[i],0,matchingAreas[i],max);
-      //     cout << "\t\t\t" << matchingAreas[i] << " ";
-      //     if((i+1)%2==0)cout << "\n" << endl;
-      //     larea->SetLineColor(kRed);
-      //     larea->SetLineWidth(2);
-      //     larea->Draw();
-      //   }
-      // }
 
       // fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
 
@@ -2426,7 +2435,7 @@ class SPHE{
     
       g_normal->Draw("AL");
       g_smooth->Draw("L SAME");
-    
+
       TLine *lmean = new TLine(timeLimit,mean,memorydepth*dtime,mean);
       TLine *ldev = new TLine(timeLimit,mean+threshold,memorydepth*dtime,mean+threshold);
     
