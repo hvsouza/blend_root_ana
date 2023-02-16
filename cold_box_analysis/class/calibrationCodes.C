@@ -1234,11 +1234,11 @@ class SPHE2{
 
     void derivateApplyThreshold(){
       Int_t ntotal = (int)peaksCross.size();
-      if(peaksRise.size() < ntotal){ // there should be only pairs
+      if((int)peaksRise.size() < ntotal){ // there should be only pairs
         cout << "@@@@@@@@@@@@@@@@@@@@ THIS SHOULD NOT HAPPEN @@@@@@@@@@@@@@@@@@@@" << endl;
         cout << "\n\n\n\n\n\n\n\n\n\n" << endl;
         cout << "@@@@@@@@@@@@@@@@@@@@ THIS SHOULD NOT HAPPEN @@@@@@@@@@@@@@@@@@@@" << endl;
-        ntotal = peaksRise.size();
+        ntotal = (int)peaksRise.size();
       }
 
       for(Int_t i = 0; i < ntotal; i++){

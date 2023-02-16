@@ -328,6 +328,36 @@ class ANALYZER{
       }
 
     }
+    void averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = true, Double_t filter = 0){
+      if (maxevent==0) {
+        maxevent = nentries;
+      }
+      getSelection(selection);
+      Int_t nev = lev->GetN();
+      if (maxevent < nev) {
+        nev = maxevent;
+      }
+      Int_t iev = 0;
+      hfft[kch] = (TH1D*)w->hfft->Clone(Form("hfft_%s_ch%d",myname.c_str(),kch));
+      hfft[kch]->Reset();
+      Int_t total = 0;
+      for(Int_t i = 0; i < nev; i++){
+        iev = lev->GetEntry(i);
+        getWaveform(iev,kch);
+        applyDenoise(filter);
+        // applyFreqFilter();
+        getFFT();
+        for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
+        total++;
+      }
+      hfft[kch]->Scale(1./total);
+      hfft[kch]->SetEntries(total);
+
+      if (inDecibel){
+        w->convertDecibel(hfft[kch]);
+        hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
+      }
+    }
 
     void averageWaveform(Int_t maxevent = 0, string selection = "", Double_t filter =  0){
       if (maxevent==0) {
@@ -590,7 +620,6 @@ class ANALYZER{
 
 
     void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
-    void averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter);
     void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs);
     void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
     void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);

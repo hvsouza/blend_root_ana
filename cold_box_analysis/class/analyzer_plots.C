@@ -59,6 +59,7 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t
     iev = lev->GetEntry(i);
     getWaveform(iev,kch);
     applyDenoise(filter);
+    // applyFreqFilter();
 
     for (int j = 0; j < n_points; j++) {
       hpers->Fill(j*dtime,ch[kch].wvf[j]*factor);
@@ -90,35 +91,6 @@ TGraph ANALYZER::drawGraph(string opt, Int_t n, Double_t* x, Double_t* y){
   return *gwvf;
 }
 
-void ANALYZER::averageFFT(Int_t maxevent, string selection, bool inDecibel, Double_t filter){
-  if (maxevent==0) {
-    maxevent = nentries;
-  }
-  getSelection(selection);
-  Int_t nev = lev->GetN();
-  if (maxevent < nev) {
-    nev = maxevent;
-  }
-  Int_t iev = 0;
-  hfft[kch] = (TH1D*)w->hfft->Clone(Form("hfft_%s_ch%d",myname.c_str(),kch));
-  hfft[kch]->Reset();
-  Int_t total = 0;
-  for(Int_t i = 0; i < nev; i++){
-    iev = lev->GetEntry(i);
-    getWaveform(iev,kch);
-    applyDenoise(filter);
-    getFFT();
-    for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
-    total++;
-  }
-  hfft[kch]->Scale(1./total);
-  hfft[kch]->SetEntries(total);
-
-  if (inDecibel){
-    w->convertDecibel(hfft[kch]);
-    hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
-  }
-}
 void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel){
 
   if (maxevent==0) {

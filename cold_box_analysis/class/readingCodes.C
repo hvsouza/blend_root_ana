@@ -262,7 +262,7 @@ class Read{
     string format_time = "hh:mm:ss";
     string format_date = "dd-mmm-yyyy";
 
-    void reset_double_vector(vector<vector<Double_t>> val){
+    void reset_double_vector(vector<vector<Double_t>> &val){
       Int_t nchannels = (int)channels.size();
       Int_t noriginal = (int)val.size();
       if (noriginal > nchannels){
@@ -280,12 +280,13 @@ class Read{
         }
       }
     }
-    void reset_vector(vector<Double_t> val){
+    void reset_vector(vector<Double_t> &val){
       Int_t nchannels = (int)channels.size();
       Int_t noriginal = (int)val.size();
       if (noriginal > nchannels){
         if (noriginal-1 >= channels[nchannels-1]){
           for (Int_t j = 0; j < nchannels; j++) {
+            // cout << val[j]  << " " << j << " " << val[channels[j]] << " " << channels[j] << endl;
             val[j] =  val[channels[j]];
           }
           val.resize(nchannels);
