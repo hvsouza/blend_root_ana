@@ -308,3 +308,46 @@ void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross){
     lns[i]->Draw("SAME");
   }
 }
+
+
+
+void ANALYZER::histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr)
+{
+  if(!_htemp){
+    _htemp = new TH1D("","",500,0,0);
+  }
+  if(nfinish==0) nfinish = nentries;
+  Double_t ref = 0;
+  for(Int_t i = nstart; i < nfinish; i++){
+    getWaveform(i,kch);
+    if(i == nstart){
+      ref = ch[kch].time;
+    }
+    else{
+      _htemp->Fill(ch[kch].time - ref);
+      ref = ch[kch].time;
+    }
+  }
+  _htemp->Draw();
+}
+
+void ANALYZER::graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr)
+{
+  if(nfinish==0) nfinish = nentries;
+  Double_t ref = 0;
+
+  if(!_gtemp){
+    _gtemp = new TGraph();
+  }
+  for(Int_t i = nstart; i < nfinish; i++){
+    getWaveform(i,kch);
+    if(i == nstart){
+      ref = ch[kch].time;
+    }
+    else{
+      _gtemp->AddPoint(ch[kch].event, ch[kch].time - ref);
+      ref = ch[kch].time;
+    }
+  }
+  _gtemp->Draw("ALP");
+}
