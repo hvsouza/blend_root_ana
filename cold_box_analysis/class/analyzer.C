@@ -28,6 +28,7 @@ class ANALYZER{
     Int_t currentEvent = 0;
     DENOISE dn;
     WIENER *w;
+    string filter_type = "default";
 
     Int_t n_points = memorydepth;
     vector<vector<Double_t>> raw;
@@ -453,10 +454,27 @@ class ANALYZER{
     void applyDenoise(Int_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       checkSignals(&_raw,&_filtered);
       if (filter == 0) return;
+      if (filter_type == "default"){
+        applyTV1D(filter, _raw, _filtered);
+      }
+      else if (filter_type == "ma"){
+        applyMovingAverage(filter);
+      }
+      else if(filter_type == "band")
+        applyBandCut();
+      else{
+        applyFreqFilter();
+      }
+    }
+
+    void applyTV1D(Int_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+      checkSignals(&_raw,&_filtered);
+      if (filter == 0) return;
       dn.TV1D_denoise(_raw,_filtered,n_points,filter);
     }
 
     void setFreqFilter(Double_t frequency_cut, string filter_type = "gaus"){
+      this->filter_type = filter_type;
       w->setFilter(frequency_cut,filter_type);
     }
     void applyFreqFilter(Double_t *_filtered = nullptr){
@@ -619,7 +637,7 @@ class ANALYZER{
 
 
 
-    void showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel);
+    void showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 100, bool inDecibel = true);
     void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs);
     void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
     void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);
@@ -627,6 +645,9 @@ class ANALYZER{
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
     void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
     void drawZeroCrossingLines(vector<Int_t> &peaksCross);
+    void histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr);
+    void graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr);
+
     ANALYZER(string m_myname = "z") : myname{m_myname}{
     }
 
