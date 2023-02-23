@@ -1,0 +1,42 @@
+#+title: Power cycles timestamps
+
+
+| System change                                         | timestamps                   |
+|-------------------------------------------------------+------------------------------|
+| Connected cable A and B                               | <2023-02-13 Mon 16:23>       |
+| Switched on argon4 and argon 2x2                      | <2023-02-13 Mon 16:25>       |
+| Finished connecting other cables for DCem1.2 VD after | <2023-02-13 Mon 16:53>       |
+| Just turned off DCem1.2 VD, on for about 15 min       | <2023-02-13 Mon 17:20>       |
+| Power supplies on and off several times, mostly on    | <2023-02-13 Mon 17:30-18:45> |
+| Using SSP power supplies                              | <2023-02-13 Mon 18:50-19:25> |
+| Turned on Argon2x2 and Argon4                         | <2023-02-14 Tue 08:54>       |
+| Turned on DCemVD1.2                                   | <2023-02-14 Tue 09:20>       |
+| Turned on DCemVD1.0                                   | <2023-02-14 Tue 09:55>       |
+| Turned off DCemVD1.0                                  | <2023-02-14 Tue 10:07>       |
+| Turned on DCemVD1.0, now with SSP                     | <2023-02-14 Tue 10:20>       |
+| Switched off DCemVD1.2                                | <2023-02-14 Tue 10:54>       |
+| Turned on V4                                          | <2023-02-14 Tue 11:39>       |
+| Turned on V5                                          | <2023-02-14 Tue 11:55>       |
+| Turned off V4                                         | <2023-02-14 Tue 12:09>       |
+| Turn off all the system                               | <2023-02-14 Tue 12:15>       |
+| Only wall system + LED was turned on in this period   | <2023-02-14 Tue 14:00-15:00> |
+| Cathode + LED turned on for SPE                       | <2023-02-14 Tue 15:30-18:35> |
+| Turned cathode system on                              | <2023-02-14 Tue 18:37>       |
+| Turned cathode system off                             | <2023-02-14 Tue 19:22>       |
+| Turned on Cable A                                     | <2023-02-15 Wed 09:12>       |
+| Turned on Cathode                                     | <2023-02-15 Wed 09:16>       |
+| Turned on Cable C                                     | <2023-02-15 Wed 09:23>       |
+| Turned off Cathode                                    | <2023-02-15 Wed 10:53>       |
+| Turned system back on                                 | <2023-02-15 Wed 14:44>       |
+| Turned v4 off                                         | <2023-02-15 Wed 19:24>       |
+| Turned v5 off                                         | <2023-02-15 Wed 19:29>       |
+| Turned DCem1.2 off                                    | <2023-02-15 Wed 19:31>       |
+| Turned DCem1.0 off                                    | <2023-02-15 Wed 19:38>       |
+| Turned off Argon2x2 and Argon4                        | <2023-02-15 Wed 19:39>       |
+| Turned on Argon2x2                                    | <2023-02-16 Thu 09:31>       |
+| Turned on Argon4                                      | <2023-02-16 Thu 09:38>       |
+| Turned on V4                                          | <2023-02-16 Thu 09:49>       |
+| Turned on V5                                          | <2023-02-16 Thu 09:50>       |
+| Set up CRT for DAQ with CRP                           | <2023-02-16 Thu 12:20>       |
+| Started DAQ with CRP                                  | <2023-02-16 Thu 13:22>       |
+| Stop DAQ with CRP                                     | <2023-02-16 Thu 14:31>       |
