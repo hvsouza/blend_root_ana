@@ -310,11 +310,13 @@ class ANALYZER{
       for(Int_t i = startpoint; i < endpoint; i++){
         if (ch[kch].wvf[i] >= 0.1*(peak_level-baseline_level)+baseline_level && triggered==false) {
           triggered = true;
-          time_mark = i*dtime;
+          time_mark = linear_interpole_tot(i, 0.1*(peak_level-baseline_level))*dtime;
+          // time_mark = i*dtime;
         }
         else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)+baseline_level){
           if(debug) draw_rise_lines(time_mark, i*dtime, baseline_level, peak_level);
-          time_mark = i*dtime - time_mark;
+          time_mark = linear_interpole_tot(i, 0.9*(peak_level - baseline_level))*dtime - time_mark;
+          // time_mark = i*dtime - time_mark;
           return time_mark;
         }
       }
@@ -417,8 +419,15 @@ class ANALYZER{
       }
     }
 
+    void addOffet(Double_t offset = 0){
+      if(offset == 0){
+        offset = ch[kch].base;
+      }
+      for(Int_t i = 0; i < memorydepth; i++){
+        ch[kch].wvf[i] = ch[kch].wvf[i] + offset;
+      }
+    }
 
-    // _________________________ Filters and processing _________________________ //
     void checkSignals(Double_t **_raw, Double_t **_filtered){
       Double_t *_temp = new Double_t[memorydepth];
       if (*_raw == nullptr  && *_filtered == nullptr){
