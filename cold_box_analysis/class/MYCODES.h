@@ -53,6 +53,7 @@
 #include <TSpectrum.h>
 #include <TGaxis.h>
 #include <TLegend.h>
+#include <TPaveStats.h>
 
 
 // #include "DUNEStyle.h"

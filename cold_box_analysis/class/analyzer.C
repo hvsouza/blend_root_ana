@@ -200,14 +200,14 @@ class ANALYZER{
       return 0;
     }
 
-    void integrate(Int_t channel = 0, Double_t from = 0, Double_t to = 0){
+    void integrate(Double_t from = 0, Double_t to = 0){
       Double_t res = 0;
       if (to == 0) to = memorydepth*dtime;
       Double_t max = -1e12;
       for(Int_t i = from/dtime; i < to/dtime; i++){
-        res += ch[channel].wvf[i];
-        if(ch[channel].wvf[i]>=max){
-          max = ch[channel].wvf[i];
+        res += ch[kch].wvf[i];
+        if(ch[kch].wvf[i]>=max){
+          max = ch[kch].wvf[i];
         }
       }
       temp_charge = res*dtime;
@@ -221,7 +221,7 @@ class ANALYZER{
         iev = lev->GetEntry(i);
         getWaveform(iev,kch);
         applyDenoise(filter);
-        integrate(kch, from, to);
+        integrate(from, to);
         _htemp->Fill(temp_charge/sphe);
       }
     }
@@ -248,11 +248,12 @@ class ANALYZER{
     }
 
 
-    void getWaveform(Int_t myevent = 0, Int_t k = 0, Double_t factor = 1){
+    void getWaveform(Int_t myevent = 0, Int_t k = 0){
       if (k>=nchannels){
         cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
         return;
       }
+      kch = k;
       b[k]->GetEvent(myevent);
       currentEvent = ch[k].event;
     }
@@ -407,6 +408,8 @@ class ANALYZER{
 
     // _________________________ _____________________________ _________________________ //
 
+
+    // _________________________ Filters and processing _________________________ //
     void scaleWvf(Double_t factor, Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch].wvf;
       for (Int_t i = 0; i < memorydepth; i++) {
@@ -570,14 +573,17 @@ class ANALYZER{
         xmax = memorydepth*dtime;
       }
       for(Int_t i = 0; i < lev->GetN(); i++){
-        getWaveform(lev->GetEntry(i), kch);
+        Int_t ev = lev->GetEntry(i);
+        getWaveform(ev, kch);
         applyDenoise(filter);
         bool contact = false;
         for(Int_t j = xmin/dtime; j < xmax/dtime; j++){
           if(type == "higher") contact = checkHigher(ch[kch].wvf[j], limit);
           else contact = checkLower(ch[kch].wvf[j], limit);
           if(contact){
-            ttemp->Enter(i);
+            if(i == 20){
+            }
+            ttemp->Enter(ev);
             break;
           }
         }

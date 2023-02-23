@@ -71,6 +71,10 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t
   hpers->GetXaxis()->SetTitle("Time (ns)");
   hpers->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
 
+  gPad->Update();
+  TPaveStats *ps = (TPaveStats*)hpers->FindObject("stats");
+  ps->SetOptStat(10);
+
 }
 
 
@@ -311,7 +315,7 @@ void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross){
 
 
 
-void ANALYZER::histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr)
+void ANALYZER::histoTimeTrigger(Int_t nstart, Int_t nfinish, TH1D *_htemp)
 {
   if(!_htemp){
     _htemp = new TH1D("","",500,0,0);
@@ -328,10 +332,12 @@ void ANALYZER::histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htem
       ref = ch[kch].time;
     }
   }
+  _htemp->GetYaxis()->SetTitle("# of events");
+  _htemp->GetXaxis()->SetTitle("Time between trigger records (s)");
   _htemp->Draw();
 }
 
-void ANALYZER::graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr)
+void ANALYZER::graphTimeTrigger(Int_t nstart, Int_t nfinish, TGraph *_gtemp)
 {
   if(nfinish==0) nfinish = nentries;
   Double_t ref = 0;

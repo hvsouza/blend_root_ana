@@ -2550,12 +2550,13 @@ class SPHE{
       Int_t noise_hits = 0;
       Double_t max = -1e12;
       mean_waveforms.clear();
+      timeg.clear();
       mean_waveforms.resize(memorydepth,0);
       naverages = 0;
     
     
-      ofstream ftmp;
-      ftmp.open("valid_events.log",ios::out);
+      // ofstream ftmp;
+      // ftmp.open("valid_events.log",ios::out);
       if(just_a_test){nentries = just_this;}
       for(Int_t i = 0; i<nentries; i++){
         bch->GetEvent(i);
@@ -2622,12 +2623,12 @@ class SPHE{
             twvf->Fill();
             hcharge->Fill(charge*dtime);
             // cout << charge*dtime << endl;
-            ftmp << i << "\n";
+            // ftmp << i << "\n";
           }
         }
         charge=0;
       }
-      ftmp.close();
+      // ftmp.close();
 
       if(get_wave_form){
         for(Int_t i = 0; i<memorydepth; i++){
