@@ -10,7 +10,7 @@ void create_histograms_argon4(){
   vector<Double_t> volts = {3.15, 3.20, 3.30, 3.50, 3.70, 3.90, 4.10, 4.30, 4.50, 4.70, 4.90, 5.20, 6.20, 7.50, 10.00, 12.50, 15.00, 17.50, 23.00, 30.00};
   Double_t saturation_level;
   if(mychannel=="Ch2") saturation_level = 12600;
-  if(mychannel=="Ch3") saturation_level = 12600;
+  if(mychannel=="Ch3") saturation_level = 6500;
 
   Int_t n = volts.size();
 
@@ -106,7 +106,7 @@ void create_histograms_argon4(){
     // for(Int_t j = 0; j<2000; j++){
       bch[i]->GetEvent(j);
       charge = 0;
-      if(ch[i].selection==0){
+      if(ch[i].selection==0 /* && ch[i].peak < saturation_level */){
         Double_t max = -1e12;
 
         if(filter>0)dn.TV1D_denoise<Double_t>(&ch[i].wvf[0],&wvf[0],memorydepth,filter);

@@ -3,8 +3,9 @@
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 bool just_a_test = false;
-Double_t threshold = 300;
+Double_t threshold = 1000;
 Double_t minFit = 100; // changed later
+Double_t maxFit = 100; // changed later
 Double_t rebin = 10;
 // Double_t rebin = 8; // lower than 600
 Double_t filter = 16;
@@ -177,7 +178,8 @@ void reconstruct(TF1 *fcorr){
   gpe_corr_r.resize(n);
   er_gpe_corr.resize(n);
   for (Int_t i = 0; i < n; i++) {
-    gpe_corr[i] = fcorr->Eval(r3->Gaus(gtot_corr[i],1));
+    // gpe_corr[i] = fcorr->Eval(r3->Gaus(gtot_corr[i],1));
+    gpe_corr[i] = fcorr->Eval(gtot_corr[i]);
     er_gpe_corr[i] = sqrt(gpe_corr[i]);
 
     hdev_sat->Fill((gpe_sat[i] - gpe[i])/gpe[i]);
@@ -271,12 +273,12 @@ void reconstruct(TF1 *fcorr){
 void tot_test(){
   gStyle->SetOptTitle(0);
   if(mychannel == "Ch3"){minInt = 10280; maxInt = 10700;}
-  if(threshold == 200) minFit = 200;
-  if(threshold == 300) minFit = 130;
-  if(threshold == 400) minFit = 130;
-  if(threshold == 600) minFit = 100;
-  if(threshold == 800) minFit = 130;
-  if(threshold == 1000) minFit = 100;
+  if(threshold == 200){minFit = 200; maxFit = 700;}
+  if(threshold == 300){minFit = 130; maxFit = 700;}
+  if(threshold == 400){minFit = 130; maxFit = 700;}
+  if(threshold == 600){minFit = 100; maxFit = 700;}
+  if(threshold == 800){minFit = 130; maxFit = 230;}
+  if(threshold == 1000){minFit = 100; maxFit = 195;}
   for(Int_t i = 0; i<n; i++){
     files[i] = files[i]+conc;
     z[i] = new ANALYZER(Form("z%.2f",volts[i]));
@@ -360,9 +362,9 @@ void tot_test(){
   configHisto2(hQ);
   hQ->Draw("colz");
   gfull->Draw("SAME ZP");
-  gfull->Fit("fexpo0","W0", "", minFit,3000);
-  gfull->Fit("fexpo0","0", "", minFit,3000);
-  gfull->Fit("fexpo0","0", "", minFit,3000);
+  gfull->Fit("fexpo0","W0", "", minFit, maxFit);
+  gfull->Fit("fexpo0","0", "", minFit, maxFit);
+  gfull->Fit("fexpo0","0", "", minFit, maxFit);
   f->SetParameters(fexpo0->GetParameter(0), fexpo0->GetParameter(1));
   // gfull->Fit("f","W");
   gfull->Fit("f","", "", minFit,3000);
@@ -387,13 +389,13 @@ void tot_test(){
   hQ_before_sat->Draw("colz");
   g_before_sat->Draw("SAME ZP");
   fexpo0->SetParameters(param[0],param[1]);
-  g_before_sat->Fit("fexpo0","W", "", minFit, 3000);
-  g_before_sat->Fit("fexpo0","", "", minFit, 3000);
+  g_before_sat->Fit("fexpo0","W", "", minFit, maxFit);
+  g_before_sat->Fit("fexpo0","", "", minFit, maxFit);
   f->SetParameters(param[0],param[1],param[2],param[3]);
   f->SetParameters(fexpo0->GetParameter(0), fexpo0->GetParameter(1));
-  g_before_sat->Fit("f","W", "", minFit, 3000);
-  g_before_sat->Fit("f", "", "", minFit, 3000);
-  g_before_sat->Fit("f", "", "", minFit, 3000);
+  g_before_sat->Fit("f","W", "", minFit, maxFit);
+  g_before_sat->Fit("f", "", "", minFit, maxFit);
+  g_before_sat->Fit("f", "", "", minFit, maxFit);
   f->Draw("SAME");
   fperf->Draw("SAME");
   TLegend *l4 = new TLegend(0.1,0.7,0.5,0.9);
