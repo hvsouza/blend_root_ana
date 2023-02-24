@@ -67,16 +67,31 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t
 
   }
 
+  hpers->SetStats(kFALSE);
   hpers->Draw("colz");
   hpers->GetXaxis()->SetTitle("Time (ns)");
   hpers->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
 
   gPad->Update();
-  TPaveStats *ps = (TPaveStats*)hpers->FindObject("stats");
-  ps->SetOptStat(10);
+  //TPaveStats *ps = (TPaveStats*)hpers->FindObject("stats");
+  //ps->SetOptStat(10);
 
 }
 
+void ANALYZER::add_persistence_plot(TH2D *_htemp, Int_t filter, string cut, Double_t factor){
+  if(!_htemp) _htemp = hpers;
+  getSelection(cut);
+  Int_t nev = lev->GetN();
+  Int_t iev = 0;
+  for(Int_t i = 0; i < nev; i++){
+    iev = lev->GetEntry(i);
+    getWaveform(iev,kch);
+    applyDenoise(filter);
+    for (int j = 0; j < n_points; j++) {
+      _htemp->Fill(j*dtime,ch[kch].wvf[j]*factor);
+    }
+  }
+}
 
 TGraph ANALYZER::drawGraph(string opt, Int_t n, Double_t* x, Double_t* y){
   if (opt == "") opt = plot_opt;

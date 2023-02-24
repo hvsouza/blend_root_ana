@@ -369,7 +369,8 @@ class ANALYZER{
       if (maxevent==0) {
         maxevent = nentries;
       }
-      haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",memorydepth,0,memorydepth*dtime);
+      if(!haverage[kch]) haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",memorydepth,0,memorydepth*dtime);
+      else haverage[kch]->Reset();
       haverage[kch]->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
       haverage[kch]->GetXaxis()->SetTitle("Time (ns)");
       Int_t total = 0;
@@ -660,6 +661,7 @@ class ANALYZER{
     void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
     void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1);
+    void add_persistence_plot(TH2D *_htemp = nullptr, Int_t filter = 0, string cut = "", Double_t factor = 1);
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
     void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
     void drawZeroCrossingLines(vector<Int_t> &peaksCross);
