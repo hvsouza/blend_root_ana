@@ -275,10 +275,12 @@ class ANALYZER{
     }
 
     void draw_rise_lines(Double_t start, Double_t finish, Double_t baseline_level, Double_t peak_level){
-      TLine *lbase = new TLine(0, baseline_level, dtime*memorydepth, baseline_level);
-      TLine *lpeak = new TLine(0, peak_level, dtime*memorydepth, peak_level);
-      TLine *l90 = new TLine(0, 0.9*(peak_level-baseline_level)+baseline_level, dtime*memorydepth, 0.9*(peak_level-baseline_level)+baseline_level);
-      TLine *l10 = new TLine(0, 0.1*(peak_level-baseline_level)+baseline_level, dtime*memorydepth, 0.1*(peak_level-baseline_level)+baseline_level);
+      Double_t gxmin = gPad->GetUxmin();
+      Double_t gxmax = gPad->GetUxmax();
+      TLine *lbase = new TLine(gxmin, baseline_level, gxmax, baseline_level);
+      TLine *lpeak = new TLine(gxmin, peak_level, gxmax, peak_level);
+      TLine *l90 = new TLine(gxmin, 0.9*(peak_level-baseline_level)+baseline_level, gxmax, 0.9*(peak_level-baseline_level)+baseline_level);
+      TLine *l10 = new TLine(gxmin, 0.1*(peak_level-baseline_level)+baseline_level, gxmax, 0.1*(peak_level-baseline_level)+baseline_level);
 
       TLine *lstart = new TLine(start, baseline_level, start, peak_level);
       TLine *lfinish = new TLine(finish, baseline_level, finish, peak_level);
@@ -506,6 +508,7 @@ class ANALYZER{
 
     void applyBandCut(WIENER *_temp = nullptr, Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      if(_temp == nullptr) _temp = w;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_filtered[i]);
       }
