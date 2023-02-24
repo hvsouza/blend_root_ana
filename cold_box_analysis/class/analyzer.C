@@ -35,6 +35,7 @@ class ANALYZER{
     vector<vector<Double_t>> wvf;
     vector<TH1D*> haverage;
     vector<TH1D*> hfft;
+    TH1D *h;
     Double_t *time = new Double_t[n_points];
 
     string plot_opt = "AL";
@@ -363,6 +364,7 @@ class ANALYZER{
         w->convertDecibel(hfft[kch]);
         hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
       }
+      h = hfft[kch];
     }
 
     void averageWaveform(Int_t maxevent = 0, string selection = "", Double_t filter =  0){
@@ -392,6 +394,7 @@ class ANALYZER{
       }
       haverage[kch]->Scale(1./total);
       haverage[kch]->SetEntries(total);
+      h = haverage[kch];
     }
 
     void zeroCrossSearch(Double_t *derwvf, vector<Int_t> &peaksRise, vector<Int_t> &peaksCross, Int_t start, Int_t finish){
@@ -422,11 +425,12 @@ class ANALYZER{
       }
     }
 
-    void addOffet(Double_t offset = 0){
+    void addOffet(Double_t offset = 0, Double_t from = 0, Double_t to = 0){
       if(offset == 0){
         offset = ch[kch].base;
       }
-      for(Int_t i = 0; i < memorydepth; i++){
+      if(to == 0) to = memorydepth*dtime;
+      for(Int_t i = from/dtime; i < to/dtime; i++){
         ch[kch].wvf[i] = ch[kch].wvf[i] + offset;
       }
     }
