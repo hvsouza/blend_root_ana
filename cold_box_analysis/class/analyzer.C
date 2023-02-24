@@ -551,6 +551,39 @@ class ANALYZER{
       delete htemp;
     }
 
+
+    Double_t reval_baseline(vector<Double_t> range_base, Double_t exclusion_baseline, Double_t exclusion_window, TH1D *hbase = nullptr){
+      Double_t result = 0;
+      if(!hbase) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,14),0,TMath::Power(2,14));
+      hbase->Reset();
+      for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime; i++) hbase->Fill(ch[kch].wvf[i]);
+      Double_t res0 = hbase->GetBinCenter(hbase->GetMaximumBin());
+      Double_t hmean = hbase->GetMean();
+      Double_t hstd = hbase->GetStdDev();
+      Double_t bins=0;
+      for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime;){
+        if(ch[kch].wvf[i] > res0 + exclusion_baseline || ch[kch].wvf[i]<res0 - exclusion_baseline) {
+          i+=exclusion_window/dtime;
+        }
+        else{
+          result += ch[kch].wvf[i];
+          bins+=1;
+          i++;
+        }
+      }
+      if(bins>0)result/=bins;
+      if(bins > (range_base[1]/dtime)/3.){
+      }
+      else{
+        result = res0;
+        cout << "Not enough points probably.. " << endl;
+      }
+      addOffet(-result);
+      return result;
+    }
+
+
+
     // _________________________ ______________________ _________________________ //
 
     // _________________________ Methods for selection _________________________ //
