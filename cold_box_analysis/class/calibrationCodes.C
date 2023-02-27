@@ -635,6 +635,7 @@ class Calibration
       //     c1->Print(name.c_str());
       cout << "1th peak = " << lastOne->GetParameter(4) << endl;
       cout << "2th peak = " << lastOne->GetParameter(7) << endl;
+      cout << "Std dev  = " << lastOne->GetParameter(5) << endl;
       cout << "sphe charge = " << lastOne->GetParameter(7) - lastOne->GetParameter(4) << endl;
       cout << " SNR = " << (lastOne->GetParameter(4))/sqrt(pow(lastOne->GetParameter(2),2)+pow(lastOne->GetParameter(5),2)) << endl;
       cout << " SNR2 = " << abs((lastOne->GetParameter(4))/lastOne->GetParameter(2)) << endl;
@@ -647,9 +648,19 @@ class Calibration
 
       sphe_charge = lastOne->GetParameter(4);
       sphe_charge2 = lastOne->GetParameter(7);
+      Double_t sphe_std = lastOne->GetParameter(5);
 
-      Double_t delta1 = (sphe_charge2 - sphe_charge)/deltaminus;
-      Double_t delta2 = deltaplus*(sphe_charge2 - sphe_charge);
+      Double_t delta1;
+      Double_t delta2;
+      if(deltaminus!=0)
+      {
+        delta1 = (sphe_charge2 - sphe_charge)/deltaminus;
+        delta2 = deltaplus*(sphe_charge2 - sphe_charge);
+      }
+      else{
+        delta1 = (sphe_charge-deltaplus*sphe_std);
+        delta2 = (sphe_charge+deltaplus*sphe_std);
+      }
       //     Double_t delta2 = sphe_charge+(sphe_charge2 - sphe_charge)/2;
 
       Double_t ymax = hcharge->GetMaximum();
@@ -943,9 +954,10 @@ class SPHE2{
 
     // Not so common to change
     Double_t social_distance = 2; // demands that there is a minimum distance of social_distance * timeHigh between 2 consecutive peaks found
-    string   method          = "static"; // `dynamic` or `derivative` evaluation of the baseline
-                               // `fix` will not evaluate baseline and use raw threshold
-                               // See tolerance, baselineTime and baselineLimit above
+    string   method          = "derivative"; // `derivative` uses the 1th derivative of the waveform and a fixed threshold
+                                             // `dynamic` evaluation of the baseline, search over moving average waveform
+                                             // `fix` will not evaluate baseline and use raw threshold over moving average
+                                             // See tolerance, baselineTime and baselineLimit above
 
     bool check_selection = true; // uses(or not) variable `selection` to discard wvfs
     Bool_t withfilter = true; // Integrate in the filtered waveform
@@ -1064,12 +1076,12 @@ class SPHE2{
 
       z->kch = channel;
       kch = channel;
-      fout = new TFile(Form("sphe_histograms_darkCount_Ch%i_2.root",kch),"RECREATE");
+      fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",kch),"RECREATE");
 
       // ____________________ Setting up what needs to be set ____________________ //
 
       if(get_wave_form==true){
-        fwvf = new TFile(Form("sphe_waveforms_Ch%i_2.root",kch),"RECREATE");
+        fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",kch),"RECREATE");
       }
       else{ // in the case we are not taking waveform, I change this values for the same setup of integration
         mean_before = timeLow;
