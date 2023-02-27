@@ -33,9 +33,10 @@ class ANALYZER{
     Int_t n_points = memorydepth;
     vector<vector<Double_t>> raw;
     vector<vector<Double_t>> wvf;
+    Double_t *tempraw = new Double_t[memorydepth];
     vector<TH1D*> haverage;
     vector<TH1D*> hfft;
-    TH1D *h;
+    TH1D *h = nullptr;
     Double_t *time = new Double_t[n_points];
 
     string plot_opt = "AL";
@@ -133,6 +134,7 @@ class ANALYZER{
         w->hwvf->SetBinContent(i+1,_v[i]);
       }
       w->fft(w->hwvf);
+      h = w->hwvf;
     }
 
     Double_t getMean(Double_t from, Double_t to){
@@ -146,11 +148,12 @@ class ANALYZER{
       return res/totalev;
     }
 
-    Double_t getMaximum(Double_t from, Double_t to){
+    Double_t getMaximum(Double_t from, Double_t to, Double_t *v = nullptr){
+      if (!v) v = ch[kch].wvf;
       Double_t max = -1e12;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
-        if(ch[kch].wvf[i]>=max){
-          max = ch[kch].wvf[i];
+        if(v[i]>=max){
+          max = v[i];
         }
       }
       return max;
@@ -434,21 +437,19 @@ class ANALYZER{
         ch[kch].wvf[i] = ch[kch].wvf[i] + offset;
       }
     }
-
     void checkSignals(Double_t **_raw, Double_t **_filtered){
-      Double_t *_temp = new Double_t[memorydepth];
       if (*_raw == nullptr  && *_filtered == nullptr){
         *_filtered = ch[kch].wvf;
-        *_raw = _temp;
+        *_raw = tempraw;
           for (Int_t i = 0; i < memorydepth; i++) {
             (*_raw)[i] = ch[kch].wvf[i];
           }
       }
       else if(*_raw == *_filtered){
-          for (Int_t i = 0; i < memorydepth; i++) {
-            _temp[i] = (*_raw)[i];
-          }
-          *_raw = _temp;
+        for (Int_t i = 0; i < memorydepth; i++) {
+          tempraw[i] = (*_raw)[i];
+        }
+        *_raw = tempraw;
       }
     }
     void differenciate(Double_t factor = 1, Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
@@ -456,10 +457,9 @@ class ANALYZER{
       _shifted[0] = 0;
       _shifted[memorydepth-1] = 0;
       for(int i=1; i<memorydepth-1; i++){
-        _shifted[i] = (_raw[i+1] - _raw[i-1])/(2*dtime);
+        _shifted[i] = factor*(_raw[i+1] - _raw[i-1])/(2*dtime);
         // _shifted[i]=_raw[i] - (i-delay_time>=0 ? _raw[i-delay_time] : 0);
       }
-      _shifted = ch[kch].wvf;
     }
 
     void applyMovingAverage(Int_t mafilter = 0, Double_t start = 0, Double_t finish = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
@@ -701,7 +701,7 @@ class ANALYZER{
     void add_persistence_plot(TH2D *_htemp = nullptr, Int_t filter = 0, string cut = "", Double_t factor = 1);
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
     void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
-    void drawZeroCrossingLines(vector<Int_t> &peaksCross);
+    void drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c = nullptr);
     void histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr);
     void graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr);
 

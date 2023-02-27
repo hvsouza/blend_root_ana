@@ -54,6 +54,7 @@
 #include <TGaxis.h>
 #include <TLegend.h>
 #include <TPaveStats.h>
+#include <TMarker.h>
 
 
 // #include "DUNEStyle.h"
@@ -72,6 +73,7 @@ using namespace std;
 #include "analyzer_plots.C"
 // #include "SignalProcessing.C"
 #include "calibrationCodes.C"
+#include "old_search_spe.C"
 #include "alpha_analysis.C"
 #include "samples.C"
 
