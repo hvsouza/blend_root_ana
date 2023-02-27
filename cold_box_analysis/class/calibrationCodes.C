@@ -962,7 +962,6 @@ class SPHE2{
     TFile    *fout   = nullptr; // File to save histogram
     TFile    *fwvf   = nullptr; // File to save waveforms
     TTree    *twvf   = nullptr; // tree of waveforms
-    ADC_DATA *sample = nullptr; // For saving waveforms
 
     string myname; // name of the declared class
     Bool_t derivate = false; // control if user has set to derivate
@@ -974,7 +973,7 @@ class SPHE2{
 
     Bool_t get_this_wvf = true;
     Bool_t get_this_charge = true;
-    Int_t npts_wvf;
+    Int_t npts_wvf = 1000;
     Double_t *timeg = new Double_t[memorydepth];
 
     string rootfile    = "analyzed.root";
@@ -1043,7 +1042,12 @@ class SPHE2{
      * Plot graphs for debugging
      * Save histogram
      */
-    void giveMeSphe(){
+    void giveMeSphe(ADC_DATA<memorydepth_sample> sample){
+      if(memorydepth_sample < mean_before/dtime + mean_after/dtime + 1){
+        cout << "memorydepth_sample < mean_before/dtime + mean_after/dtime + 1" << endl;
+        cout << "make it equal to " << mean_before/dtime + mean_after/dtime + 1 << " or equal to memorydepth" << endl;
+        return;
+      }
       gROOT->SetBatch(kTRUE);
 
       rootfile = filename + ".root";
@@ -1072,17 +1076,17 @@ class SPHE2{
         mean_after = timeHigh;
       }
       twvf = new TTree("t1","mean waveforms");
-      // if the user set mean_before = 24 and mea50n_after = 100
+      // if the user set mean_before = 24 and mean_after = 100
       // we need to get  6 + 25 points + 1 = 32  (+1 because of the peak start)
       // if I found a point in around 100 ns, that is i = 25, I perform a while that goes
       // from i-mean_before = 19 up to i+mean_after = 50 (included) = 32 pts
-      sample = new ADC_DATA();
-      npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
+      // npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
+      npts_wvf = memorydepth_sample;
       mean_waveform.clear();
       mean_waveform.resize(npts_wvf);
       naverages = 0;
-      sample->setBranchName(npts_wvf);
-      twvf->Branch(Form("Ch%i",channel),sample,sample->tobranch.c_str());
+      sample.setBranchName(npts_wvf);
+      twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
 
 
       nshow_start = nshow_range[0];
@@ -1158,7 +1162,7 @@ class SPHE2{
           derivateApplyThreshold();
         }
         cleanPeaks();
-        integrateSignals();
+        integrateSignals(sample);
         if(snap()){
           drawMySamples();
           cout << "Event " << z->ch[kch].event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
@@ -1423,12 +1427,12 @@ class SPHE2{
       return res;
     }
 
-    void integrateSignals(){
+    void integrateSignals(ADC_DATA<memorydepth_sample> &sample){
       unsigned int npeaks = peakPosition.size();
       if (led_calibration) npeaks = 1;
       for(unsigned int i = 0; i < npeaks; i++){
         Int_t peakPosIdx = peakPosition[i]; // position of the peak as idx ( don't worry for led )
-        getIntegral(peakPosIdx); // If get_mean_wvf is set to false, there is no problem!
+        getIntegral(peakPosIdx, sample); // If get_mean_wvf is set to false, there is no problem!
         Double_t charge = z->temp_charge;
         Double_t peak = z->temp_max;
         if(get_this_charge){
@@ -1447,21 +1451,29 @@ class SPHE2{
           continue; // If I didn't get the charge, I will not take the waveform
         }
         if(get_this_wvf){
+          sample.selection = 0;
           if(charge>=deltaminus && charge <= deltaplus){
-            sample->selection = 1;
-            for(Int_t i = 0; i < npts_wvf; i++){
-              mean_waveform[i] += sample->wvf[i];
+            sample.selection = 1;
+            for(Int_t j = 0; j < npts_wvf; j++){
+              mean_waveform[j] += sample.wvf[j];
+              if(j*dtime >= time_cut && sample.wvf[j] >= spe_max_val_at_time_cut){
+                sample.selection = 2;
+                for(Int_t k = j; k >= 0; k--){
+                  mean_waveform[k] -= sample.wvf[k];
+                }
+                break;
+              }
             }
-            naverages+=1;
+            if(sample.selection == 1) naverages+=1;
           }
-          sample->peak = peak;
-          sample->charge = charge;
+          sample.peak = peak;
+          sample.charge = charge;
           twvf->Fill();
         }
       }
     }
 
-    void getIntegral(Int_t peakPosIdx){
+    void getIntegral(Int_t peakPosIdx, ADC_DATA<memorydepth_sample> &sample){
       get_this_charge = true;
       if(get_wave_form) get_this_wvf = true; // in the case not, I dont take the waveform
       else get_this_wvf = false;
@@ -1491,7 +1503,7 @@ class SPHE2{
       for(Int_t i = from; i <= to; i++, iwvf++){
         Double_t val = denoise_wvf[i];
         if(get_this_wvf){
-          sample->wvf[iwvf] = z->ch[kch].wvf[i];
+          sample.wvf[iwvf] = z->ch[kch].wvf[i];
         }
         if(i >= integralfrom && i <= integralto){
           if (val < lowerThreshold){
@@ -1685,7 +1697,7 @@ class MeanSignal{
   
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-      vector<ADC_DATA> ch(channels.size());
+      vector<ADC_DATA<memorydepth>> ch(channels.size());
       vector<TBranch*> bch(channels.size());
       for(Int_t k = 0; k<(int)channels.size();k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
@@ -1787,7 +1799,7 @@ class Resolution{
   
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-      vector<ADC_DATA> ch(channels.size());
+      vector<ADC_DATA<memorydepth>> ch(channels.size());
       vector<TBranch *> bch(channels.size());
       for(Int_t k = 0; k<(int)channels.size(); k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
@@ -2017,7 +2029,7 @@ class TimeDistribuction{
   
       TFile *fout = new TFile("time_distribuction.root","RECREATE");
   
-      vector<ADC_DATA>  ch(nchannels);
+      vector<ADC_DATA<memorydepth>>  ch(nchannels);
       vector<TBranch *> bch(nchannels);
       for(Int_t k = 0; k<nchannels;k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));

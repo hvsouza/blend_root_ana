@@ -15,7 +15,7 @@ class ANALYZER{
     TTree *t1 = nullptr;
     Int_t nentries = 0;
     vector<TBranch*> b;
-    vector<ADC_DATA> ch;
+    vector<ADC_DATA<memorydepth>> ch;
     Int_t nchannels = 0;
     vector<Int_t> channels = {1,2};
     vector<string> schannel;

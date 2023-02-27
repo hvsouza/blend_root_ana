@@ -7,6 +7,10 @@
 #define memorydepth 5000
 #endif
 
+#ifndef memorydepth_sample
+#define memorydepth_sample memorydepth
+#endif
+
 #ifndef MYCODES
 #define MYCODES
 
