@@ -1142,8 +1142,8 @@ class SPHE2{
         theGreatReset();
         z->getWaveform(i,kch); // get waveform by memory
         if(check_selection && z->ch[kch].selection != 0) continue;
-
-        if(!snap() && static_cast<Int_t>(i)%200==0){
+        
+        if(i>nshow_finish && static_cast<Int_t>(i)%200==0){
           cout << i << " out of " << nentries << "\r" << flush;
         }
         processData();
@@ -1257,7 +1257,7 @@ class SPHE2{
 
     bool goodSocialDistance(Int_t id2, Int_t id1){
       if(abs(id2-id1) <= social_distance*timeHigh/dtime){
-        // if(snap()) cout << abs(id2-id1) << " " <<  social_distance*timeHigh/dtime << endl;
+        // if(snap()) cout << id2 << " " << id1 << " " << abs(id2-id1) << " " <<  social_distance*timeHigh/dtime << endl;
         return false;
       }
       else{
@@ -1345,8 +1345,8 @@ class SPHE2{
         }
 
         //request social distance
-        if(!(current_good_distance = goodSocialDistance(peaksFound[i+1],candidatePosition)) || discard_by_distance){
-          // if(snap())cout << discard_by_distance << endl;
+        if( (ntotal > 1  && !(current_good_distance = goodSocialDistance(peaksFound[i+1],candidatePosition))) || discard_by_distance){
+          // if(snap()) cout << discard_by_distance << endl;
           if (!current_good_distance) discard_by_distance = true;
           else discard_by_distance = false;
 
@@ -1468,6 +1468,7 @@ class SPHE2{
           }
           sample.peak = peak;
           sample.charge = charge;
+          sample.event = z->currentEvent;
           twvf->Fill();
         }
       }
@@ -1557,7 +1558,8 @@ class SPHE2{
       TGraph g_normal(memorydepth, timeg, &denoise_wvf[0]);
       // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
       // this is not working when saving
-      TCanvas *c1 = new TCanvas();
+      TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str());
+
 
       c1->cd(1);
       g_smooth.SetLineColor(kRed);
