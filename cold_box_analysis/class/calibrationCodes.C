@@ -188,7 +188,7 @@ class Calibration
 
       h->Rebin(rebin);
       Double_t scale = 1/(h->Integral());
-      h->Scale(scale);
+      // h->Scale(scale);
       Int_t nbins = h->GetNbinsX();
       Double_t *source = new Double_t[nbins];
       Double_t *destVector = new Double_t[nbins];
@@ -316,7 +316,7 @@ class Calibration
       {
         TCanvas *cdb = new TCanvas("cdb");
         cdb->cd();
-        h->GetYaxis()->SetTitle("Normalized count");
+        h->GetYaxis()->SetTitle("# of entries");
         h->GetXaxis()->SetTitle("Charge (ADC*ns)");
         h->Draw("hist");
         TPolyMarker * pm = new TPolyMarker(nfound-pos0, &fPositionX[0], &fPositionY[0]);
@@ -445,7 +445,7 @@ class Calibration
     
     
       Double_t scale = 1/(hcharge->Integral());
-      hcharge->Scale(scale);
+      //hcharge->Scale(scale);
       hcharge->Draw("hist");
       hcharge->Fit("func","R0Q");
       // Debug level:
@@ -930,7 +930,7 @@ class SPHE2{
     Double_t sphe_std      = 500; // std dev of the first peak (not needed of deltaminus != 0)
     Double_t spe_max_val_at_time_cut = 20; // after `time_cut`, the signal cannot be higher than this
                                            // this allows to remove after pulses
-    Double_t time_cut = 20; // in ns seconds
+    Double_t time_cut = 2000; // in ns seconds
 
     // coeficients to surround gaussian of 1 spe.
     // Gain             = (sphe_charge2 - sphe_charge)
@@ -1622,7 +1622,7 @@ class SPHE2{
         g_discarded->Draw();
       }
 
-      // if(derivate) z->drawZeroCrossingLines(peaksCross, c1);
+      if(derivate) z->drawZeroCrossingLines(peaksCross, c1,0,tolerance);
       fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
       for(Int_t i = 0; i < n; i++){
         delete g_selected[i];

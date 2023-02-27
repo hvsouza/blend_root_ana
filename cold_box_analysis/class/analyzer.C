@@ -701,7 +701,7 @@ class ANALYZER{
     void add_persistence_plot(TH2D *_htemp = nullptr, Int_t filter = 0, string cut = "", Double_t factor = 1);
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
     void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
-    void drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c = nullptr);
+    void drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
     void histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr);
     void graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr);
 

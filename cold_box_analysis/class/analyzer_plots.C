@@ -312,20 +312,24 @@ void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vect
 }
 
 
-void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c){
+void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c, Double_t ymin, Double_t ymax){
   if(!c){
     cout << "We need a Canvas :)" << endl;
     return;
   }
   TPad *p = (TPad*)c->GetPad(0);
 
-  Double_t ymin = p->GetUymin();
-  Double_t ymax = p->GetUymax();
+  if(ymin == 0 && ymax == 0)
+  {
+    ymin = p->GetUymin();
+    ymax = p->GetUymax();
+  }
+
   Int_t nlines = peaksCross.size();
   vector<TLine *> lns(nlines);
   for(Int_t i = 0; i < nlines; i++){
     Int_t lnx = peaksCross[i]*dtime;
-    lns[i] = new TLine(lnx, ymin, lnx, 20);
+    lns[i] = new TLine(lnx, ymin, lnx, ymax);
     lns[i]->Draw("SAME");
   }
 }
