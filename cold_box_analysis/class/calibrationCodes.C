@@ -920,15 +920,16 @@ class SPHE2{
     Double_t start  = 0;        // start the search for peaks or start the integration (led)
     Double_t finish = 10250;    // fisish the search or finish the integration (led)
 
-    Double_t timeLow        = 60; // integration time before peak (not used for led)
-    Double_t timeHigh       = 400; // integration time after peak (not used for led)
-    Double_t lowerThreshold = -1; // threshold to detect noise (normal waveform) (not used for led)
-    Double_t maxHits        = 1; // maximum hit before discarding   (not used for led)
-    Double_t too_big        = 1000; // if there is a peak > "too_big" .. wait "waiting" ns for next peak
-    Double_t waiting        = 1000;
-    Double_t filter         = 14; // one dimentional denoise filter (0 equal no filder)
-    Double_t interactions   = 45; // for moving avarage filter (not used on led)
-    Int_t    ninter         = 2; // N times that moving average is applied
+    Double_t timeLow         = 60; // integration time before peak (not used for led)
+    Double_t timeHigh        = 400; // integration time after peak (not used for led)
+    Double_t lowerThreshold  = -1; // threshold to detect noise (normal waveform) (not used for led)
+    Double_t maxHits         = 1; // maximum hit before discarding   (not used for led)
+    Double_t too_big         = 1000; // if there is a peak > "too_big" .. wait "waiting" ns for next peak
+    Double_t waiting         = 1000;
+    Double_t filter          = 14; // one dimentional denoise filter (0 equal no filder)
+    Double_t interactions    = 45; // for moving avarage filter (not used on led)
+    Int_t    ninter          = 2; // N times that moving average is applied
+    Double_t diff_multiplier = 1e3; //derivative can be very small. Use this to make it easier to see
 
     Double_t dtime = 4.;        // time step in ns
 
@@ -1019,6 +1020,7 @@ class SPHE2{
 
     vector<Double_t> discardedTime; //store position of thed
     vector<Double_t> discardedPeak; //store position of thed
+    vector<Double_t> discardedCharge; //store position of thed
     vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
     vector<Double_t> mean_waveform;
     Int_t naverages = 0;
@@ -1076,7 +1078,7 @@ class SPHE2{
 
       z->kch = channel;
       kch = channel;
-      fout = new TFile(Form("sphe_histograms_darkCount_Ch%i.root",kch),"RECREATE");
+      fout = new TFile(Form("sphe_histograms_Ch%i.root",kch),"RECREATE");
 
       // ____________________ Setting up what needs to be set ____________________ //
 
@@ -1115,6 +1117,7 @@ class SPHE2{
         // this might be too much, time will tell. Keep an eye in the RAM memory
         discardedTime.reserve(memorydepth);
         discardedPeak.reserve(memorydepth);
+        discardedCharge.reserve(memorydepth);
         discarded_idx.reserve(memorydepth);
         peakPosition.reserve(memorydepth);
         peakMax.reserve(memorydepth);
@@ -1226,6 +1229,7 @@ class SPHE2{
           selected_charge_time.clear();
           discardedTime.clear();
           discardedPeak.clear();
+          discardedCharge.clear();
           discarded_idx.clear();
           peaksFound.clear();
         }
@@ -1253,7 +1257,7 @@ class SPHE2{
        *Usediscarded_idx to check the best option
        **/
       if(derivate){
-        z->differenciate(1e3,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
+        z->differenciate(diff_multiplier,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
         vec = &smooted_wvf[0];
       }
       else{
@@ -1290,7 +1294,7 @@ class SPHE2{
         return true;
       }
       else{
-        wait_now = false;
+
         return false;
       }
 
@@ -1335,8 +1339,10 @@ class SPHE2{
         if(checkTooBig(wait_now, refWait, candidatePosition)){
           discard_by_distance = false;
           if(snap()){
+            // cout << wait_now << " " << refWait << " " << candidatePosition << " " << waiting << endl;
             discardedTime.push_back(candidatePosition*dtime);
             discardedPeak.push_back(smooted_wvf[candidatePosition]);
+            discardedCharge.push_back(0);
             discarded_idx.push_back(2);
           }
           continue;
@@ -1344,13 +1350,14 @@ class SPHE2{
 
         if(wait_now){ // I am waiting for a big pulse to finish
           if(candidatePosition*dtime >= (refWait+waiting)){
+            // if(snap()){
+            //   cout << "Got out of big pulse: " << candidatePosition << endl;
+            // }
             wait_now = false;
           }
           else{
             if(snap()){
-              discardedTime.push_back(candidatePosition*dtime);
-              discardedPeak.push_back(smooted_wvf[candidatePosition]);
-              discarded_idx.push_back(2);
+              fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 2);
             }
             continue;
           }
@@ -1363,14 +1370,20 @@ class SPHE2{
           else discard_by_distance = false;
 
           if(snap()){ // discarding current peak by social
-            discardedTime.push_back(candidatePosition*dtime);
-            discardedPeak.push_back(denoise_wvf[candidatePosition]);
-            discarded_idx.push_back(0);
+            fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 0);
+
           }
           continue;
         }
         peakPosition.push_back(peaksFound[i]);
       }
+    }
+
+    void fill_discarded(Int_t pidx, Double_t val, Double_t charge, Int_t discardidx){
+      discardedTime.push_back(pidx*dtime);
+      discardedPeak.push_back(val);
+      discardedCharge.push_back(charge);
+      discarded_idx.push_back(discardidx);
     }
 
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
@@ -1444,6 +1457,8 @@ class SPHE2{
       if (led_calibration) npeaks = 1;
       for(unsigned int i = 0; i < npeaks; i++){
         Int_t peakPosIdx = peakPosition[i]; // position of the peak as idx ( don't worry for led )
+        temp_selected_peaks.clear();
+        temp_selected_time.clear();
         getIntegral(peakPosIdx, sample); // If get_mean_wvf is set to false, there is no problem!
         Double_t charge = z->temp_charge;
         Double_t peak = z->temp_max;
@@ -1455,8 +1470,6 @@ class SPHE2{
             selected_charge_time.push_back(peakPosIdx*dtime);
             selected_peaks.push_back(temp_selected_peaks);
             selected_time.push_back(temp_selected_time);
-            temp_selected_peaks.clear();
-            temp_selected_time.clear();
           }
         }
         else{
@@ -1479,6 +1492,7 @@ class SPHE2{
             if(sample.selection == 1) naverages+=1;
           }
           sample.peak = peak;
+          sample.peakpos = peakPosIdx*dtime;
           sample.charge = charge;
           sample.event = z->currentEvent;
           twvf->Fill();
@@ -1527,9 +1541,7 @@ class SPHE2{
             get_this_wvf = false;
             get_this_charge = false;
             if(snap()){
-              discardedTime.push_back(peakPosIdx*dtime);
-              discardedPeak.push_back(smooted_wvf[peakPosIdx]);
-              discarded_idx.push_back(1);
+              fill_discarded(peakPosIdx, smooted_wvf[peakPosIdx], res*dtime, 1);
             }
             break;
           }
@@ -1580,6 +1592,9 @@ class SPHE2{
       g_normal.SetLineColor(kBlue);
       g_normal.SetTitle(" ");
 
+      g_normal.SetEditable(kFALSE);
+      g_smooth.SetEditable(kFALSE);
+
       g_normal.Draw("AL");
       g_smooth.Draw("L SAME");
 
@@ -1613,18 +1628,22 @@ class SPHE2{
       }
 
       Int_t ndis = discardedPeak.size();
-      TMarker *g_discarded = nullptr;
+      TGraph *g_discarded = nullptr;
       Int_t marker_style = 21;
       Color_t marker_color = kRed;
       for(Int_t i = 0; i < ndis; i++){
-        g_discarded = new TMarker(discardedTime[i], discardedPeak[i],21);
+        g_discarded = new TGraph(1, &discardedTime[i], &discardedPeak[i]);
+        stringstream stream_discarded;
+        stream_discarded << std::fixed << std::setprecision(2) << discardedCharge[i];
+        string gtitle_discarded = "charge = " + stream_discarded.str();
+        g_discarded->SetTitle(gtitle_discarded.c_str());
         if(discarded_idx[i] == 0){ // social distance
           marker_style = 22; // triangle
           marker_color = kYellow;
         }
         else if(discarded_idx[i] == 1){ // negative hits
           marker_style = 29; // filled star
-          marker_color = kMagenta;
+          marker_color = kGreen;
         }
         else if(discarded_idx[i] == 2){ // Too big
           marker_style = 21; // filled square
@@ -1633,10 +1652,11 @@ class SPHE2{
         g_discarded->SetMarkerSize(2);
         g_discarded->SetMarkerStyle(marker_style);
         g_discarded->SetMarkerColor(marker_color);
-        g_discarded->Draw();
+        g_discarded->SetEditable(kFALSE);
+        g_discarded->Draw("SAME P");
       }
 
-      if(derivate) z->drawZeroCrossingLines(peaksCross, c1,0,tolerance);
+      // if(derivate) z->drawZeroCrossingLines(peaksCross, c1,0,tolerance);
       fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
       for(Int_t i = 0; i < n; i++){
         delete g_selected[i];

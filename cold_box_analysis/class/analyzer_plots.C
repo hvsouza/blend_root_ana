@@ -177,10 +177,10 @@ void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Doubl
   SNRs[0] = computeSNR_simple(xmin+3*dtime, xmax-3*dtime, signal_range);
   drawGraph("SAME");
   Double_t maxav = getMaximum(xmin+8, xmax-8);
-  differenciate();
+  differenciate(1e3);
   Double_t maxdif = getMaximum(xmin+8, xmax-8);
   // scaleWvf(maxav/maxdif); // not a good option, it will chage for each peak
-  scaleWvf(1e3);
+  // scaleWvf(1e3);
   // compute signal to noise ratio for amplitude
   // i am avoiding the fist and last 3 points due to residual noise there
   SNRs[1] = computeSNR_simple(xmin+3*dtime, xmax-3*dtime, signal_range);
