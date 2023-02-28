@@ -10,7 +10,7 @@
 /**
  *
  * This class holds the methods for ploting for analyzer */
-void ANALYZER::sample_plot(Int_t myevent, string opt, Int_t filter, Double_t factor, Int_t mafilter){
+void ANALYZER::sample_plot(Int_t myevent, string opt, Double_t filter, Double_t factor, Int_t mafilter){
   if (opt == "") opt = plot_opt;
   bool state = getWaveformHard(myevent,factor);
   if (!state) return;
@@ -20,7 +20,7 @@ void ANALYZER::sample_plot(Int_t myevent, string opt, Int_t filter, Double_t fac
   drawGraph(opt,n_points,&time[0],&ch[kch].wvf[0]);
 }
 
-void ANALYZER::showWaveform(Int_t maxevent, Int_t filter, Int_t dt){
+void ANALYZER::showWaveform(Int_t maxevent, Double_t filter, Int_t dt){
 
   if (maxevent==0) {
     maxevent = nentries;
@@ -39,7 +39,7 @@ void ANALYZER::showWaveform(Int_t maxevent, Int_t filter, Int_t dt){
   }
 }
 
-void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t filter, string cut, Double_t factor){
+void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Double_t filter, string cut, Double_t factor){
 
   Int_t nbinsx = (xmax-xmin)/dtime;
   if(!hpers) hpers = new TH2D("hpers","hpers",nbinsx,xmin,xmax,nbins,ymin,ymax);
@@ -78,7 +78,7 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t
 
 }
 
-void ANALYZER::add_persistence_plot(TH2D *_htemp, Int_t filter, string cut, Double_t factor){
+void ANALYZER::add_persistence_plot(TH2D *_htemp, Double_t filter, string cut, Double_t factor){
   if(!_htemp) _htemp = hpers;
   getSelection(cut);
   Int_t nev = lev->GetN();

@@ -421,7 +421,8 @@ class Read{
       string rootfile;
       TFile *f1;
       TTree *t1;
-      hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
+      // hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
+      hbase = new TH1D("hbase","finding baseline",1000,-1,1);
       Double_t tEvent = 0;
       vector<ADC_DATA<memorydepth>> ch(channels.size());
       vector<TBranch*> bch(channels.size());
@@ -628,10 +629,10 @@ class Read{
           cout << "ERROR !!!! INCORRECT LENGTH !!! Reading: " << memorydepth << ", folder: " << (headbin.EventSize-24)/2 << endl;
           return;
         }
+        fin[0].clear();
+        fin[0].seekg(0);
       }
 
-      fin[0].clear();
-      fin[0].seekg(0);
       while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
         Int_t n_reads = 0;
     
@@ -643,6 +644,7 @@ class Read{
             {
               if(withTimestamp) fin[i] >> timestamp >> temp;
               else fin[i] >> temp;
+              // cout << timestamp << " " << temp << endl;
               if(fin[i].bad() || fin[i].fail()){
                 cout << "going ... ";
                 break;
@@ -824,7 +826,7 @@ class Read{
       // }
     
       // if(idx == 0 && mevent == 3294){
-      //   cout << hmean << " " << hstd << " " << res0 << endl;
+        // cout << hmean << " " << hstd << " " << res0 << endl;
       // }
     
       Double_t bins=0;
