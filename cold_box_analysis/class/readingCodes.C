@@ -421,8 +421,8 @@ class Read{
       string rootfile;
       TFile *f1;
       TTree *t1;
-      // hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
-      hbase = new TH1D("hbase","finding baseline",1000,-1,1);
+      if(isBinary) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
+      else hbase = new TH1D("hbase","finding baseline",1000,-1,1);
       Double_t tEvent = 0;
       vector<ADC_DATA<memorydepth>> ch(channels.size());
       vector<TBranch*> bch(channels.size());

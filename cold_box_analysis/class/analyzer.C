@@ -154,6 +154,8 @@ class ANALYZER{
       for (Int_t i = from/dtime; i < to/dtime; i++) {
         if(v[i]>=max){
           max = v[i];
+          temp_max = max;
+          temp_pos = i;
         }
       }
       return max;
@@ -204,20 +206,44 @@ class ANALYZER{
       return 0;
     }
 
-    void integrate(Double_t from = 0, Double_t to = 0){
+    void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0){
       Double_t res = 0;
-      if (to == 0) to = memorydepth*dtime;
       Double_t max = -1e12;
-      for(Int_t i = from/dtime; i < to/dtime; i++){
-        res += ch[kch].wvf[i];
-        if(ch[kch].wvf[i]>=max){
-          max = ch[kch].wvf[i];
+      if (to == 0) to = memorydepth*dtime;
+      if(percent == 0){ // normal integration
+        for(Int_t i = from/dtime; i < to/dtime; i++){
+          res += ch[kch].wvf[i];
+          if(ch[kch].wvf[i]>=max){
+            max = ch[kch].wvf[i];
+          }
+
+        }
+      }
+      else{
+        max = getMaximum(from, to);
+        for(Int_t i = temp_pos; i >= 0 ;i--){
+          Double_t val = ch[kch].wvf[i];
+          if(val >= percent*max){
+            res += val;
+          }
+          else{
+            break;
+          }
+        }
+        for(Int_t i = temp_pos+1; i < memorydepth ;i++){
+          Double_t val = ch[kch].wvf[i];
+          if(val >= percent*max){
+            res += val;
+          }
+          else{
+            break;
+          }
         }
       }
       temp_charge = res*dtime;
       temp_max = max;
     }
-    void getIntegral(TH1D *_htemp = nullptr, Double_t from = 0, Double_t to = 0, string selection = "", Double_t filter = 0, Double_t sphe = 1.){
+    void getIntegral(TH1D *_htemp = nullptr, Double_t from = 0, Double_t to = 0, string selection = "", Double_t filter = 0, Double_t sphe = 1., Double_t percent = 0){
       getSelection(selection);
       Int_t nev = lev->GetN();
       Int_t iev = 0;
@@ -225,7 +251,7 @@ class ANALYZER{
         iev = lev->GetEntry(i);
         getWaveform(iev,kch);
         applyDenoise(filter);
-        integrate(from, to);
+        integrate(from, to, percent);
         _htemp->Fill(temp_charge/sphe);
       }
     }
