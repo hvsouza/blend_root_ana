@@ -16,7 +16,7 @@ class ANALYZER{
     Int_t nentries = 0;
     vector<TBranch*> b;
     vector<ADC_DATA<memorydepth>> ch;
-    Int_t nchannels = 0;
+    Int_t nchannels = 1;
     vector<Int_t> channels = {1,2};
     vector<string> schannel;
     Double_t dtime = 4;
@@ -64,21 +64,11 @@ class ANALYZER{
       filename = m_filename;
       if(f == nullptr) f = new TFile(filename.c_str(),"READ");
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
-      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
       TList *lb = (TList*)t1->GetListOfBranches();
       this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
       nchannels = lb->GetEntries();
-      b.resize(nchannels);
-      schannel.resize(nchannels);
-      channels.resize(nchannels);
-      ch.resize(nchannels);
-      raw.resize(nchannels);
-      wvf.resize(nchannels);
-      haverage.resize(nchannels);
-      hfft.resize(nchannels);
-
+      setEmpty();
       for (Int_t i = 0; i < nchannels; i++) {
-
         schannel[i] = lb->At(i)->GetName();
         channels[i] = schannel[i][2] - '0';
         // schannel[i] = Form("Ch%d",channels[i]);
@@ -87,10 +77,22 @@ class ANALYZER{
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
       }
+      nentries = t1->GetEntries();
+    }
+
+    void setEmpty(){
+      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
+      b.resize(nchannels);
+      schannel.resize(nchannels);
+      channels.resize(nchannels);
+      ch.resize(nchannels);
+      raw.resize(nchannels);
+      wvf.resize(nchannels);
+      haverage.resize(nchannels);
+      hfft.resize(nchannels);
       for (int j = 0; j < n_points; j++) {
         time[j] = j*dtime;
       }
-      nentries = t1->GetEntries();
       xmin = 0;
       xmax = memorydepth*dtime;
     }
@@ -128,12 +130,13 @@ class ANALYZER{
 
     // _________________________ Methods that get me something _________________________ //
     
-    void getFFT(Double_t *_v = nullptr){
+    void getFFT(Double_t *_v = nullptr, bool inDecibel = false){
       if(_v == nullptr) _v = ch[kch].wvf;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_v[i]);
       }
       w->fft(w->hwvf);
+      if(inDecibel) w->convertDecibel();
       h = w->hwvf;
     }
 
@@ -278,7 +281,8 @@ class ANALYZER{
     }
 
 
-    void getWaveform(Int_t myevent = 0, Int_t k = 0){
+    void getWaveform(Int_t myevent = 0, Int_t k = -1){
+      if (k == -1) k = kch;
       if (k>=nchannels){
         cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
         return;
@@ -423,6 +427,7 @@ class ANALYZER{
       }
       haverage[kch]->Scale(1./total);
       haverage[kch]->SetEntries(total);
+      haverage[kch]->Sumw2(kFALSE);
       h = haverage[kch];
     }
 
