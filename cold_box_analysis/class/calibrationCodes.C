@@ -106,7 +106,6 @@ class Calibration
     // _______________ Parameters for fit_sphe_wave _______________/
   
     string rootFile = "";
-    string histogram_name = "";
   
     Int_t n_peaks = 7;
     Double_t peak0 = 0.1;
@@ -143,15 +142,10 @@ class Calibration
     Bool_t darknoise = false;
   
     Bool_t is_poisson_test = false; // if running tests of poisson statistics
-  
-  
-  
-  
-  
-    // _______________ Parameters for smoothing  _______________/
-    Int_t smooth_factor = 35;
 
-
+    TH1D *htemp = nullptr;
+  
+  
     // ____________________________________________________________________________________________________ //
     void fit_sphe_wave(string name, bool optimize = true){
 
@@ -181,9 +175,8 @@ class Calibration
         h = (TH1D*)f1->Get(histogram.c_str());
       }
       else{
-        h = (TH1D*)gDirectory->Get(histogram.c_str());
+        h = (TH1D*)htemp->Clone("");
       }
-      histogram_name = histogram;
 
 
       h->Rebin(rebin);
@@ -375,16 +368,16 @@ class Calibration
         hcharge = (TH1D*)f1->Get(histogram.c_str());
       }
       else{
-        hcharge = (TH1D*)gDirectory->Get(histogram.c_str());
+        hcharge = (TH1D*)htemp->Clone("");
       }
-      histogram_name = histogram;
       hcharge->Rebin(rebin);
     
       ofstream out;
       out.open("sphe.txt", ios::app);
 
       // ____________________________ Start of sphe fit ____________________________ //
-      hcharge->GetYaxis()->SetTitle("Normalized count");
+      // hcharge->GetYaxis()->SetTitle("Normalized count");
+      hcharge->GetYaxis()->SetTitle("# of events");
       hcharge->GetYaxis()->SetTitleOffset(1.0);
       hcharge->GetXaxis()->SetTitle("Charge (ADC*nsec)");
     
