@@ -20,7 +20,7 @@ void giveMeSphe_darkCount(){
     // dark.finish = 10700; // fisish the search or finish the integration (led)
 
     dark.start = 10320; // start the search for peaks or start the integration (led)
-    dark.finish = 10420; // fisish the search or finish the integration (led)
+    dark.finish = 10500; // fisish the search or finish the integration (led)
 
     dark.timeLimit = 0; // time after LED signal
     dark.timeLow = 8; // integration time before peak

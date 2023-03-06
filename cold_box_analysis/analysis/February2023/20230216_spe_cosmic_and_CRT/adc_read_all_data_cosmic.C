@@ -14,8 +14,8 @@ void adc_read_all_data_cosmic(){
     r.isBinary = true;
     
     r.baselineTime = 2500; // time limit for baseline
-    r.chargeTime = 3000; // last time to integrate
-    r.startCharge = 5000;
+    r.chargeTime = 5000; // last time to integrate
+    r.startCharge = 2500;
     r.maxRange = 10500; // max range to search for amplitude peak
     r.fast = 200; // fprompt fast integration time
     r.slow = 1700; //fprompt slow integration time

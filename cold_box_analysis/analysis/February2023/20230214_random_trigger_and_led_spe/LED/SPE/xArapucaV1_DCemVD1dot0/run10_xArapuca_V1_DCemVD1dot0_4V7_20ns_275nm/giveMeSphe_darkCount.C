@@ -47,8 +47,8 @@ void giveMeSphe_darkCount(){
     dark.deltaminus = 1.5;
     
 
-    dark.sphe_charge_ch0 = 6962.07; //wave0
-    dark.sphe_charge2_ch0 = 13912; // wave0
+    dark.sphe_charge_ch0 = 1169.28; //wave0
+    dark.sphe_charge2_ch0 = 2369.2; // wave0
 
     dark.channel = 2;
         

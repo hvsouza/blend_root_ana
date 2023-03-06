@@ -41,18 +41,19 @@ void giveMeSphe_darkCount(){
     dark.get_wave_form = true;
     dark.mean_before = 120; // time recorded before and after the peak found 
     dark.mean_after = 1000;
-    // dark.sphe_charge_ch0 = 4486.84; //wave0
-    // dark.sphe_charge2_ch0 = 8910.46; // wave0
     dark.deltaplus = 1.3;
     dark.deltaminus = 1.5;
     
 
-    dark.sphe_charge_ch0 = 6962.07; //wave0
-    dark.sphe_charge2_ch0 = 13912; // wave0
+    dark.sphe_charge_ch0 = 2380.92; //wave0
+    dark.sphe_charge2_ch0 = 4897.22; // wave0
 
     dark.channel = 5;
     dark.giveMeSphe_darkCount("analyzed");
 
+
+    dark.sphe_charge_ch0 = 2380.92; //wave0
+    dark.sphe_charge2_ch0 = 4897.22; // wave0
 
     dark.channel = 6;
     dark.giveMeSphe_darkCount("analyzed");
