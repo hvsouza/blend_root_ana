@@ -106,7 +106,6 @@ class Calibration
     // _______________ Parameters for fit_sphe_wave _______________/
   
     string rootFile = "";
-    string histogram_name = "";
   
     Int_t n_peaks = 7;
     Double_t peak0 = 0.1;
@@ -143,15 +142,10 @@ class Calibration
     Bool_t darknoise = false;
   
     Bool_t is_poisson_test = false; // if running tests of poisson statistics
-  
-  
-  
-  
-  
-    // _______________ Parameters for smoothing  _______________/
-    Int_t smooth_factor = 35;
 
-
+    TH1D *htemp = nullptr;
+  
+  
     // ____________________________________________________________________________________________________ //
     void fit_sphe_wave(string name, bool optimize = true){
 
@@ -181,9 +175,8 @@ class Calibration
         h = (TH1D*)f1->Get(histogram.c_str());
       }
       else{
-        h = (TH1D*)gDirectory->Get(histogram.c_str());
+        h = (TH1D*)htemp->Clone("");
       }
-      histogram_name = histogram;
 
 
       h->Rebin(rebin);
@@ -375,16 +368,16 @@ class Calibration
         hcharge = (TH1D*)f1->Get(histogram.c_str());
       }
       else{
-        hcharge = (TH1D*)gDirectory->Get(histogram.c_str());
+        hcharge = (TH1D*)htemp->Clone("");
       }
-      histogram_name = histogram;
       hcharge->Rebin(rebin);
     
       ofstream out;
       out.open("sphe.txt", ios::app);
 
       // ____________________________ Start of sphe fit ____________________________ //
-      hcharge->GetYaxis()->SetTitle("Normalized count");
+      // hcharge->GetYaxis()->SetTitle("Normalized count");
+      hcharge->GetYaxis()->SetTitle("# of events");
       hcharge->GetYaxis()->SetTitleOffset(1.0);
       hcharge->GetXaxis()->SetTitle("Charge (ADC*nsec)");
     
@@ -930,6 +923,7 @@ class SPHE2{
     Double_t interactions    = 45; // for moving avarage filter (not used on led)
     Int_t    ninter          = 2; // N times that moving average is applied
     Double_t diff_multiplier = 1e3; //derivative can be very small. Use this to make it easier to see
+    Bool_t derivate_raw      = true; // If you apply a denoise in the data and want to take derivative on that, set to false
 
     Double_t dtime = 4.;        // time step in ns
 
@@ -1022,6 +1016,8 @@ class SPHE2{
     vector<Double_t> discardedPeak; //store position of thed
     vector<Double_t> discardedCharge; //store position of thed
     vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
+    const char *selec_types[3] = {"Social distance", "Negative hits", "Too big"};
+    TH1D *hdiscard = nullptr;
     vector<Double_t> mean_waveform;
     Int_t naverages = 0;
     // ____________________ ________________________________ ____________________ //
@@ -1032,6 +1028,7 @@ class SPHE2{
       hbase        = new TH1D(Form("hbase_sphe_%s",myname.c_str()),"histogram for baseline",5*800,-400,400);
       hbase_smooth = new TH1D(Form("hbase_smooth_sphe_%s",myname.c_str()),"histogram for baseline smoothed",5*800,-400,400);
       hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),50000,0,0);
+      hdiscard     = new TH1D(Form("hdiscard_sphe_%s",myname.c_str()),Form("hdiscard_sphe_%s",myname.c_str()),3,0,3);
 
       smooted_wvf.resize(memorydepth);
       denoise_wvf.resize(memorydepth);
@@ -1107,7 +1104,6 @@ class SPHE2{
       nshow_finish = nshow_range[1];
 
       if(led_calibration==true){
-        cout << led_calibration << endl;
         method = "led";
       }
       else{
@@ -1206,6 +1202,7 @@ class SPHE2{
       }
 
       fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),channel),"TObject::kOverwrite");
+      fout->WriteObject(hdiscard,"hdiscard","TObject::kOverwrite");
 
 
     }
@@ -1257,7 +1254,8 @@ class SPHE2{
        *Usediscarded_idx to check the best option
        **/
       if(derivate){
-        z->differenciate(diff_multiplier,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
+        if(derivate_raw) z->differenciate(diff_multiplier,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
+        else z->differenciate(diff_multiplier,&denoise_wvf[0],&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
         vec = &smooted_wvf[0];
       }
       else{
@@ -1312,9 +1310,7 @@ class SPHE2{
       for(Int_t i = 0; i < ntotal; i++){
         Double_t crossPositive = peaksRise[i];
         Double_t candidatePosition = peaksCross[i]; // peaks previously selected
-        if((candidatePosition - crossPositive)*dtime > social_distance*timeHigh){
-          crossPositive = candidatePosition - social_distance*timeHigh/dtime;
-        }
+
         Int_t dmax = z->getMaximum(crossPositive*dtime, candidatePosition*dtime, &smooted_wvf[0]);
         // if(snap()) cout << crossPositive*dtime << " " << candidatePosition*dtime << " " << dmax  << "\n";
         if(dmax < tolerance) {
@@ -1338,13 +1334,10 @@ class SPHE2{
 
         if(checkTooBig(wait_now, refWait, candidatePosition)){
           discard_by_distance = false;
-          if(snap()){
-            // cout << wait_now << " " << refWait << " " << candidatePosition << " " << waiting << endl;
-            discardedTime.push_back(candidatePosition*dtime);
-            discardedPeak.push_back(smooted_wvf[candidatePosition]);
-            discardedCharge.push_back(0);
-            discarded_idx.push_back(2);
-          }
+          // if(snap()){
+          //   // cout << wait_now << " " << refWait << " " << candidatePosition << " " << waiting << endl;
+          // }
+          fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 2);
           continue;
         }
 
@@ -1356,9 +1349,7 @@ class SPHE2{
             wait_now = false;
           }
           else{
-            if(snap()){
-              fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 2);
-            }
+            fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 2);
             continue;
           }
         }
@@ -1369,10 +1360,8 @@ class SPHE2{
           if (!current_good_distance) discard_by_distance = true;
           else discard_by_distance = false;
 
-          if(snap()){ // discarding current peak by social
-            fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 0);
-
-          }
+          // discarding current peak by social
+          fill_discarded(candidatePosition, smooted_wvf[candidatePosition], 0, 0);
           continue;
         }
         peakPosition.push_back(peaksFound[i]);
@@ -1380,10 +1369,14 @@ class SPHE2{
     }
 
     void fill_discarded(Int_t pidx, Double_t val, Double_t charge, Int_t discardidx){
-      discardedTime.push_back(pidx*dtime);
-      discardedPeak.push_back(val);
-      discardedCharge.push_back(charge);
-      discarded_idx.push_back(discardidx);
+      if(snap())
+      {
+        discardedTime.push_back(pidx*dtime);
+        discardedPeak.push_back(val);
+        discardedCharge.push_back(charge);
+        discarded_idx.push_back(discardidx);
+      }
+      hdiscard->Fill(selec_types[discardidx], 1);
     }
 
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
@@ -1540,9 +1533,7 @@ class SPHE2{
           if(negativeHits >= maxHits){
             get_this_wvf = false;
             get_this_charge = false;
-            if(snap()){
-              fill_discarded(peakPosIdx, smooted_wvf[peakPosIdx], res*dtime, 1);
-            }
+            fill_discarded(peakPosIdx, smooted_wvf[peakPosIdx], res*dtime, 1);
             break;
           }
           if(snap())
@@ -1656,7 +1647,7 @@ class SPHE2{
         g_discarded->Draw("SAME P");
       }
 
-      // if(derivate) z->drawZeroCrossingLines(peaksCross, c1,0,tolerance);
+      // if(derivate) z->drawZeroCrossingLines(peaksCross, peaksRise, c1,0,tolerance);
       fout->WriteObject(c1,(sampleName.c_str()),"TObject::kOverwrite");
       for(Int_t i = 0; i < n; i++){
         delete g_selected[i];

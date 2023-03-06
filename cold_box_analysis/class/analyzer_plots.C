@@ -10,7 +10,7 @@
 /**
  *
  * This class holds the methods for ploting for analyzer */
-void ANALYZER::sample_plot(Int_t myevent, string opt, Int_t filter, Double_t factor, Int_t mafilter){
+void ANALYZER::sample_plot(Int_t myevent, string opt, Double_t filter, Double_t factor, Int_t mafilter){
   if (opt == "") opt = plot_opt;
   bool state = getWaveformHard(myevent,factor);
   if (!state) return;
@@ -20,7 +20,7 @@ void ANALYZER::sample_plot(Int_t myevent, string opt, Int_t filter, Double_t fac
   drawGraph(opt,n_points,&time[0],&ch[kch].wvf[0]);
 }
 
-void ANALYZER::showWaveform(Int_t maxevent, Int_t filter, Int_t dt){
+void ANALYZER::showWaveform(Int_t maxevent, Double_t filter, Int_t dt){
 
   if (maxevent==0) {
     maxevent = nentries;
@@ -39,7 +39,7 @@ void ANALYZER::showWaveform(Int_t maxevent, Int_t filter, Int_t dt){
   }
 }
 
-void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t filter, string cut, Double_t factor){
+void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Double_t filter, string cut, Double_t factor){
 
   Int_t nbinsx = (xmax-xmin)/dtime;
   if(!hpers) hpers = new TH2D("hpers","hpers",nbinsx,xmin,xmax,nbins,ymin,ymax);
@@ -78,7 +78,7 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Int_t
 
 }
 
-void ANALYZER::add_persistence_plot(TH2D *_htemp, Int_t filter, string cut, Double_t factor){
+void ANALYZER::add_persistence_plot(TH2D *_htemp, Double_t filter, string cut, Double_t factor){
   if(!_htemp) _htemp = hpers;
   getSelection(cut);
   Int_t nev = lev->GetN();
@@ -157,12 +157,13 @@ void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel)
 
 }
 
-void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs){
+void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> not_used,  Double_t filter, Double_t factor, Double_t *SNRs){
 
   if(!SNRs){
     SNRs = new Double_t[2];
   }
   getWaveform(event,kch);
+  applyDenoise(filter);
   TGraph *g = new TGraph(drawGraph());
 
   g->Draw("AL");
@@ -177,7 +178,13 @@ void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Doubl
   SNRs[0] = computeSNR_simple(xmin+3*dtime, xmax-3*dtime, signal_range);
   drawGraph("SAME");
   Double_t maxav = getMaximum(xmin+8, xmax-8);
-  differenciate(1e3);
+
+  getWaveform(event,kch);
+  applyDenoise(filter);
+  differenciate(factor);
+  for(Int_t i = 0; i < n_moving; i++){
+    applyMovingAverage(moving_average,xmin,xmax);
+  }
   Double_t maxdif = getMaximum(xmin+8, xmax-8);
   // scaleWvf(maxav/maxdif); // not a good option, it will chage for each peak
   // scaleWvf(1e3);
@@ -200,7 +207,7 @@ void ANALYZER::debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Doubl
  * Set the range of the signal in ns, ex: 6200 to 6700 ns
  * call the function as minimizeParamsSPE(3, 5000, 10000, {6200, 6700})
  **/
-void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter){
+void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter, Double_t filter, Double_t factor){
 
 
 
@@ -234,7 +241,6 @@ void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vect
   }
 
   TCanvas *c1 = new TCanvas("c1", "c1",1920,0,1920,1080);
-
   vector<Double_t> SNRs = {0,0,0};
   vector<vector<Double_t>> resSNR0(ma_repeat); // stores the values of snr for different iterations
   vector<vector<Double_t>> resSNR1(ma_repeat); // stores the values of snr for different iterations
@@ -251,7 +257,7 @@ void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vect
 
   cout << "idx\tninter\tav. window\tSNR (differential)\tSNR (M.A)\t SNR (normal)" << endl;
   for(Int_t i = 0; i < total_tries; i++){
-    debugSPE(event, parameters[i][1], parameters[i][0], xmin, xmax, signal_range, &SNRs[0]);
+    debugSPE(event, parameters[i][1], parameters[i][0], xmin, xmax, signal_range, rangeInter, filter, factor, &SNRs[0]);
 
     c1->Modified();
     c1->Update();
@@ -294,25 +300,24 @@ void ANALYZER::minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vect
     gm1->Add(gsnr1[i]);
   }
 
-  TCanvas *c2 = new TCanvas("", "Diff",1920,0,1920,1080);
+  TCanvas *c2 = new TCanvas("c2", "Diff",1920,0,1920,1080);
   gm1->Draw("ap pmc");
   gm1->GetXaxis()->SetTitle("Moving Average Window (Ticks)");
   gm1->GetYaxis()->SetTitle("SNR");
   c2->BuildLegend();
 
 
-  TCanvas *c3 = new TCanvas("", "MA",1920,0,1920,1080);
+  TCanvas *c3 = new TCanvas("c3", "MA",1920,0,1920,1080);
 
   gm0->Draw("ap pmc");
   gm0->GetXaxis()->SetTitle("Moving Average Window (Ticks)");
   gm0->GetYaxis()->SetTitle("SNR");
   c3->BuildLegend();
 
-
 }
 
 
-void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c, Double_t ymin, Double_t ymax){
+void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross, vector<Int_t> &peaksRise, TCanvas *c, Double_t ymin, Double_t ymax){
   if(!c){
     cout << "We need a Canvas :)" << endl;
     return;
@@ -329,6 +334,13 @@ void ANALYZER::drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c, Doub
   vector<TLine *> lns(nlines);
   for(Int_t i = 0; i < nlines; i++){
     Int_t lnx = peaksCross[i]*dtime;
+    lns[i] = new TLine(lnx, ymin, lnx, ymax);
+    lns[i]->Draw("SAME");
+  }
+  nlines = peaksRise.size();
+  lns.resize(nlines);
+  for(Int_t i = 0; i < nlines; i++){
+    Int_t lnx = peaksRise[i]*dtime;
     lns[i] = new TLine(lnx, ymin, lnx, ymax);
     lns[i]->Draw("SAME");
   }

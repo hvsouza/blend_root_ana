@@ -8,3 +8,6 @@
 /cold_box_analysis/analysis/December2022run/20221215_led_and_random_trigger/LED/tot_test_C_ACLiC_dict1b81f18281_dictContent.h
 /cold_box_analysis/analysis/December2022run/20221215_led_and_random_trigger/LED/tot_test_C_ACLiC_dict33c407fae8_dictUmbrella.h
 .ipynb_checkpoints
+*_C.d
+*_C.so
+*_C_ACLiC_dict_rdict.pcm

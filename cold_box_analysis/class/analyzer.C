@@ -16,7 +16,7 @@ class ANALYZER{
     Int_t nentries = 0;
     vector<TBranch*> b;
     vector<ADC_DATA<memorydepth>> ch;
-    Int_t nchannels = 0;
+    Int_t nchannels = 1;
     vector<Int_t> channels = {1,2};
     vector<string> schannel;
     Double_t dtime = 4;
@@ -64,21 +64,11 @@ class ANALYZER{
       filename = m_filename;
       if(f == nullptr) f = new TFile(filename.c_str(),"READ");
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
-      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
       TList *lb = (TList*)t1->GetListOfBranches();
       this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
       nchannels = lb->GetEntries();
-      b.resize(nchannels);
-      schannel.resize(nchannels);
-      channels.resize(nchannels);
-      ch.resize(nchannels);
-      raw.resize(nchannels);
-      wvf.resize(nchannels);
-      haverage.resize(nchannels);
-      hfft.resize(nchannels);
-
+      setEmpty();
       for (Int_t i = 0; i < nchannels; i++) {
-
         schannel[i] = lb->At(i)->GetName();
         channels[i] = schannel[i][2] - '0';
         // schannel[i] = Form("Ch%d",channels[i]);
@@ -87,10 +77,22 @@ class ANALYZER{
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
       }
+      nentries = t1->GetEntries();
+    }
+
+    void setEmpty(){
+      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
+      b.resize(nchannels);
+      schannel.resize(nchannels);
+      channels.resize(nchannels);
+      ch.resize(nchannels);
+      raw.resize(nchannels);
+      wvf.resize(nchannels);
+      haverage.resize(nchannels);
+      hfft.resize(nchannels);
       for (int j = 0; j < n_points; j++) {
         time[j] = j*dtime;
       }
-      nentries = t1->GetEntries();
       xmin = 0;
       xmax = memorydepth*dtime;
     }
@@ -128,12 +130,13 @@ class ANALYZER{
 
     // _________________________ Methods that get me something _________________________ //
     
-    void getFFT(Double_t *_v = nullptr){
+    void getFFT(Double_t *_v = nullptr, bool inDecibel = false){
       if(_v == nullptr) _v = ch[kch].wvf;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_v[i]);
       }
       w->fft(w->hwvf);
+      if(inDecibel) w->convertDecibel();
       h = w->hwvf;
     }
 
@@ -154,6 +157,8 @@ class ANALYZER{
       for (Int_t i = from/dtime; i < to/dtime; i++) {
         if(v[i]>=max){
           max = v[i];
+          temp_max = max;
+          temp_pos = i;
         }
       }
       return max;
@@ -204,20 +209,44 @@ class ANALYZER{
       return 0;
     }
 
-    void integrate(Double_t from = 0, Double_t to = 0){
+    void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0){
       Double_t res = 0;
-      if (to == 0) to = memorydepth*dtime;
       Double_t max = -1e12;
-      for(Int_t i = from/dtime; i < to/dtime; i++){
-        res += ch[kch].wvf[i];
-        if(ch[kch].wvf[i]>=max){
-          max = ch[kch].wvf[i];
+      if (to == 0) to = memorydepth*dtime;
+      if(percent == 0){ // normal integration
+        for(Int_t i = from/dtime; i < to/dtime; i++){
+          res += ch[kch].wvf[i];
+          if(ch[kch].wvf[i]>=max){
+            max = ch[kch].wvf[i];
+          }
+
+        }
+      }
+      else{
+        max = getMaximum(from, to);
+        for(Int_t i = temp_pos; i >= 0 ;i--){
+          Double_t val = ch[kch].wvf[i];
+          if(val >= percent*max){
+            res += val;
+          }
+          else{
+            break;
+          }
+        }
+        for(Int_t i = temp_pos+1; i < memorydepth ;i++){
+          Double_t val = ch[kch].wvf[i];
+          if(val >= percent*max){
+            res += val;
+          }
+          else{
+            break;
+          }
         }
       }
       temp_charge = res*dtime;
       temp_max = max;
     }
-    void getIntegral(TH1D *_htemp = nullptr, Double_t from = 0, Double_t to = 0, string selection = "", Double_t filter = 0, Double_t sphe = 1.){
+    void getIntegral(TH1D *_htemp = nullptr, Double_t from = 0, Double_t to = 0, string selection = "", Double_t filter = 0, Double_t sphe = 1., Double_t percent = 0){
       getSelection(selection);
       Int_t nev = lev->GetN();
       Int_t iev = 0;
@@ -225,7 +254,7 @@ class ANALYZER{
         iev = lev->GetEntry(i);
         getWaveform(iev,kch);
         applyDenoise(filter);
-        integrate(from, to);
+        integrate(from, to, percent);
         _htemp->Fill(temp_charge/sphe);
       }
     }
@@ -252,7 +281,8 @@ class ANALYZER{
     }
 
 
-    void getWaveform(Int_t myevent = 0, Int_t k = 0){
+    void getWaveform(Int_t myevent = 0, Int_t k = -1){
+      if (k == -1) k = kch;
       if (k>=nchannels){
         cout << "There are only " << nchannels << " in the TTree, execute print() to check channels" << endl;
         return;
@@ -350,9 +380,11 @@ class ANALYZER{
       Int_t iev = 0;
       hfft[kch] = (TH1D*)w->hfft->Clone(Form("hfft_%s_ch%d",myname.c_str(),kch));
       hfft[kch]->Reset();
+      cout << "\n";
       Int_t total = 0;
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
+        if(i%200==0) cout << "computing event " << i << " of " << nev << "\r" << flush;
         getWaveform(iev,kch);
         applyDenoise(filter);
         // applyFreqFilter();
@@ -360,6 +392,7 @@ class ANALYZER{
         for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
         total++;
       }
+      cout << "\n";
       hfft[kch]->Scale(1./total);
       hfft[kch]->SetEntries(total);
 
@@ -397,13 +430,14 @@ class ANALYZER{
       }
       haverage[kch]->Scale(1./total);
       haverage[kch]->SetEntries(total);
+      haverage[kch]->Sumw2(kFALSE);
       h = haverage[kch];
     }
 
     void zeroCrossSearch(Double_t *derwvf, vector<Int_t> &peaksRise, vector<Int_t> &peaksCross, Int_t start, Int_t finish){
-      if(start == 0) start = 4;
+      if(start == 0) start = dtime;
       bool lastIsPositive = false; // I want to always start with a positive crossing
-      for(Int_t i = start/4; i < finish/4-1; i++){
+      for(Int_t i = start/dtime; i < finish/dtime-1; i++){
         if(lastIsPositive==false && derwvf[i] >= 0 && derwvf[i-1] <=0 && derwvf[i+1]>0){
           peaksRise.push_back(i);
           lastIsPositive = true;
@@ -470,7 +504,7 @@ class ANALYZER{
       }
     }
 
-    void applyDenoise(Int_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+    void applyDenoise(Double_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       checkSignals(&_raw,&_filtered);
       if (filter == 0) return;
       if (filter_type == "default"){
@@ -486,7 +520,7 @@ class ANALYZER{
       }
     }
 
-    void applyTV1D(Int_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
+    void applyTV1D(Double_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       checkSignals(&_raw,&_filtered);
       if (filter == 0) return;
       dn.TV1D_denoise(_raw,_filtered,n_points,filter);
@@ -694,14 +728,14 @@ class ANALYZER{
 
 
     void showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 100, bool inDecibel = true);
-    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs);
-    void sample_plot(Int_t myevent = 0, string opt = "", Int_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
-    void showWaveform(Int_t maxevent = 0, Int_t filter = 0, Int_t dt = 0);
-    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Int_t filter = 0, string cut="", Double_t factor = 1);
-    void add_persistence_plot(TH2D *_htemp = nullptr, Int_t filter = 0, string cut = "", Double_t factor = 1);
+    void sample_plot(Int_t myevent = 0, string opt = "", Double_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
+    void showWaveform(Int_t maxevent = 0, Double_t filter = 0, Int_t dt = 0);
+    void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Double_t filter = 0, string cut="", Double_t factor = 1);
+    void add_persistence_plot(TH2D *_htemp = nullptr, Double_t filter = 0, string cut = "", Double_t factor = 1);
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
-    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
-    void drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
+    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> not_used, Double_t filter = 16, Double_t factor = 200, Double_t *SNRs = nullptr);
+    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0}, Double_t filter = 16, Double_t factor = 200);
+    void drawZeroCrossingLines(vector<Int_t> &peaksCross, vector<Int_t> &peaksRise, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
     void histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr);
     void graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr);
 

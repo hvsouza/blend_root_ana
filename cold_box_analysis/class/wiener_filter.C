@@ -384,6 +384,7 @@ class WIENER{
       // hfinal->Scale(factor); // you dont scale to get back ...
 
 
+      hwvf->Reset();
       for(Int_t i = 0; i<npts; i++){
         res[i] = hfinal->GetBinContent(i+1);
         hwvf->SetBinContent(i+1,res[i]);
