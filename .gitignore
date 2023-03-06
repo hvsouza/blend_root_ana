@@ -10,4 +10,5 @@
 .ipynb_checkpoints
 *_C.d
 *_C.so
-*_C_ACLiC_dict_*.pcm
+*.pcm
+*_C_ACLiC_dict*
