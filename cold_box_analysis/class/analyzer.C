@@ -380,9 +380,11 @@ class ANALYZER{
       Int_t iev = 0;
       hfft[kch] = (TH1D*)w->hfft->Clone(Form("hfft_%s_ch%d",myname.c_str(),kch));
       hfft[kch]->Reset();
+      cout << "\n";
       Int_t total = 0;
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
+        if(i%200==0) cout << "computing event " << i << " of " << nev << "\r" << flush;
         getWaveform(iev,kch);
         applyDenoise(filter);
         // applyFreqFilter();
@@ -390,6 +392,7 @@ class ANALYZER{
         for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
         total++;
       }
+      cout << "\n";
       hfft[kch]->Scale(1./total);
       hfft[kch]->SetEntries(total);
 
@@ -432,9 +435,9 @@ class ANALYZER{
     }
 
     void zeroCrossSearch(Double_t *derwvf, vector<Int_t> &peaksRise, vector<Int_t> &peaksCross, Int_t start, Int_t finish){
-      if(start == 0) start = 4;
+      if(start == 0) start = dtime;
       bool lastIsPositive = false; // I want to always start with a positive crossing
-      for(Int_t i = start/4; i < finish/4-1; i++){
+      for(Int_t i = start/dtime; i < finish/dtime-1; i++){
         if(lastIsPositive==false && derwvf[i] >= 0 && derwvf[i-1] <=0 && derwvf[i+1]>0){
           peaksRise.push_back(i);
           lastIsPositive = true;
@@ -725,14 +728,14 @@ class ANALYZER{
 
 
     void showFFT(Int_t naverage = 10, Int_t maxevent = 0, Int_t dt = 100, bool inDecibel = true);
-    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, Double_t *SNRs);
     void sample_plot(Int_t myevent = 0, string opt = "", Double_t filter = 0, Double_t factor = 1., Int_t mafilter = 0);
     void showWaveform(Int_t maxevent = 0, Double_t filter = 0, Int_t dt = 0);
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Double_t filter = 0, string cut="", Double_t factor = 1);
     void add_persistence_plot(TH2D *_htemp = nullptr, Double_t filter = 0, string cut = "", Double_t factor = 1);
     TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
-    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0});
-    void drawZeroCrossingLines(vector<Int_t> &peaksCross, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
+    void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> not_used, Double_t filter = 16, Double_t factor = 200, Double_t *SNRs = nullptr);
+    void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0}, Double_t filter = 16, Double_t factor = 200);
+    void drawZeroCrossingLines(vector<Int_t> &peaksCross, vector<Int_t> &peaksRise, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
     void histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr);
     void graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr);
 

@@ -38,5 +38,5 @@ void fit_sphe_wave1(){
     // Cal.deltaplus = 1.35;
     // Cal.deltaminus = 1.4;
 
-    Cal.fit_sphe_wave(histogram.c_str());
+    Cal.fit_sphe_wave(histogram.c_str(),false); // set true to make if you want to execute "searchParameters" inside here instead
 }
