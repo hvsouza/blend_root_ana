@@ -3,13 +3,13 @@
 
 void create_histograms_v4_ch1(){
   gStyle->SetCanvasPreferGL(kFALSE);
-  bool just_a_test = false;
+  bool just_a_test = true;
   string mychannel = "Ch4";
   Double_t minInt = 10380;
   Double_t maxInt = 11400;
   if(mychannel == "Ch0"){minInt = 10280; maxInt = 10700;}
   if(mychannel == "Ch2"){minInt = 10280; maxInt = 10700;}
-  if(mychannel == "Ch3"){minInt = 10320; maxInt = 10500;}
+  if(mychannel == "Ch3"){minInt = 10320; maxInt = 10720;}
   if(mychannel == "Ch4"){minInt = 10300; maxInt = 10720;}
   vector<string> devices = {
                             "miniArapuca 37V (A1ch1)",

@@ -12,8 +12,8 @@ void DCR_analysis(){
                           };
 
   vector<string> description = {
-                                "miniArapucas + flex + V1 (VD) + v4 +v5",
-                                "miniArapucas + flex + V1 (VD) + v5",
+                                "miniArapucas + flex + V1 (VD-SSP) + v4 +v5",
+                                "miniArapucas + flex + V1 (VD-SSP) + v5",
                                 "miniArapucas + flex + V1 (VD-SSP)",
                                 "miniArapucas +  V1 (VD-SSP) ",
                                 "miniArapucas"

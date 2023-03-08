@@ -19,7 +19,7 @@ void giveMeSphe(){
     dark.nshow_range = {0,10}; // will save some debugging waveforms inside the range.
                                 // Example, nshow_range = {0,2} will save waveforms 0, 1 and 2;
 
-    dark.tolerance    = 8.5;      // n sigmas (smoothed) (not used for led)
+    dark.tolerance    = 10;      // n sigmas (smoothed) (not used for led)
                                 // if `method` is set to `fix`, the threshold will be the absolute value of tolerance, no baseline is calculated
     dark.baselineTime = 5000;   // is the time to compute the baseline (not used for led)
                                   // If the `method` is set to `dynamic` the baseline is calculated over the range of baselineTime
@@ -40,6 +40,7 @@ void giveMeSphe(){
     dark.interactions    = 80;  // for moving avarage filter (not used on led)
     dark.ninter          = 2;   // N times that moving average is applied
     dark.diff_multiplier = 200; //derivative can be very small. Use this to make it easier to see
+    dark.derivate_raw    = false;
 
     dark.dtime = 4.;            // time step in ns
 
@@ -65,7 +66,7 @@ void giveMeSphe(){
 
 
     // Not so common to change
-    dark.social_distance = 5.;   // demands that there is a minimum distance of social_distance * timeHigh between 2 consecutive peaks found
+    dark.social_distance = 1.;   // demands that there is a minimum distance of social_distance * timeHigh between 2 consecutive peaks found
     dark.method          = "derivative"; // `dynamic` or `derivative` evaluation of the baseline
                                // `fix` will not evaluate baseline and use raw threshold
                                // See tolerance, baselineTime and baselineLimit above
