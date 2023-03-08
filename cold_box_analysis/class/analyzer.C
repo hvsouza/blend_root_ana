@@ -209,7 +209,7 @@ class ANALYZER{
       return 0;
     }
 
-    void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0){
+    void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0, Bool_t withlimit = false){
       Double_t res = 0;
       Double_t max = -1e12;
       if (to == 0) to = memorydepth*dtime;
@@ -224,7 +224,13 @@ class ANALYZER{
       }
       else{
         max = getMaximum(from, to);
-        for(Int_t i = temp_pos; i >= 0 ;i--){
+        Int_t imin = 0;
+        Int_t imax = memorydepth;
+        if(withlimit){
+          imin = from/dtime;
+          imax = to/dtime;
+        }
+        for(Int_t i = temp_pos; i >= imin ;i--){
           Double_t val = ch[kch].wvf[i];
           if(val >= percent*max){
             res += val;
@@ -233,7 +239,7 @@ class ANALYZER{
             break;
           }
         }
-        for(Int_t i = temp_pos+1; i < memorydepth ;i++){
+        for(Int_t i = temp_pos+1; i < imax ;i++){
           Double_t val = ch[kch].wvf[i];
           if(val >= percent*max){
             res += val;
