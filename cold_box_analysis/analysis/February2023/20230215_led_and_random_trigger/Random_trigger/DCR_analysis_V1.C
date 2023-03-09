@@ -1,37 +1,37 @@
-void DCR_analysis(){
+void DCR_analysis_V1(){
 
-  Int_t nfiles = 5;
+  Int_t nfiles = 4;
   vector<TFile*> f1(nfiles);
-
   vector<string> fname = {
                           "run74_all_devices",
                           "run75_argon2x2_argon4_DCemVD1dot0_DCemVD1dot2_xArapucaV5",
                           "run76_argon2x2_argon4_DCemVD1dot0_DCemVD1dot2",
-                          "run77_argon2x2_argon4_DCemVD1dot0",
-                          "run78_argon2x2_argon4"
+                          "run77_argon2x2_argon4_DCemVD1dot0"
                           };
 
   vector<string> description = {
                                 "miniArapucas + flex + V1 (VD-SSP) + v4 +v5",
                                 "miniArapucas + flex + V1 (VD-SSP) + v5",
                                 "miniArapucas + flex + V1 (VD-SSP)",
-                                "miniArapucas +  V1 (VD-SSP) ",
-                                "miniArapucas"
+                                "miniArapucas +  V1 (VD-SSP) "
                                 };
 
   vector<TH1D*> h(nfiles);
   THStack *hs = new THStack("hs","hs");
   Double_t total_entries = 0;
   Double_t total_time = 500*1e-3;
-  Double_t total_sipms_area = 36*20;
+  Double_t total_sipms_area = 36*80;
   Double_t dcr = 0;
 
   for(Int_t i = nfiles-1; i >= 0; i--){
-    fname[i] = fname[i] + "/sphe_histograms_Ch0.root";
+    fname[i] = fname[i] + "/sphe_histograms_Ch2.root";
     f1[i] = new TFile(fname[i].c_str(),"READ");
-    h[i] = (TH1D*)f1[i]->Get("analyzed_0");
+    h[i] = (TH1D*)f1[i]->Get("analyzed_2");
     h[i]->Rebin(200);
-    total_entries = h[i]->GetEntries();
+    Double_t minval = h[i]->GetBinCenter(1);
+    Double_t binwidth = h[i]->GetBinWidth(1);
+    Int_t binCut = round(500 - minval)/binwidth + 1;
+    total_entries = h[i]->Integral(binCut,h[i]->GetNbinsX());
     dcr = total_entries/total_time/total_sipms_area;
     stringstream stream;
     stream << std::fixed << std::setprecision(2) << dcr;
