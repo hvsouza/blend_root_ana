@@ -1055,7 +1055,7 @@ class SPHE2{
      * Plot graphs for debugging
      * Save histogram
      */
-    void giveMeSphe(ADC_DATA<memorydepth_sample> sample){
+    void giveMeSphe(ADC_DATA sample){
       if(memorydepth_sample < mean_before/dtime + mean_after/dtime + 1){
         cout << "memorydepth_sample < mean_before/dtime + mean_after/dtime + 1" << endl;
         cout << "make it equal to " << mean_before/dtime + mean_after/dtime + 1 << " or equal to memorydepth" << endl;
@@ -1156,7 +1156,7 @@ class SPHE2{
       for(Int_t i = 0; i<nentries; i++){
         theGreatReset();
         z->getWaveform(i,kch); // get waveform by memory
-        if(check_selection && z->ch[kch].selection != 0) continue;
+        if(check_selection && z->ch[kch]->selection != 0) continue;
         
         if(i>nshow_finish && static_cast<Int_t>(i)%200==0){
           cout << i << " out of " << nentries << "\r" << flush;
@@ -1180,7 +1180,7 @@ class SPHE2{
         integrateSignals(sample);
         if(snap()){
           drawMySamples();
-          cout << "Event " << z->ch[kch].event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
+          cout << "Event " << z->ch[kch]->event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
           for(unsigned int j = 0; j < selected_charge.size(); j++){
             cout << "\t\t Charge = " << selected_charge[j] << " at " << selected_charge_time[j] << " ns " << endl;
           }
@@ -1246,7 +1246,7 @@ class SPHE2{
     void processData(){
       Double_t *vec = nullptr;
 
-      z->applyDenoise(filter, z->ch[kch].wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
+      z->applyDenoise(filter, z->ch[kch]->wvf, &denoise_wvf[0]); // denoise is stored at denoise_wvf. If no filter, they are equal
 
       /**
        * From https://terpconnect.umd.edu/~toh/spectrum/Differentiation.html
@@ -1260,12 +1260,12 @@ class SPHE2{
        *Usediscarded_idx to check the best option
        **/
       if(derivate){
-        if(derivate_raw) z->differenciate(diff_multiplier,z->ch[kch].wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
+        if(derivate_raw) z->differenciate(diff_multiplier,z->ch[kch]->wvf,&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
         else z->differenciate(diff_multiplier,&denoise_wvf[0],&smooted_wvf[0]); // multiply by 1e3 so we can see something :)
         vec = &smooted_wvf[0];
       }
       else{
-        vec = z->ch[kch].wvf;
+        vec = z->ch[kch]->wvf;
       }
       for(Int_t i = 0; i < ninter; i++){
         if (i == interactions-1 && method == "static") getstaticbase = true;
@@ -1453,7 +1453,7 @@ class SPHE2{
       return res;
     }
 
-    void integrateSignals(ADC_DATA<memorydepth_sample> &sample){
+    void integrateSignals(ADC_DATA &sample){
       unsigned int npeaks = peakPosition.size();
       if (led_calibration) npeaks = 1;
       for(unsigned int i = 0; i < npeaks; i++){
@@ -1502,7 +1502,7 @@ class SPHE2{
       }
     }
 
-    void getIntegral(Int_t peakPosIdx, ADC_DATA<memorydepth_sample> &sample){
+    void getIntegral(Int_t peakPosIdx, ADC_DATA &sample){
       get_this_charge = true;
       if(get_wave_form) get_this_wvf = true; // in the case not, I dont take the waveform
       else get_this_wvf = false;
@@ -1532,7 +1532,7 @@ class SPHE2{
       for(Int_t i = from; i <= to; i++, iwvf++){
         Double_t val = denoise_wvf[i];
         if(get_this_wvf){
-          sample.wvf[iwvf] = z->ch[kch].wvf[i];
+          sample.wvf[iwvf] = z->ch[kch]->wvf[i];
         }
         if(i >= integralfrom && i <= integralto){
           if (val < lowerThreshold){
@@ -1550,7 +1550,7 @@ class SPHE2{
             temp_selected_peaks.push_back(val);
             temp_selected_time.push_back(i*dtime);
           }
-          if(withfilter == false){ val = z->ch[kch].wvf[i]; }
+          if(withfilter == false){ val = z->ch[kch]->wvf[i]; }
           res += val;
           if(val>=max){
             max = val;
@@ -1731,7 +1731,7 @@ class MeanSignal{
   
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-      vector<ADC_DATA<memorydepth>> ch(channels.size());
+      vector<ADC_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
       for(Int_t k = 0; k<(int)channels.size();k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
@@ -1833,7 +1833,7 @@ class Resolution{
   
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-      vector<ADC_DATA<memorydepth>> ch(channels.size());
+      vector<ADC_DATA> ch(channels.size());
       vector<TBranch *> bch(channels.size());
       for(Int_t k = 0; k<(int)channels.size(); k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
@@ -2063,7 +2063,7 @@ class TimeDistribuction{
   
       TFile *fout = new TFile("time_distribuction.root","RECREATE");
   
-      vector<ADC_DATA<memorydepth>>  ch(nchannels);
+      vector<ADC_DATA>  ch(nchannels);
       vector<TBranch *> bch(nchannels);
       for(Int_t k = 0; k<nchannels;k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));

@@ -15,7 +15,7 @@ class ANALYZER{
     TTree *t1 = nullptr;
     Int_t nentries = 0;
     vector<TBranch*> b;
-    vector<ADC_DATA<memorydepth>> ch;
+    vector<ADC_DATA*> ch;
     Int_t nchannels = 1;
     vector<Int_t> channels = {1,2};
     vector<string> schannel;
@@ -66,14 +66,23 @@ class ANALYZER{
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
       TList *lb = (TList*)t1->GetListOfBranches();
       this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
+      string branchtitle = lb->At(0)->GetTitle();
+      ADC_DATA temp_adc;
       nchannels = lb->GetEntries();
+      Bool_t is_old_data = (temp_adc.tobranch == branchtitle) ? true : false;
       setEmpty();
       for (Int_t i = 0; i < nchannels; i++) {
         schannel[i] = lb->At(i)->GetName();
         channels[i] = schannel[i][2] - '0';
-        // schannel[i] = Form("Ch%d",channels[i]);
-        b[i] = t1->GetBranch(schannel[i].c_str());
-        b[i]->SetAddress(&ch[i]);
+        string temp_ch_name = schannel[i];
+        b[i] = t1->GetBranch(temp_ch_name.c_str());
+        if (is_old_data) ch[i] = new ADC_DATA();
+        // else {
+          // cout << "heeere" << endl;
+          // ch[i] = new MY_DATA();
+        // }
+        if(is_old_data) b[i]->SetAddress(ch[i]);
+        else b[i]->SetAddress(&ch[i]);
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
       }
@@ -131,7 +140,7 @@ class ANALYZER{
     // _________________________ Methods that get me something _________________________ //
     
     void getFFT(Double_t *_v = nullptr, bool inDecibel = false){
-      if(_v == nullptr) _v = ch[kch].wvf;
+      if(_v == nullptr) _v = ch[kch]->wvf;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_v[i]);
       }
@@ -145,14 +154,14 @@ class ANALYZER{
       Double_t res = 0;
       Double_t totalev = 0;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
-        res += ch[kch].wvf[i];
+        res += ch[kch]->wvf[i];
         totalev+=1;
       }
       return res/totalev;
     }
 
     Double_t getMaximum(Double_t from, Double_t to, Double_t *v = nullptr){
-      if (!v) v = ch[kch].wvf;
+      if (!v) v = ch[kch]->wvf;
       Double_t max = -1e12;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
         if(v[i]>=max){
@@ -184,8 +193,8 @@ class ANALYZER{
       }
       Double_t t1 = i-1;
       Double_t t2 = i;
-      Double_t A1 = ch[kch].wvf[i-1];
-      Double_t A2 = ch[kch].wvf[i];
+      Double_t A1 = ch[kch]->wvf[i-1];
+      Double_t A2 = ch[kch]->wvf[i];
 
       return ((t2-t1)*th - (A1*t2- A2*t1))/(A2-A1);
     }
@@ -195,13 +204,13 @@ class ANALYZER{
       Bool_t triggered = false;
       Double_t time_mark = 0;
       for(Int_t i = from/dtime; i<to/dtime; i++){
-        if(ch[channel].wvf[i]>time_trigger && triggered == false){
+        if(ch[channel]->wvf[i]>time_trigger && triggered == false){
           triggered = true;
           time_mark = linear_interpole_tot(i, time_trigger)*dtime;
           temp_pos = time_mark;
           // break;
         }
-        else if(triggered==true && ch[channel].wvf[i]<time_trigger && (i*dtime-time_mark)>=minimum_gap_ns){
+        else if(triggered==true && ch[channel]->wvf[i]<time_trigger && (i*dtime-time_mark)>=minimum_gap_ns){
           time_mark = linear_interpole_tot(i, time_trigger)*dtime - time_mark;
           return time_mark;
         }
@@ -215,9 +224,9 @@ class ANALYZER{
       if (to == 0) to = memorydepth*dtime;
       if(percent == 0){ // normal integration
         for(Int_t i = from/dtime; i < to/dtime; i++){
-          res += ch[kch].wvf[i];
-          if(ch[kch].wvf[i]>=max){
-            max = ch[kch].wvf[i];
+          res += ch[kch]->wvf[i];
+          if(ch[kch]->wvf[i]>=max){
+            max = ch[kch]->wvf[i];
           }
 
         }
@@ -231,7 +240,7 @@ class ANALYZER{
           imax = to/dtime;
         }
         for(Int_t i = temp_pos; i >= imin ;i--){
-          Double_t val = ch[kch].wvf[i];
+          Double_t val = ch[kch]->wvf[i];
           if(val >= percent*max){
             res += val;
           }
@@ -240,7 +249,7 @@ class ANALYZER{
           }
         }
         for(Int_t i = temp_pos+1; i < imax ;i++){
-          Double_t val = ch[kch].wvf[i];
+          Double_t val = ch[kch]->wvf[i];
           if(val >= percent*max){
             res += val;
           }
@@ -271,7 +280,7 @@ class ANALYZER{
         return;
       }
       for(Int_t i = 0; i < htemp->GetNbinsX(); i++){
-        ch[kch].wvf[i] = htemp->GetBinContent(i+1);
+        ch[kch]->wvf[i] = htemp->GetBinContent(i+1);
       }
     }
     void getWaveFromGraph(TGraph *gtemp){
@@ -282,7 +291,7 @@ class ANALYZER{
         return;
       }
       for(Int_t i = 0; i < ntemp; i++){
-        ch[kch].wvf[i] = *(gtemp->GetY()+i);
+        ch[kch]->wvf[i] = *(gtemp->GetY()+i);
       }
     }
 
@@ -295,7 +304,8 @@ class ANALYZER{
       }
       kch = k;
       b[k]->GetEvent(myevent);
-      currentEvent = ch[k].event;
+      // n_points = ch[k]->npts;
+      currentEvent = ch[k]->event;
     }
 
     bool getWaveformHard(Int_t myevent = 0, Double_t factor = 1){
@@ -304,9 +314,11 @@ class ANALYZER{
         return false;
       }
       b[kch]->GetEvent(myevent);
+      // n_points = ch[kch]->npts;
+      currentEvent = ch[kch]->event;
       for (int j = 0; j < n_points; j++) {
-        raw[kch][j] = ch[kch].wvf[j]*factor;
-        ch[kch].wvf[j] = ch[kch].wvf[j]*factor;
+        raw[kch][j] = ch[kch]->wvf[j]*factor;
+        ch[kch]->wvf[j] = ch[kch]->wvf[j]*factor;
         wvf[kch][j] = raw[kch][j];
         time[j] = j*dtime;
       }
@@ -342,7 +354,7 @@ class ANALYZER{
 
       Double_t time_mark;
       for(Int_t i = startpoint; i < endpoint; i++){
-        if (ch[kch].wvf[i] >= threshold) {
+        if (ch[kch]->wvf[i] >= threshold) {
           if(i == startpoint) break;
           time_mark = linear_interpole_tot(i, threshold - baseline_level)*dtime;
           temp_pos = time_mark;
@@ -371,12 +383,12 @@ class ANALYZER{
       Double_t time_mark = 0;
 
       for(Int_t i = startpoint; i < endpoint; i++){
-        if (ch[kch].wvf[i] >= 0.1*(peak_level-baseline_level)+baseline_level && triggered==false) {
+        if (ch[kch]->wvf[i] >= 0.1*(peak_level-baseline_level)+baseline_level && triggered==false) {
           triggered = true;
           time_mark = linear_interpole_tot(i, 0.1*(peak_level-baseline_level))*dtime;
           // time_mark = i*dtime;
         }
-        else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)+baseline_level){
+        else if(triggered == true && ch[kch]->wvf[i]>=0.9*(peak_level - baseline_level)+baseline_level){
           if(debug) draw_rise_lines(time_mark, i*dtime, baseline_level, peak_level);
           temp_pos = linear_interpole_tot(i, 0.9*(peak_level - baseline_level))*dtime;
           // time_mark = i*dtime - time_mark;
@@ -389,7 +401,7 @@ class ANALYZER{
     }
 
     void getBackFFT(Double_t *_filtered = nullptr){
-      if (_filtered == nullptr){_filtered = ch[kch].wvf;}
+      if (_filtered == nullptr){_filtered = ch[kch]->wvf;}
       w->backfft(*w);
       for(Int_t i = 0; i < memorydepth; i++){
         _filtered[i] = w->hwvf->GetBinContent(i+1);
@@ -452,7 +464,7 @@ class ANALYZER{
         applyDenoise(filter);
         total += 1;
         for (Int_t j = 0; j < memorydepth; j++){
-          haverage[kch]->AddBinContent(j+1,ch[kch].wvf[j]);
+          haverage[kch]->AddBinContent(j+1,ch[kch]->wvf[j]);
         }
 
       }
@@ -484,7 +496,7 @@ class ANALYZER{
 
     // _________________________ Filters and processing _________________________ //
     void scaleWvf(Double_t factor, Double_t *_filtered = nullptr){
-      if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      if(_filtered == nullptr) _filtered = ch[kch]->wvf;
       for (Int_t i = 0; i < memorydepth; i++) {
         _filtered[i] = _filtered[i]*factor;
       }
@@ -492,19 +504,19 @@ class ANALYZER{
 
     void addOffet(Double_t offset = 0, Double_t from = 0, Double_t to = 0){
       if(offset == 0){
-        offset = ch[kch].base;
+        offset = ch[kch]->base;
       }
       if(to == 0) to = memorydepth*dtime;
       for(Int_t i = from/dtime; i < to/dtime; i++){
-        ch[kch].wvf[i] = ch[kch].wvf[i] + offset;
+        ch[kch]->wvf[i] = ch[kch]->wvf[i] + offset;
       }
     }
     void checkSignals(Double_t **_raw, Double_t **_filtered){
       if (*_raw == nullptr  && *_filtered == nullptr){
-        *_filtered = ch[kch].wvf;
+        *_filtered = ch[kch]->wvf;
         *_raw = tempraw;
           for (Int_t i = 0; i < memorydepth; i++) {
-            (*_raw)[i] = ch[kch].wvf[i];
+            (*_raw)[i] = ch[kch]->wvf[i];
           }
       }
       else if(*_raw == *_filtered){
@@ -559,7 +571,7 @@ class ANALYZER{
       w->setFilter(frequency_cut,filter_type);
     }
     void applyFreqFilter(Double_t *_filtered = nullptr){
-      if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      if(_filtered == nullptr) _filtered = ch[kch]->wvf;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_filtered[i]);
       }
@@ -574,7 +586,7 @@ class ANALYZER{
 
 
     void applyBandCut(WIENER *_temp = nullptr, Double_t *_filtered = nullptr){
-      if(_filtered == nullptr) _filtered = ch[kch].wvf;
+      if(_filtered == nullptr) _filtered = ch[kch]->wvf;
       if(_temp == nullptr) _temp = w;
       for(Int_t i = 0; i < memorydepth; i++){
         w->hwvf->SetBinContent(i+1,_filtered[i]);
@@ -588,7 +600,7 @@ class ANALYZER{
     }
 
     void makeCopy(Double_t *cpy, Double_t *original = nullptr){
-      if (original == nullptr) original = ch[kch].wvf;
+      if (original == nullptr) original = ch[kch]->wvf;
       for (Int_t i = 0; i < memorydepth; i++) {
         cpy[i] = original[i];
       }
@@ -622,17 +634,17 @@ class ANALYZER{
       Double_t result = 0;
       if(!hbase) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,14),0,TMath::Power(2,14));
       hbase->Reset();
-      for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime; i++) hbase->Fill(ch[kch].wvf[i]);
+      for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime; i++) hbase->Fill(ch[kch]->wvf[i]);
       Double_t res0 = hbase->GetBinCenter(hbase->GetMaximumBin());
       Double_t hmean = hbase->GetMean();
       Double_t hstd = hbase->GetStdDev();
       Double_t bins=0;
       for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime;){
-        if(ch[kch].wvf[i] > res0 + exclusion_baseline || ch[kch].wvf[i]<res0 - exclusion_baseline) {
+        if(ch[kch]->wvf[i] > res0 + exclusion_baseline || ch[kch]->wvf[i]<res0 - exclusion_baseline) {
           i+=exclusion_window/dtime;
         }
         else{
-          result += ch[kch].wvf[i];
+          result += ch[kch]->wvf[i];
           bins+=1;
           i++;
         }
@@ -690,8 +702,8 @@ class ANALYZER{
         applyDenoise(filter);
         bool contact = false;
         for(Int_t j = xmin/dtime; j < xmax/dtime; j++){
-          if(type == "higher") contact = checkHigher(ch[kch].wvf[j], limit);
-          else contact = checkLower(ch[kch].wvf[j], limit);
+          if(type == "higher") contact = checkHigher(ch[kch]->wvf[j], limit);
+          else contact = checkLower(ch[kch]->wvf[j], limit);
           if(contact){
             if(i == 20){
             }
@@ -735,14 +747,14 @@ class ANALYZER{
 
       for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
         if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
-          sum += ch[kch].wvf[i];
+          sum += ch[kch]->wvf[i];
           navg += 1;
         }
       }
       avg = sum/navg;
       for(Int_t i = xmin/dtime; i < xmax/dtime; i++){
         if(i*dtime > signal_range[1] || i*dtime < signal_range[0]){
-          Double_t diff = (ch[kch].wvf[i] - avg);
+          Double_t diff = (ch[kch]->wvf[i] - avg);
           stddev += diff*diff;
         }
       }

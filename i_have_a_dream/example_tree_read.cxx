@@ -12,15 +12,20 @@
 
 void example_tree_read() {
   MY_DATA *ch0 = 0, *ch1 = 0; // note: they must be initialized
-  TFile *fread = TFile::Open("example_tree.root", "READ");
-  if ((!fread) || fread->IsZombie()) { delete fread; return; } // just a precaution
-  TTree *t1; fread->GetObject("t1", t1);
-  if (!t1) { delete fread; return; } // just a precaution
+  TFile *f1 = TFile::Open("example_tree.root", "READ");
+  if ((!f1) || f1->IsZombie()) { delete f1; return; } // just a precaution
+  TTree *t1; f1->GetObject("t1", t1);
+  if (!t1) { delete f1; return; } // just a precaution
   // std::cout << "\n"; t1->Print();
-  t1->SetBranchAddress("ch0.", &ch0);  // note: the name's last character is a "."
-  t1->SetBranchAddress("ch1.", &ch1);  // note: the name's last character is a "."
+  // t1->SetBranchAddress("ch0.", &ch0);  // note: the name's last character is a "."
+  // t1->SetBranchAddress("ch1.", &ch1);  // note: the name's last character is a "."
+  TBranch *b1 = t1->GetBranch("ch0.");
+  TBranch *b2 = t1->GetBranch("ch1.");
+  b1->SetAddress(&ch0);
+  b2->SetAddress(&ch1);
   for(Long64_t i = 0; i < t1->GetEntries(); i++) {
-    t1->GetEntry(i);
+    b1->GetEntry(i);
+    b2->GetEntry(i);
     if (!(ch0 && ch1)) continue; // just a precaution
     std::cout << "\nEntry : " << i << "\n";
     // ch0
@@ -34,7 +39,7 @@ void example_tree_read() {
   }
   std::cout << "\n";
   // cleanup
-  delete fread; // automatically deletes the "t1", too
+  delete f1; // automatically deletes the "t1", too
   delete ch0;
   delete ch1;
 }

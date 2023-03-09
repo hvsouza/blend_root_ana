@@ -20,8 +20,8 @@ class SPHE{
     Double_t value = 0;
     Double_t desv = 0;
     Int_t channel = 1;
-    ADC_DATA<memorydepth> ch;
-    ADC_DATA<memorydepth> sample;
+    ADC_DATA ch;
+    ADC_DATA sample;
 
 
     // ____________________ Variables to calculate ____________________ //

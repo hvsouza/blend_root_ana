@@ -17,7 +17,7 @@ void ANALYZER::sample_plot(Int_t myevent, string opt, Double_t filter, Double_t 
   applyMovingAverage(mafilter);
   applyDenoise(filter);
 
-  drawGraph(opt,n_points,&time[0],&ch[kch].wvf[0]);
+  drawGraph(opt,n_points,&time[0],&ch[kch]->wvf[0]);
 }
 
 void ANALYZER::showWaveform(Int_t maxevent, Double_t filter, Int_t dt){
@@ -62,7 +62,7 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Doubl
     // applyFreqFilter();
 
     for (int j = 0; j < n_points; j++) {
-      hpers->Fill(j*dtime,ch[kch].wvf[j]*factor);
+      hpers->Fill(j*dtime,ch[kch]->wvf[j]*factor);
     }
 
   }
@@ -88,7 +88,7 @@ void ANALYZER::add_persistence_plot(TH2D *_htemp, Double_t filter, string cut, D
     getWaveform(iev,kch);
     applyDenoise(filter);
     for (int j = 0; j < n_points; j++) {
-      _htemp->Fill(j*dtime,ch[kch].wvf[j]*factor);
+      _htemp->Fill(j*dtime,ch[kch]->wvf[j]*factor);
     }
   }
 }
@@ -96,7 +96,7 @@ void ANALYZER::add_persistence_plot(TH2D *_htemp, Double_t filter, string cut, D
 TGraph ANALYZER::drawGraph(string opt, Int_t n, Double_t* x, Double_t* y){
   if (opt == "") opt = plot_opt;
   if (x == nullptr) x = time;
-  if (y == nullptr) y = ch[kch].wvf;
+  if (y == nullptr) y = ch[kch]->wvf;
   gwvf = new TGraph(n,x,y);
   gwvf->Draw(opt.c_str());
   gwvf->GetXaxis()->SetTitle(xlabel.c_str());
@@ -358,11 +358,11 @@ void ANALYZER::histoTimeTrigger(Int_t nstart, Int_t nfinish, TH1D *_htemp)
   for(Int_t i = nstart; i < nfinish; i++){
     getWaveform(i,kch);
     if(i == nstart){
-      ref = ch[kch].time;
+      ref = ch[kch]->time;
     }
     else{
-      _htemp->Fill(ch[kch].time - ref);
-      ref = ch[kch].time;
+      _htemp->Fill(ch[kch]->time - ref);
+      ref = ch[kch]->time;
     }
   }
   _htemp->GetYaxis()->SetTitle("# of events");
@@ -381,11 +381,11 @@ void ANALYZER::graphTimeTrigger(Int_t nstart, Int_t nfinish, TGraph *_gtemp)
   for(Int_t i = nstart; i < nfinish; i++){
     getWaveform(i,kch);
     if(i == nstart){
-      ref = ch[kch].time;
+      ref = ch[kch]->time;
     }
     else{
-      _gtemp->AddPoint(ch[kch].event, ch[kch].time - ref);
-      ref = ch[kch].time;
+      _gtemp->AddPoint(ch[kch]->event, ch[kch]->time - ref);
+      ref = ch[kch]->time;
     }
   }
   _gtemp->Draw("ALP");
