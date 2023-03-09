@@ -1,15 +1,15 @@
 #define memorydepth 5000
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
-void create_histograms_v4_ch1(){
+void create_histograms_v4_ch2(){
   gStyle->SetCanvasPreferGL(kFALSE);
-  bool just_a_test = true;
-  string mychannel = "Ch4";
+  bool just_a_test = false;
+  string mychannel = "Ch3";
   Double_t minInt = 10380;
   Double_t maxInt = 11400;
   if(mychannel == "Ch0"){minInt = 10280; maxInt = 10700;}
   if(mychannel == "Ch2"){minInt = 10280; maxInt = 10700;}
-  if(mychannel == "Ch3"){minInt = 10320; maxInt = 10720;}
+  if(mychannel == "Ch3"){minInt = 10300; maxInt = 12000;}
   if(mychannel == "Ch4"){minInt = 10300; maxInt = 10720;}
   vector<string> devices = {
                             "miniArapuca 37V (A1ch1)",
@@ -22,6 +22,7 @@ void create_histograms_v4_ch1(){
                             "flex 46V (DCemVD1.2)",};
 
   vector<Double_t> saturations = {12000, 12000, 12600, 12600, 12000, 12000, 12000, 100};
+  // vector<Double_t> sphes = {7100,400, 7100, 5800*9.97/515.25, 5800, 0, 0, 0};
   vector<Double_t> sphes = {7100,400, 7100, 1, 5800, 0, 0, 0};
 
   vector<string> files = {"run44_all_devices_365nm_20ns_3V2", "run45_all_devices_365nm_20ns_3V4", "run46_all_devices_365nm_20ns_3V6", "run47_all_devices_365nm_20ns_3V8", "run48_all_devices_365nm_20ns_4V0", "run49_all_devices_365nm_20ns_4V2", "run50_all_devices_365nm_20ns_4V4", "run51_all_devices_365nm_20ns_4V6", "run52_all_devices_365nm_20ns_4V8", "run53_all_devices_365nm_20ns_5V0", "run54_all_devices_365nm_20ns_5V2", "run55_all_devices_365nm_20ns_5V4", "run56_all_devices_365nm_20ns_5V6", "run57_all_devices_365nm_20ns_5V8", "run58_all_devices_365nm_20ns_6V0", "run59_all_devices_365nm_20ns_6V5", "run60_all_devices_365nm_20ns_7V0", "run61_all_devices_365nm_20ns_7V5", "run62_all_devices_365nm_20ns_8V0", "run63_all_devices_365nm_20ns_8V5", "run64_all_devices_365nm_20ns_9V0", "run65_all_devices_365nm_20ns_10V0", "run66_all_devices_365nm_20ns_11V0", "run67_all_devices_365nm_20ns_12V5", "run68_all_devices_365nm_20ns_15V0", "run69_all_devices_365nm_20ns_17V5", "run70_all_devices_365nm_20ns_20V0", "run71_all_devices_365nm_20ns_22V5", "run72_all_devices_365nm_20ns_25V0", "run73_all_devices_365nm_20ns_30V0"};
@@ -46,7 +47,7 @@ void create_histograms_v4_ch1(){
 
   vector<TH1D*> h(n);
   vector<TH1D*> hpeak(n);
-  TH2D *h2p = new TH2D("h2p","h2p",4000,-5,4000,2000,-100,14000);
+  TH2D *h2p = new TH2D("h2p","h2p",4000,-5,2.3e6,2000,-100,2500);
   TH2D *h2 = new TH2D("h2","h2",300,0,30,8000,-50,4000);
   TGraphErrors *gpeaks = new TGraphErrors();
   gStyle->SetPadTickX(0);
@@ -123,9 +124,9 @@ void create_histograms_v4_ch1(){
       if(z[i]->ch[kch].selection!=2){
 
         z[i]->applyDenoise(filter);
-        z[i]->integrate(minInt,maxInt);
+        z[i]->integrate(minInt,maxInt,0.01,true);
         charge = z[i]->temp_charge;
-        max = z[i]->temp_max;
+        max = z[i]->temp_max*(11200/24.5)/457.5;
         h[i]->Fill(charge/sphe);
         hpeak[i]->Fill(max);
         h2p->Fill(charge/sphe,max);
@@ -170,10 +171,14 @@ void create_histograms_v4_ch1(){
   vector<Double_t> Eravgs(n);
   vector<Double_t> ErSTD(n);
   for(Int_t i = 0; i<n; i++){
-    avgs[i] = h[i]->GetMean();
-    ErSTD[i] = h[i]->GetStdDev();
-    Double_t aux_arror_avgs = h[i]->GetMeanError();
-    Double_t aux_arror_std = h[i]->GetStdDevError();
+    // avgs[i] = h[i]->GetMean();
+    // ErSTD[i] = h[i]->GetStdDev();
+    avgs[i] = hpeak[i]->GetMean();
+    ErSTD[i] = hpeak[i]->GetStdDev();
+    // Double_t aux_arror_avgs = h[i]->GetMeanError();
+    // Double_t aux_arror_std = h[i]->GetStdDevError();
+    Double_t aux_arror_avgs = hpeak[i]->GetMeanError();
+    Double_t aux_arror_std = hpeak[i]->GetStdDevError();
 
      
     // peak[i] = fgap[i]->GetParameter(1);
@@ -253,14 +258,16 @@ void create_histograms_v4_ch1(){
   gpeakph->SetMarkerStyle(21);
   gpeakph->SetMarkerSize(0.5);
   gpeakph->Draw("AP");
-  gpeakph->GetXaxis()->SetLimits(0.01,3000);
+  // gpeakph->GetXaxis()->SetLimits(0.01,3000);
   // gpeakph->Fit("myfunc2","RQ0");
   // myfunc2->SetRange(0,250);
   // myfunc2->Draw("SAME");
 
   TCanvas *c2p = new TCanvas("c2p","c2p",1920,0,1920,1080);
-  h2p->GetXaxis()->SetTitle("#mu (photo-electrons)");
-  h2p->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
+  // h2p->GetXaxis()->SetTitle("#mu (photo-electrons)");
+  // h2p->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
+  h2p->GetXaxis()->SetTitle("Charge (ADC*ns)");
+  h2p->GetYaxis()->SetTitle("Amplitude (Photo-electrons)");
   h2p->Draw("colz");
   
   TCanvas *c2c = new TCanvas("c2c","c2c",1920,0,1920,1080);

@@ -266,11 +266,6 @@ class SPHE{
       Int_t aux_sample = 0;
 
 
-      sphe_charge = sphe_charge_ch0; // wave0
-      sphe_charge2 = sphe_charge2_ch0; // wave0
-      delta = sphe_charge2 - sphe_charge;
-      sphe_std = sphe_std_ch0;
-
       Double_t statcharge[npeaks];
       Double_t statpeak[npeaks];
       Double_t trackLow[npeaks];
@@ -439,7 +434,7 @@ class SPHE{
           if(get_wave_form){
             Double_t newbase = 0;
             if(notAGoodWaveform[i]==false){
-              if(statcharge[i]>=delta/deltaminus && statcharge[i]<=delta*deltaplus){
+              if(statcharge[i]>=deltaminus && statcharge[i]<=deltaplus){
                 naverages++;
                 valid = true;
                 high_cut = mean_before+mean_after;
@@ -617,6 +612,17 @@ class SPHE{
         cout << area_off << " " << shift << endl;
       }
 
+      sphe_charge = sphe_charge_ch0; // wave0
+      sphe_charge2 = sphe_charge2_ch0; // wave0
+      delta = sphe_charge2 - sphe_charge;
+      if(deltaminus == 0){
+        deltaminus = sphe_charge - deltaplus*sphe_std;
+        deltaplus = sphe_charge + deltaplus*sphe_std;
+      }
+      else{
+        deltaminus = delta/deltaminus;
+        deltaplus = delta*deltaplus;
+      }
 
       if(creation){
         tout->Branch("value",&value,"value/D");
@@ -958,8 +964,14 @@ class SPHE{
       sphe_charge = sphe_charge_ch0; // wave0
       sphe_charge2 = sphe_charge2_ch0; // wave0
       delta = sphe_charge2 - sphe_charge;
-      sphe_std = sphe_std_ch0;
-
+      if(deltaminus == 0){
+        deltaminus = sphe_charge - deltaplus*sphe_std;
+        deltaplus = sphe_charge + deltaplus*sphe_std;
+      }
+      else{
+        deltaminus = delta/deltaminus;
+        deltaplus = delta*deltaplus;
+      }
       if(creation){
         twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
       }
@@ -1036,7 +1048,7 @@ class SPHE{
             for(Int_t j = 0; j<memorydepth; j++){
               sample.wvf[j] = ch.wvf[j];
             }
-            if(charge*dtime>=delta/deltaminus  && charge*dtime<=delta*deltaplus){
+            if(charge*dtime>=deltaminus  && charge*dtime<=deltaplus){
               valid = true;
               for(Int_t j = 0; j<memorydepth; j++){
                 mean_waveforms[j]+=ch.wvf[j];

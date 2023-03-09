@@ -209,7 +209,7 @@ class ANALYZER{
       return 0;
     }
 
-    void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0){
+    void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0, Bool_t withlimit = false){
       Double_t res = 0;
       Double_t max = -1e12;
       if (to == 0) to = memorydepth*dtime;
@@ -224,7 +224,13 @@ class ANALYZER{
       }
       else{
         max = getMaximum(from, to);
-        for(Int_t i = temp_pos; i >= 0 ;i--){
+        Int_t imin = 0;
+        Int_t imax = memorydepth;
+        if(withlimit){
+          imin = from/dtime;
+          imax = to/dtime;
+        }
+        for(Int_t i = temp_pos; i >= imin ;i--){
           Double_t val = ch[kch].wvf[i];
           if(val >= percent*max){
             res += val;
@@ -233,7 +239,7 @@ class ANALYZER{
             break;
           }
         }
-        for(Int_t i = temp_pos+1; i < memorydepth ;i++){
+        for(Int_t i = temp_pos+1; i < imax ;i++){
           Double_t val = ch[kch].wvf[i];
           if(val >= percent*max){
             res += val;
@@ -327,6 +333,27 @@ class ANALYZER{
       set_up_lines(lfinish, kRed);
 
     }
+
+    Double_t triggerTime(vector<Double_t> baseline_range = {0,0}, vector<Double_t> peak_range = {0,0}, Double_t threshold = 0, bool debug = false){
+      Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
+
+      Int_t startpoint = peak_range[0]/dtime;
+      Int_t endpoint = peak_range[1]/dtime;
+
+      Double_t time_mark;
+      for(Int_t i = startpoint; i < endpoint; i++){
+        if (ch[kch].wvf[i] >= threshold) {
+          if(i == startpoint) break;
+          time_mark = linear_interpole_tot(i, threshold - baseline_level)*dtime;
+          temp_pos = time_mark;
+          return time_mark;
+        }
+      }
+      temp_pos = 0;
+      return 0;
+    }
+
+
     Double_t rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, bool debug = false){
       kch = channel;
       Double_t baseline_level = getMean(baseline_range[0],baseline_range[1]);
@@ -338,7 +365,7 @@ class ANALYZER{
       else{
         peak_level = getMean(peak_range[0],peak_range[1]);
       }
-      Int_t startpoint = baseline_range[1]/dtime;
+      Int_t startpoint = peak_range[0]/dtime;
       Int_t endpoint = peak_range[1]/dtime;
       Bool_t triggered = false;
       Double_t time_mark = 0;
@@ -351,9 +378,10 @@ class ANALYZER{
         }
         else if(triggered == true && ch[kch].wvf[i]>=0.9*(peak_level - baseline_level)+baseline_level){
           if(debug) draw_rise_lines(time_mark, i*dtime, baseline_level, peak_level);
-          time_mark = linear_interpole_tot(i, 0.9*(peak_level - baseline_level))*dtime - time_mark;
+          temp_pos = linear_interpole_tot(i, 0.9*(peak_level - baseline_level))*dtime;
           // time_mark = i*dtime - time_mark;
-          return time_mark;
+          temp_max = peak_level;
+          return temp_pos - time_mark;
         }
       }
       if(debug) draw_rise_lines(time_mark, 0, baseline_level, peak_level);

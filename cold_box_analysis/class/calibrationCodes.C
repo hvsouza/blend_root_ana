@@ -1000,6 +1000,8 @@ class SPHE2{
     vector<Int_t> peaksFound; // peaks found (threshold apply)
     vector<Int_t> peaksRise; // Rising derivative
     vector<Int_t> peaksCross; // Falling derivative
+    vector<Double_t> derivateMax; // Stores the max of the derivative
+    vector<Double_t> derivateMaxFound; // Stores the max of the derivative before applying threshold
 
     vector<Double_t> smooted_wvf; // not needed to reset this
     vector<Double_t> denoise_wvf;
@@ -1118,6 +1120,8 @@ class SPHE2{
         peakPosition.reserve(memorydepth);
         peakMax.reserve(memorydepth);
         peaksFound.reserve(memorydepth);
+        derivateMax.reserve(memorydepth);
+        derivateMaxFound.reserve(memorydepth);
         temp_selected_peaks.reserve(memorydepth);
         temp_selected_time.reserve(memorydepth);
         selected_charge.reserve(memorydepth);
@@ -1229,6 +1233,8 @@ class SPHE2{
           discardedCharge.clear();
           discarded_idx.clear();
           peaksFound.clear();
+          derivateMax.clear();
+          derivateMaxFound.clear();
         }
       
         denoise_wvf.clear();
@@ -1311,12 +1317,13 @@ class SPHE2{
         Double_t crossPositive = peaksRise[i];
         Double_t candidatePosition = peaksCross[i]; // peaks previously selected
 
-        Int_t dmax = z->getMaximum(crossPositive*dtime, candidatePosition*dtime, &smooted_wvf[0]);
+        Double_t dmax = z->getMaximum(crossPositive*dtime, candidatePosition*dtime, &smooted_wvf[0]);
         // if(snap()) cout << crossPositive*dtime << " " << candidatePosition*dtime << " " << dmax  << "\n";
         if(dmax < tolerance) {
           continue;
         }
 
+        derivateMaxFound.push_back(dmax);
         peaksFound.push_back(peaksCross[i]) ;
       }
 
@@ -1365,6 +1372,7 @@ class SPHE2{
           continue;
         }
         peakPosition.push_back(peaksFound[i]);
+        derivateMax.push_back(derivateMaxFound[i]);
       }
     }
 
@@ -1488,6 +1496,7 @@ class SPHE2{
           sample.peakpos = peakPosIdx*dtime;
           sample.charge = charge;
           sample.event = z->currentEvent;
+          sample.fprompt = derivateMax[i];
           twvf->Fill();
         }
       }
