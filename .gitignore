@@ -12,3 +12,6 @@
 *_C.so
 *.pcm
 *_C_ACLiC_dict*
+cold_box_analysis/class/codes/*
+!cold_box_analysis/class/codes/.templates/
+/cold_box_analysis/class/load_my_class.sh
