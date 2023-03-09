@@ -308,7 +308,7 @@ class SPHE{
         totalmany = 0;
 
 
-        if((peakPosition[i]+social_distance*timeHigh>=peakPosition[i+1] && i+1!=npeaks) || next_is_bad || peakPosition[i]<waitingInterval){
+        if((i+1!=npeaks && peakPosition[i]+social_distance*timeHigh>=peakPosition[i+1]) || next_is_bad || peakPosition[i]<waitingInterval){
 
           selected_peaks.push_back(temp_peak.at(peakPosition[i]/dtime));
           selected_time.push_back(peakPosition[i]);
