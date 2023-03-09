@@ -15,7 +15,11 @@ class ANALYZER{
     TTree *t1 = nullptr;
     Int_t nentries = 0;
     vector<TBranch*> b;
+<<<<<<< Updated upstream
     vector<ADC_DATA<memorydepth>> ch;
+=======
+    vector<MY_DATA*> ch;
+>>>>>>> Stashed changes
     Int_t nchannels = 1;
     vector<Int_t> channels = {1,2};
     vector<string> schannel;
@@ -71,9 +75,21 @@ class ANALYZER{
       for (Int_t i = 0; i < nchannels; i++) {
         schannel[i] = lb->At(i)->GetName();
         channels[i] = schannel[i][2] - '0';
+<<<<<<< Updated upstream
         // schannel[i] = Form("Ch%d",channels[i]);
         b[i] = t1->GetBranch(schannel[i].c_str());
         b[i]->SetAddress(&ch[i]);
+=======
+        string temp_ch_name = schannel[i];
+        b[i] = t1->GetBranch(temp_ch_name.c_str());
+        if (is_old_data) ch[i] = new MY_DATA();
+        else {
+          cout << "heeere" << endl;
+          ch[i] = new MY_DATA();
+        }
+        if(is_old_data) b[i]->SetAddress(ch[i]);
+        else b[i]->SetAddress(&ch[i]);
+>>>>>>> Stashed changes
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
       }
@@ -295,7 +311,12 @@ class ANALYZER{
       }
       kch = k;
       b[k]->GetEvent(myevent);
+<<<<<<< Updated upstream
       currentEvent = ch[k].event;
+=======
+      n_points = ch[k]->npts;
+      currentEvent = ch[k]->event;
+>>>>>>> Stashed changes
     }
 
     bool getWaveformHard(Int_t myevent = 0, Double_t factor = 1){
@@ -304,6 +325,11 @@ class ANALYZER{
         return false;
       }
       b[kch]->GetEvent(myevent);
+<<<<<<< Updated upstream
+=======
+      n_points = ch[kch]->npts;
+      currentEvent = ch[kch]->event;
+>>>>>>> Stashed changes
       for (int j = 0; j < n_points; j++) {
         raw[kch][j] = ch[kch].wvf[j]*factor;
         ch[kch].wvf[j] = ch[kch].wvf[j]*factor;

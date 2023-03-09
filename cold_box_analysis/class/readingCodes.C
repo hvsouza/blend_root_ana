@@ -368,7 +368,11 @@ class Read{
       TFile *f1;
       TTree *t1;
       Double_t tEvent = 0;
+<<<<<<< Updated upstream
       vector<ADC_DATA<memorydepth>> ch(channels.size());
+=======
+      vector<MY_DATA*> ch(channels.size());
+>>>>>>> Stashed changes
       vector<TBranch*> bch(channels.size());
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
@@ -380,7 +384,8 @@ class Read{
       f1 = new TFile(rootfile.c_str(),"RECREATE");
       t1 = new TTree("t1","ADC processed waveform");
       for(Int_t i = 0; i< (int)channels.size(); i++){
-        bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
+        // bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0]->tobranch.c_str());
+        bch[i] = t1->Branch(Form("Ch%i.",channels[i]),&ch[i]);
       }
     
     
@@ -424,7 +429,11 @@ class Read{
       if(isBinary) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
       else hbase = new TH1D("hbase","finding baseline",1000,-1,1);
       Double_t tEvent = 0;
+<<<<<<< Updated upstream
       vector<ADC_DATA<memorydepth>> ch(channels.size());
+=======
+      vector<MY_DATA*> ch(channels.size());
+>>>>>>> Stashed changes
       vector<TBranch*> bch(channels.size());
 
     
@@ -469,7 +478,7 @@ class Read{
           f1 = new TFile(rootfile.c_str(),"RECREATE");
           t1 = new TTree("t1","ADC processed waveform");
           for(Int_t i = 0; i < (int)channels.size(); i++){
-            bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
+            bch[i] = t1->Branch(Form("Ch%i.",channels[i]),&ch[i]);
           }
         
         
@@ -516,7 +525,11 @@ class Read{
       TTree *t1 = (TTree*)f1->Get("t1");
     
     
+<<<<<<< Updated upstream
       vector<ADC_DATA<memorydepth>> ch(channels.size());
+=======
+      vector<MY_DATA*> ch(channels.size());
+>>>>>>> Stashed changes
       vector<TBranch*> bch(channels.size());
       vector<string> filename_ch(channels.size());
       TimeREADER myTimer;
@@ -533,7 +546,7 @@ class Read{
       Double_t filtered[memorydepth];
     
       for(Int_t i = 0; i < (int)channels.size(); i++){
-        bch[i] = t1->GetBranch(Form("Ch%i",channels[i]));
+        bch[i] = t1->GetBranch(Form("Ch%i.",channels[i]));
         bch[i]->SetAddress(&ch[i]);
         filename_ch[i] = file_ch[i] + file_extension;
       }
@@ -639,7 +652,6 @@ class Read{
         for(Int_t i = 0; i < (int)channels.size(); i++){
           if(isBinary==false){
 
-          
             for(int j = 0; j < memorydepth; j++)
             {
               if(withTimestamp) fin[i] >> timestamp >> temp;
@@ -651,7 +663,7 @@ class Read{
               }
               n_reads++;
               raw[j] = temp;
-              ch[i].wvf[j] = temp;
+              ch[i]->wvf[j] = temp;
               filtered[j] = temp;
             }
             //           cout << "............................ \n";
@@ -663,6 +675,7 @@ class Read{
             // printf("%d\n",headbin);
             // }
             timestamp = headbin.TriggerTimeTag;
+            ch[i]->Set_npts(memorydepth);
 
             //           printf("%.0f\n",timestamp);
             for(int j = 0; j < memorydepth; j++)
@@ -675,7 +688,7 @@ class Read{
               }
               // cout << valbin << endl;
               raw[j] = valbin;
-              ch[i].wvf[j] = valbin;
+              ch[i]->wvf[j] = valbin;
               filtered[j] = valbin;
             }
           }
@@ -703,17 +716,17 @@ class Read{
             else{
               init_time = 1;
             }
-            ch[i].time = currentTime;
+            ch[i]->time = currentTime;
           }
 
-          // if(!isBinary) ch[i].time = event_time[aux_time];
+          // if(!isBinary) ch[i]->time = event_time[aux_time];
           // printf("time of event = %11f\n",event_time[aux_time]);
           aux_time++;
-          if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i].wvf[0],&filtered[0],memorydepth,filter);
-          // if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i].wvf[0],memorydepth,filter);
+          if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i]->wvf[0],&filtered[0],memorydepth,filter);
+          // if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i]->wvf[0],memorydepth,filter);
           if(saveFilter==true){
             for(Int_t l = 0; l<memorydepth; l++){
-              ch[i].wvf[l] = filtered[l];
+              ch[i]->wvf[l] = filtered[l];
             }
           }
 
@@ -723,13 +736,13 @@ class Read{
           else if (exclusion_baselines.size() == 1){
             exclusion_baseline = exclusion_baselines[0];
           }
-          bl = baseline(filtered,ch[i].selection,i,tEvent);
-          // bl = baseline(ch[i].wvf,ch[i].selection,i,tEvent);
+          bl = baseline(filtered,ch[i]->selection,i,tEvent);
+          // bl = baseline(ch[i]->wvf,ch[i]->selection,i,tEvent);
           // if(bl==-9999) cout << i << " " << tEvent << endl;
 
-          ch[i].base = bl;
+          ch[i]->base = bl;
           getvalues(i,ch[i],filtered,bl);
-          ch[i].event = tEvent;
+          ch[i]->event = tEvent;
         
           numberoflines++;
         
@@ -765,35 +778,39 @@ class Read{
   
   
 
+<<<<<<< Updated upstream
     void getvalues(Int_t &nch,ADC_DATA<memorydepth> &ch,Double_t filtered[],Double_t bl){
+=======
+    void getvalues(Int_t &nch,MY_DATA* ch,Double_t filtered[],Double_t bl){
+>>>>>>> Stashed changes
     
-      ch.peak =0;
+      ch->peak =0;
       Double_t fastcomp = 0;
       Double_t slowcomp = 0;
-      ch.charge=0;
+      ch->charge=0;
       navg[nch]++;
       for(Int_t i = 0; i<memorydepth; i++){
-        ch.wvf[i] = ch.wvf[i]-bl;
+        ch->wvf[i] = ch->wvf[i]-bl;
         filtered[i] = filtered[i]-bl;
-        avg[nch][i]+=ch.wvf[i];
-//       cout << i << " " << ch.wvf[i] << endl;
+        avg[nch][i]+=ch->wvf[i];
+//       cout << i << " " << ch->wvf[i] << endl;
         if(i>=startCharge/dtime && i<chargeTime/dtime){
-          ch.charge+=filtered[i]*dtime;
+          ch->charge+=filtered[i]*dtime;
           if(i <= maxRange/dtime){
-            if(ch.peak==0){ ch.peak = filtered[i]; ch.peakpos = i*dtime;}
-            else if(ch.peak<filtered[i]){ch.peak=filtered[i];ch.peakpos = i*dtime;}
+            if(ch->peak==0){ ch->peak = filtered[i]; ch->peakpos = i*dtime;}
+            else if(ch->peak<filtered[i]){ch->peak=filtered[i];ch->peakpos = i*dtime;}
           }
           if(i<(startCharge+fast)/dtime){
-            fastcomp+=ch.wvf[i];
+            fastcomp+=ch->wvf[i];
           }
           if(i<(startCharge+slow)/dtime){
-            slowcomp+=ch.wvf[i];
+            slowcomp+=ch->wvf[i];
           }
 
         }
       }
 //     cout << fastcomp << " " << slowcomp << endl;
-      ch.fprompt = fastcomp/slowcomp;
+      ch->fprompt = fastcomp/slowcomp;
     }
   
   
