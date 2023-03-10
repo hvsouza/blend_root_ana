@@ -368,7 +368,7 @@ class Read{
       TFile *f1;
       TTree *t1;
       Double_t tEvent = 0;
-      vector<MY_DATA*> ch(channels.size());
+      vector<MY_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
@@ -404,6 +404,10 @@ class Read{
       }
     
       f1 = new TFile(rootfile.c_str(),"UPDATE");
+      t1 = new TTree("t1","ADC processed waveform");
+      for(Int_t i = 0; i < (int)channels.size(); i++){
+        bch[i] = t1->Branch(Form("Ch%i.",channels[i]),&ch[i]);
+      }
       vector<TGraph*> gavg(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
         gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
@@ -425,7 +429,7 @@ class Read{
       if(isBinary) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
       else hbase = new TH1D("hbase","finding baseline",1000,-1,1);
       Double_t tEvent = 0;
-      vector<MY_DATA*> ch(channels.size());
+      vector<MY_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
 
     
@@ -494,6 +498,10 @@ class Read{
       }
     
       f1 = new TFile(rootfile.c_str(),"UPDATE");
+      t1 = new TTree("t1","ADC processed waveform");
+      for(Int_t i = 0; i < (int)channels.size(); i++){
+        bch[i] = t1->Branch(Form("Ch%i.",channels[i]),&ch[i]);
+      }
       vector<TGraph*> gavg(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
         gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
@@ -766,7 +774,7 @@ class Read{
   
   
 
-    void getvalues(Int_t &nch,MY_DATA* ch,Double_t filtered[],Double_t bl){
+    void getvalues(Int_t &nch,MY_DATA *ch,Double_t filtered[],Double_t bl){
 
       ch->peak =0;
       Double_t fastcomp = 0;

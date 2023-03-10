@@ -3,7 +3,7 @@
 //        root -b -q -e '.L MY_DATA.hxx' example_tree.root -e 't1->Print();'
 //
 
-#include "MY_DATA.hxx"
+#include "../cold_box_analysis/class/MYCODES.h"
 
 #include "TFile.h"
 #include "TTree.h"
