@@ -403,6 +403,10 @@ class Read{
       }
     
       f1 = new TFile(rootfile.c_str(),"UPDATE");
+      t1 = new TTree("t1","ADC processed waveform");
+      for(Int_t i = 0; i < (int)channels.size(); i++){
+        bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
+      }
       vector<TGraph*> gavg(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
         gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
@@ -471,7 +475,7 @@ class Read{
           for(Int_t i = 0; i < (int)channels.size(); i++){
             bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
           }
-        
+
         
           f1->Write();
         
@@ -493,6 +497,10 @@ class Read{
       }
     
       f1 = new TFile(rootfile.c_str(),"UPDATE");
+      t1 = new TTree("t1","ADC processed waveform");
+      for(Int_t i = 0; i < (int)channels.size(); i++){
+        bch[i] = t1->Branch(Form("Ch%i",channels[i]),&ch[i],ch[0].tobranch.c_str());
+      }
       vector<TGraph*> gavg(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
         gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
