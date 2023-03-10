@@ -304,7 +304,7 @@ class ANALYZER{
       }
       kch = k;
       b[k]->GetEvent(myevent);
-      // n_points = ch[k]->npts;
+      n_points = ch[k]->npts;
       currentEvent = ch[k]->event;
     }
 
@@ -314,7 +314,7 @@ class ANALYZER{
         return false;
       }
       b[kch]->GetEvent(myevent);
-      // n_points = ch[kch]->npts;
+      n_points = ch[kch]->npts;
       currentEvent = ch[kch]->event;
       for (int j = 0; j < n_points; j++) {
         raw[kch][j] = ch[kch]->wvf[j]*factor;
