@@ -368,7 +368,7 @@ class Read{
       TFile *f1;
       TTree *t1;
       Double_t tEvent = 0;
-      vector<MY_DATA> ch(channels.size());
+      vector<ADC_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
@@ -429,7 +429,7 @@ class Read{
       if(isBinary) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,basebits),0,TMath::Power(2,nbits));
       else hbase = new TH1D("hbase","finding baseline",1000,-1,1);
       Double_t tEvent = 0;
-      vector<MY_DATA> ch(channels.size());
+      vector<ADC_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
 
     
@@ -525,7 +525,7 @@ class Read{
       TTree *t1 = (TTree*)f1->Get("t1");
     
     
-      vector<MY_DATA*> ch(channels.size());
+      vector<ADC_DATA*> ch(channels.size());
       vector<TBranch*> bch(channels.size());
       vector<string> filename_ch(channels.size());
       TimeREADER myTimer;
@@ -774,7 +774,7 @@ class Read{
   
   
 
-    void getvalues(Int_t &nch,MY_DATA *ch,Double_t filtered[],Double_t bl){
+    void getvalues(Int_t &nch,ADC_DATA *ch,Double_t filtered[],Double_t bl){
 
       ch->peak =0;
       Double_t fastcomp = 0;

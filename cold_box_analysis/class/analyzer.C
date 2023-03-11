@@ -15,7 +15,7 @@ class ANALYZER{
     TTree *t1 = nullptr;
     Int_t nentries = 0;
     vector<TBranch*> b;
-    vector<MY_DATA*> ch;
+    vector<ADC_DATA*> ch;
     Int_t nchannels = 1;
     vector<Int_t> channels = {1,2};
     vector<string> schannel;
@@ -67,24 +67,40 @@ class ANALYZER{
       TList *lb = (TList*)t1->GetListOfBranches();
       this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
       string branchtitle = lb->At(0)->GetTitle();
-      ADC_DATA temp_adc;
+      OLD_ADC_DATA temp_adc;
       nchannels = lb->GetEntries();
       Bool_t is_old_data = (temp_adc.tobranch == branchtitle) ? true : false;
       setEmpty();
       for (Int_t i = 0; i < nchannels; i++) {
         schannel[i] = lb->At(i)->GetName();
         channels[i] = schannel[i][2] - '0';
-        string temp_ch_name = schannel[i];
-        b[i] = t1->GetBranch(temp_ch_name.c_str());
-        // if (is_old_data) ch[i] = new ADC_DATA();
-        // else {
-          // cout << "heeere" << endl;
-          ch[i] = new MY_DATA();
-        // }
-        if(is_old_data) b[i]->SetAddress(ch[i]);
-        else b[i]->SetAddress(&ch[i]);
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
+        ch[i] = new ADC_DATA();
+        if(is_old_data) continue;
+        string temp_ch_name = schannel[i];
+        b[i] = t1->GetBranch(temp_ch_name.c_str());
+        b[i]->SetAddress(&ch[i]);
+      }
+      if (is_old_data){
+        cout << "@@@@@@@@@@@@@@@ ________________________________________________________ @@@@@@@@@@@@@@@" << endl;
+        cout << "@@@@@@@@@@@@@@@ This class is not used anymore                           " << endl;
+        cout << "@@@@@@@@@@@@@@@ You can reprocess the data (no data should be loss)      " << endl;
+        cout << "@@@@@@@@@@@@@@@ A copy of the orignal file will be created as backup_" << filename << endl;
+        cout << "@@@@@@@@@@@@@@@ Make sure that `memorydepth` is set correctly " << endl;
+        cout << "@@@@@@@@@@@@@@@ ________________________________________________________ @@@@@@@@@@@@@@@" << endl;
+        cout << "\n" << endl;
+
+        string input;
+        cout << "Do you want to recreate the root file? ([Y]es/[N]o) " << endl;
+        cin >> input;
+        if(input == "y" || input == "Y" || input == "Yes" || input == "yes"){
+          recreateFile();
+        }
+        else{
+          return;
+        }
+
       }
       nentries = t1->GetEntries();
     }
@@ -133,6 +149,8 @@ class ANALYZER{
       setAnalyzer();
       for (Int_t i = 0; i < nchannels; i++) bt[i] = b[i];
     }
+
+    void recreateFile();
 
     // _________________________ ________________________________________ _________________________ //
 
@@ -705,8 +723,6 @@ class ANALYZER{
           if(type == "higher") contact = checkHigher(ch[kch]->wvf[j], limit);
           else contact = checkLower(ch[kch]->wvf[j], limit);
           if(contact){
-            if(i == 20){
-            }
             ttemp->Enter(ev);
             break;
           }
@@ -786,3 +802,90 @@ class ANALYZER{
 
 
 
+void ANALYZER::recreateFile(){
+  TFile *ftemp = new TFile("new_data.root","RECREATE");
+  TTree *ttemp = new TTree("t1","ADC processed waveform");
+
+  vector<TBranch*> bold(nchannels);
+  vector<ADC_DATA*> newch(nchannels);
+  vector<OLD_ADC_DATA*> oldch(nchannels);
+
+
+
+  TFile *oldf = new TFile(filename.c_str(),"READ");
+  TTree *oldt = (TTree*)oldf->Get("t1");
+
+  for(Int_t i = 0; i < (int)channels.size(); i++){
+    oldch[i] = new OLD_ADC_DATA();
+    ttemp->Branch(Form("Ch%i.",channels[i]),&newch[i]);
+    bold[i] = oldt->GetBranch(Form("Ch%i",channels[i]));
+    bold[i]->SetAddress(oldch[i]);
+
+  }
+
+  for(Int_t j = 0; j < oldt->GetEntries(); j++){
+    for(Int_t i = 0; i < (int)channels.size(); i++){
+      bold[i]->GetEntry(j);
+
+      newch[i]->peak      = oldch[i]->peak;
+      newch[i]->peakpos   = oldch[i]->peakpos;
+      newch[i]->charge    = oldch[i]->charge;
+      newch[i]->fprompt   = oldch[i]->fprompt;
+      newch[i]->event     = oldch[i]->event;
+      newch[i]->time      = oldch[i]->time;
+      newch[i]->selection = oldch[i]->selection;
+      newch[i]->base      = oldch[i]->base;
+      newch[i]->Set_npts(memorydepth);
+      for(Int_t k = 0; k < memorydepth; k++){
+        newch[i]->wvf[k] = oldch[i]->wvf[k];
+
+      }
+    }
+
+    ttemp->Fill();
+  }
+
+  ftemp->WriteTObject(ttemp,"t1","TObject::kOverwrite");
+
+  TIter next(oldf->GetListOfKeys());
+  TKey *key;
+  while ((key = (TKey*)next())) {
+    string lname = key->GetName();
+    if(lname == "t1") continue;
+    auto *tobj = oldf->Get(lname.c_str());
+    ftemp->WriteTObject(tobj, lname.c_str());
+  }
+
+  delete ttemp;
+  delete oldt;
+  ftemp->Close();
+  oldf->Close();
+  delete ftemp;
+  delete oldf;
+  for(Int_t i = 0; i < (int)channels.size(); i++){
+    delete newch[i];
+    delete oldch[i];
+  }
+  f->Close();
+  string make_backup = Form("mv %s backup_%s",filename.c_str(),filename.c_str());
+  string rename = Form("mv new_data.root %s",filename.c_str());
+
+  system(make_backup.c_str());
+  system(rename.c_str());
+
+  f = nullptr;
+  t1 = nullptr;
+  f = new TFile(filename.c_str(),"READ");
+  t1 = (TTree*)f->Get("t1");
+  this->lev = nullptr;
+  this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
+  TList *lb = (TList*)t1->GetListOfBranches();
+  for (Int_t i = 0; i < nchannels; i++) {
+    schannel[i] += ".";
+    string temp_ch_name = schannel[i];
+    b[i] = t1->GetBranch(temp_ch_name.c_str());
+    b[i]->SetAddress(&ch[i]);
+  }
+
+
+}

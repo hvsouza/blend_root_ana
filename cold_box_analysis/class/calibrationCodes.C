@@ -1055,7 +1055,7 @@ class SPHE2{
      * Plot graphs for debugging
      * Save histogram
      */
-    void giveMeSphe(ADC_DATA sample){
+    void giveMeSphe(OLD_ADC_DATA sample){
       if(memorydepth_sample < mean_before/dtime + mean_after/dtime + 1){
         cout << "memorydepth_sample < mean_before/dtime + mean_after/dtime + 1" << endl;
         cout << "make it equal to " << mean_before/dtime + mean_after/dtime + 1 << " or equal to memorydepth" << endl;
@@ -1453,7 +1453,7 @@ class SPHE2{
       return res;
     }
 
-    void integrateSignals(ADC_DATA &sample){
+    void integrateSignals(OLD_ADC_DATA &sample){
       unsigned int npeaks = peakPosition.size();
       if (led_calibration) npeaks = 1;
       for(unsigned int i = 0; i < npeaks; i++){
@@ -1502,7 +1502,7 @@ class SPHE2{
       }
     }
 
-    void getIntegral(Int_t peakPosIdx, ADC_DATA &sample){
+    void getIntegral(Int_t peakPosIdx, OLD_ADC_DATA &sample){
       get_this_charge = true;
       if(get_wave_form) get_this_wvf = true; // in the case not, I dont take the waveform
       else get_this_wvf = false;
@@ -1731,7 +1731,7 @@ class MeanSignal{
   
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-      vector<ADC_DATA> ch(channels.size());
+      vector<OLD_ADC_DATA> ch(channels.size());
       vector<TBranch*> bch(channels.size());
       for(Int_t k = 0; k<(int)channels.size();k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
@@ -1833,7 +1833,7 @@ class Resolution{
   
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-      vector<ADC_DATA> ch(channels.size());
+      vector<OLD_ADC_DATA> ch(channels.size());
       vector<TBranch *> bch(channels.size());
       for(Int_t k = 0; k<(int)channels.size(); k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
@@ -2063,7 +2063,7 @@ class TimeDistribuction{
   
       TFile *fout = new TFile("time_distribuction.root","RECREATE");
   
-      vector<ADC_DATA>  ch(nchannels);
+      vector<OLD_ADC_DATA>  ch(nchannels);
       vector<TBranch *> bch(nchannels);
       for(Int_t k = 0; k<nchannels;k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));

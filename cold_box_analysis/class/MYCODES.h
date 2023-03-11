@@ -70,12 +70,12 @@
 using namespace std;
 
 #include "variables.C"
+#include "old_class.C"
 #include "timeReader.C"
 #include "readingCodes.C"
 #include "wiener_filter.C"
 #include "analyzer.C"
 #include "analyzer_plots.C"
-// #include "SignalProcessing.C"
 #include "calibrationCodes.C"
 #include "old_search_spe.C"
 #include "alpha_analysis.C"
