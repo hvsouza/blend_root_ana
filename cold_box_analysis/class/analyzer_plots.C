@@ -97,6 +97,7 @@ TGraph ANALYZER::drawGraph(string opt, Int_t n, Double_t* x, Double_t* y){
   if (opt == "") opt = plot_opt;
   if (x == nullptr) x = time;
   if (y == nullptr) y = ch[kch]->wvf;
+  if (n == 0) n = n_points;
   gwvf = new TGraph(n,x,y);
   gwvf->Draw(opt.c_str());
   gwvf->GetXaxis()->SetTitle(xlabel.c_str());
@@ -125,12 +126,12 @@ void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel)
     if (inDecibel) w->convertDecibel();
     if (i < naverage) {
       hfft[k] = (TH1D*)w->hfft->Clone(Form("h%d",k));
-      for (Int_t j = 0; j < memorydepth/2; j++) h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
+      for (Int_t j = 0; j < n_points/2; j++) h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
       if (naverage == 1) h->Draw();
     }
     else{
       if (k < naverage) {
-        for (Int_t j = 0; j < memorydepth/2; j++) {
+        for (Int_t j = 0; j < n_points/2; j++) {
           h->AddBinContent(j+1,-hfft[k]->GetBinContent(j+1));
           hfft[k]->SetBinContent(j+1,w->hfft->GetBinContent(j+1));
           h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));

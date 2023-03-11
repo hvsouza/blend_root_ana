@@ -10,12 +10,12 @@ class WIENER{
   public:
 
     string obj_name;
-    Int_t npts = memorydepth;
+    Int_t npts = 0;
     Double_t frequency = 250; // in units
     Double_t step = 4; // in ns
     Double_t units_freq = 1e6; // 1e6 = MHz
     Double_t units_step = 1e-9; // 1e9 = ns
-    Double_t factor = 1./(npts);
+    Double_t factor = 1;
 
     Double_t baseline = 0;
 

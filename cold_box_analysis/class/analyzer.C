@@ -30,14 +30,14 @@ class ANALYZER{
     WIENER *w;
     string filter_type = "default";
 
-    Int_t n_points = memorydepth;
+    Int_t n_points;
     vector<vector<Double_t>> raw;
     vector<vector<Double_t>> wvf;
-    Double_t *tempraw = new Double_t[memorydepth];
     vector<TH1D*> haverage;
     vector<TH1D*> hfft;
     TH1D *h = nullptr;
-    Double_t *time = new Double_t[n_points];
+    Double_t *time = nullptr;
+    Double_t *tempraw = nullptr;
 
     string plot_opt = "AL";
     TGraph *gwvf;
@@ -65,20 +65,24 @@ class ANALYZER{
       if(f == nullptr) f = new TFile(filename.c_str(),"READ");
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
       TList *lb = (TList*)t1->GetListOfBranches();
-      this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
+      if(lev==nullptr) lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
       // branch title of new data format is equal to "ChX."
       // while for the old one, it is equal to `tobranch` string
       // So old branch will have brackets `[]`
       string branchtitle = lb->At(0)->GetTitle();
-      size_t bracketpos = branchtitle.find("[");
-      nchannels = lb->GetEntries();
+      int  bracketpos = branchtitle.find("[");
       Bool_t is_old_data = (bracketpos != -1) ? true : false;
-      setEmpty();
+
+      nchannels = lb->GetEntries();
+
+      b.resize(nchannels);
+      schannel.resize(nchannels);
+      channels.resize(nchannels);
+      ch.resize(nchannels);
+
       for (Int_t i = 0; i < nchannels; i++) {
         schannel[i] = lb->At(i)->GetName();
         channels[i] = schannel[i][2] - '0';
-        raw[i].resize(n_points);
-        wvf[i].resize(n_points);
         ch[i] = new ADC_DATA();
         string temp_ch_name = schannel[i];
         b[i] = t1->GetBranch(temp_ch_name.c_str());
@@ -124,24 +128,31 @@ class ANALYZER{
         }
 
       }
+      else{
+        b[0]->GetEntry(0);
+        n_points = ch[0]->npts;
+      }
+      setEmpty();
       nentries = t1->GetEntries();
     }
 
     void setEmpty(){
-      w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,memorydepth);
-      b.resize(nchannels);
-      schannel.resize(nchannels);
-      channels.resize(nchannels);
-      ch.resize(nchannels);
+      if(!w) w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,n_points);
       raw.resize(nchannels);
       wvf.resize(nchannels);
       haverage.resize(nchannels);
       hfft.resize(nchannels);
+      for(Int_t i = 0; i < nchannels; i++){
+        raw[i].resize(n_points);
+        wvf[i].resize(n_points);
+      }
+      time = new Double_t[n_points];
+      tempraw = new Double_t[n_points];
       for (int j = 0; j < n_points; j++) {
         time[j] = j*dtime;
       }
       xmin = 0;
-      xmax = memorydepth*dtime;
+      xmax = n_points*dtime;
     }
 
     Int_t getIdx(){
@@ -181,7 +192,7 @@ class ANALYZER{
     
     void getFFT(Double_t *_v = nullptr, bool inDecibel = false){
       if(_v == nullptr) _v = ch[kch]->wvf;
-      for(Int_t i = 0; i < memorydepth; i++){
+      for(Int_t i = 0; i < n_points; i++){
         w->hwvf->SetBinContent(i+1,_v[i]);
       }
       w->fft(w->hwvf);
@@ -261,7 +272,7 @@ class ANALYZER{
     void integrate(Double_t from = 0, Double_t to = 0, Double_t percent = 0, Bool_t withlimit = false){
       Double_t res = 0;
       Double_t max = -1e12;
-      if (to == 0) to = memorydepth*dtime;
+      if (to == 0) to = n_points*dtime;
       if(percent == 0){ // normal integration
         for(Int_t i = from/dtime; i < to/dtime; i++){
           res += ch[kch]->wvf[i];
@@ -274,7 +285,7 @@ class ANALYZER{
       else{
         max = getMaximum(from, to);
         Int_t imin = 0;
-        Int_t imax = memorydepth;
+        Int_t imax = n_points;
         if(withlimit){
           imin = from/dtime;
           imax = to/dtime;
@@ -315,7 +326,7 @@ class ANALYZER{
     }
 
     void getWaveFromHistogram(TH1D *htemp){
-      if (htemp->GetNbinsX() != memorydepth){
+      if (htemp->GetNbinsX() != n_points){
         cout << "Not same amount of samples! Graph has " << htemp->GetNbinsX() << endl;
         return;
       }
@@ -326,7 +337,7 @@ class ANALYZER{
     void getWaveFromGraph(TGraph *gtemp){
       Double_t *xtemp = nullptr;
       Int_t ntemp = gtemp->GetN();
-      if (ntemp != memorydepth){
+      if (ntemp != n_points){
         cout << "Not same amount of samples! Graph has " << ntemp << endl;
         return;
       }
@@ -443,7 +454,7 @@ class ANALYZER{
     void getBackFFT(Double_t *_filtered = nullptr){
       if (_filtered == nullptr){_filtered = ch[kch]->wvf;}
       w->backfft(*w);
-      for(Int_t i = 0; i < memorydepth; i++){
+      for(Int_t i = 0; i < n_points; i++){
         _filtered[i] = w->hwvf->GetBinContent(i+1);
       }
 
@@ -469,7 +480,7 @@ class ANALYZER{
         applyDenoise(filter);
         // applyFreqFilter();
         getFFT();
-        for (Int_t j = 0; j < memorydepth/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
+        for (Int_t j = 0; j < n_points/2; j++) hfft[kch]->AddBinContent(j+1,w->hfft->GetBinContent(j+1));
         total++;
       }
       cout << "\n";
@@ -487,7 +498,7 @@ class ANALYZER{
       if (maxevent==0) {
         maxevent = nentries;
       }
-      if(!haverage[kch]) haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",memorydepth,0,memorydepth*dtime);
+      if(!haverage[kch]) haverage[kch] = new TH1D(Form("haverage_%s_Ch%d",myname.c_str(),channels[kch]),"Averaged waveform",n_points,0,n_points*dtime);
       else haverage[kch]->Reset();
       haverage[kch]->GetYaxis()->SetTitle("Amplitude (ADC Channels)");
       haverage[kch]->GetXaxis()->SetTitle("Time (ns)");
@@ -503,7 +514,7 @@ class ANALYZER{
         getWaveform(iev,kch);
         applyDenoise(filter);
         total += 1;
-        for (Int_t j = 0; j < memorydepth; j++){
+        for (Int_t j = 0; j < n_points; j++){
           haverage[kch]->AddBinContent(j+1,ch[kch]->wvf[j]);
         }
 
@@ -537,7 +548,7 @@ class ANALYZER{
     // _________________________ Filters and processing _________________________ //
     void scaleWvf(Double_t factor, Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch]->wvf;
-      for (Int_t i = 0; i < memorydepth; i++) {
+      for (Int_t i = 0; i < n_points; i++) {
         _filtered[i] = _filtered[i]*factor;
       }
     }
@@ -546,7 +557,7 @@ class ANALYZER{
       if(offset == 0){
         offset = ch[kch]->base;
       }
-      if(to == 0) to = memorydepth*dtime;
+      if(to == 0) to = n_points*dtime;
       for(Int_t i = from/dtime; i < to/dtime; i++){
         ch[kch]->wvf[i] = ch[kch]->wvf[i] + offset;
       }
@@ -555,12 +566,12 @@ class ANALYZER{
       if (*_raw == nullptr  && *_filtered == nullptr){
         *_filtered = ch[kch]->wvf;
         *_raw = tempraw;
-          for (Int_t i = 0; i < memorydepth; i++) {
+          for (Int_t i = 0; i < n_points; i++) {
             (*_raw)[i] = ch[kch]->wvf[i];
           }
       }
       else if(*_raw == *_filtered){
-        for (Int_t i = 0; i < memorydepth; i++) {
+        for (Int_t i = 0; i < n_points; i++) {
           tempraw[i] = (*_raw)[i];
         }
         *_raw = tempraw;
@@ -569,15 +580,15 @@ class ANALYZER{
     void differenciate(Double_t factor = 1, Double_t *_raw = nullptr, Double_t *_shifted = nullptr){
       checkSignals(&_raw,&_shifted);
       _shifted[0] = 0;
-      _shifted[memorydepth-1] = 0;
-      for(int i=1; i<memorydepth-1; i++){
+      _shifted[n_points-1] = 0;
+      for(int i=1; i<n_points-1; i++){
         _shifted[i] = factor*(_raw[i+1] - _raw[i-1])/(2*dtime);
         // _shifted[i]=_raw[i] - (i-delay_time>=0 ? _raw[i-delay_time] : 0);
       }
     }
 
     void applyMovingAverage(Int_t mafilter = 0, Double_t start = 0, Double_t finish = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
-      if (finish == 0) finish = memorydepth*dtime;
+      if (finish == 0) finish = n_points*dtime;
       if(mafilter!=0) {
         checkSignals(&_raw,&_filtered);
         dn.movingAverage(_raw,_filtered,mafilter,start/dtime,finish/dtime);
@@ -612,13 +623,13 @@ class ANALYZER{
     }
     void applyFreqFilter(Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch]->wvf;
-      for(Int_t i = 0; i < memorydepth; i++){
+      for(Int_t i = 0; i < n_points; i++){
         w->hwvf->SetBinContent(i+1,_filtered[i]);
       }
       w->fft(w->hwvf);
       w->apply_filter();
       w->backfft(*w);
-      for(Int_t i = 0; i < memorydepth; i++){
+      for(Int_t i = 0; i < n_points; i++){
         _filtered[i] = w->hwvf->GetBinContent(i+1);
       }
       // w->hwvf->Draw("");
@@ -628,20 +639,20 @@ class ANALYZER{
     void applyBandCut(WIENER *_temp = nullptr, Double_t *_filtered = nullptr){
       if(_filtered == nullptr) _filtered = ch[kch]->wvf;
       if(_temp == nullptr) _temp = w;
-      for(Int_t i = 0; i < memorydepth; i++){
+      for(Int_t i = 0; i < n_points; i++){
         w->hwvf->SetBinContent(i+1,_filtered[i]);
       }
       w->fft(w->hwvf);
       w->applyBandCut(_temp);
       w->backfft(*w);
-      for(Int_t i = 0; i < memorydepth; i++){
+      for(Int_t i = 0; i < n_points; i++){
         _filtered[i] = w->hwvf->GetBinContent(i+1);
       }
     }
 
     void makeCopy(Double_t *cpy, Double_t *original = nullptr){
       if (original == nullptr) original = ch[kch]->wvf;
-      for (Int_t i = 0; i < memorydepth; i++) {
+      for (Int_t i = 0; i < n_points; i++) {
         cpy[i] = original[i];
       }
     }
@@ -734,7 +745,7 @@ class ANALYZER{
       TEventList *ttemp = new TEventList("ttemp", "ttemp");
 
       if (xmax == 0) {
-        xmax = memorydepth*dtime;
+        xmax = n_points*dtime;
       }
       for(Int_t i = 0; i < lev->GetN(); i++){
         Int_t ev = lev->GetEntry(i);
@@ -810,7 +821,7 @@ class ANALYZER{
     void showWaveform(Int_t maxevent = 0, Double_t filter = 0, Int_t dt = 0);
     void persistence_plot(Int_t nbins = 500, Double_t ymin = -500, Double_t ymax = 500, Double_t filter = 0, string cut="", Double_t factor = 1);
     void add_persistence_plot(TH2D *_htemp = nullptr, Double_t filter = 0, string cut = "", Double_t factor = 1);
-    TGraph drawGraph(string opt = "", Int_t n = memorydepth, Double_t* x = nullptr, Double_t* y = nullptr);
+    TGraph drawGraph(string opt = "", Int_t n = 0, Double_t* x = nullptr, Double_t* y = nullptr);
     void debugSPE(Int_t event, Int_t moving_average, Int_t n_moving, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> not_used, Double_t filter = 16, Double_t factor = 200, Double_t *SNRs = nullptr);
     void minimizeParamsSPE(Int_t event, Double_t xmin, Double_t xmax, vector<Double_t> signal_range, vector<Double_t> rangeInter = {0,0}, Double_t filter = 16, Double_t factor = 200);
     void drawZeroCrossingLines(vector<Int_t> &peaksCross, vector<Int_t> &peaksRise, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
@@ -834,6 +845,7 @@ void ANALYZER::recreateFile(){
 
 
 
+  n_points = memorydepth;
   TFile *oldf = new TFile(filename.c_str(),"READ");
   TTree *oldt = (TTree*)oldf->Get("t1");
 
@@ -857,8 +869,8 @@ void ANALYZER::recreateFile(){
       newch[i]->time      = oldch[i]->time;
       newch[i]->selection = oldch[i]->selection;
       newch[i]->base      = oldch[i]->base;
-      newch[i]->Set_npts(memorydepth);
-      for(Int_t k = 0; k < memorydepth; k++){
+      newch[i]->Set_npts(n_points);
+      for(Int_t k = 0; k < n_points; k++){
         newch[i]->wvf[k] = oldch[i]->wvf[k];
 
       }
@@ -892,22 +904,19 @@ void ANALYZER::recreateFile(){
   string make_backup = Form("mv %s backup_%s",filename.c_str(),filename.c_str());
   string rename = Form("mv new_data.root %s",filename.c_str());
 
-  system(make_backup.c_str());
-  system(rename.c_str());
+  int outputsys = system(make_backup.c_str());
+  if(outputsys != 0){
+    cout << "\n\nCould not backup properly. New data is saved as \"new_data.root\"" << endl;
+    filename = "new_data.root";
+  }
+  else{
+    outputsys = system(rename.c_str());
+  }
 
   f = nullptr;
   t1 = nullptr;
-  f = new TFile(filename.c_str(),"READ");
-  t1 = (TTree*)f->Get("t1");
-  this->lev = nullptr;
-  this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
-  TList *lb = (TList*)t1->GetListOfBranches();
-  for (Int_t i = 0; i < nchannels; i++) {
-    schannel[i] += ".";
-    string temp_ch_name = schannel[i];
-    b[i] = t1->GetBranch(temp_ch_name.c_str());
-    b[i]->SetAddress(&ch[i]);
-  }
+  lev = nullptr;
+  setAnalyzer(filename.c_str());
 
 
 }
