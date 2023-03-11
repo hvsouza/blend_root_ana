@@ -644,7 +644,7 @@ class Read{
 
       while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
         Int_t n_reads = 0;
-    
+
         for(Int_t i = 0; i < (int)channels.size(); i++){
           if(isBinary==false){
 
@@ -737,7 +737,7 @@ class Read{
           // if(bl==-9999) cout << i << " " << tEvent << endl;
 
           ch[i]->base = bl;
-          getvalues(i,ch[i],filtered,bl);
+          getvalues(i,*ch[i],filtered,bl);
           ch[i]->event = tEvent;
         
           numberoflines++;
@@ -774,35 +774,35 @@ class Read{
   
   
 
-    void getvalues(Int_t &nch,ADC_DATA *ch,Double_t filtered[],Double_t bl){
+    void getvalues(Int_t &nch,ADC_DATA &ch,Double_t filtered[],Double_t bl){
 
-      ch->peak =0;
+      ch.peak =0;
       Double_t fastcomp = 0;
       Double_t slowcomp = 0;
-      ch->charge=0;
+      ch.charge=0;
       navg[nch]++;
       for(Int_t i = 0; i<memorydepth; i++){
-        ch->wvf[i] = ch->wvf[i]-bl;
+        ch.wvf[i] = ch.wvf[i]-bl;
         filtered[i] = filtered[i]-bl;
-        avg[nch][i]+=ch->wvf[i];
-//       cout << i << " " << ch->wvf[i] << endl;
+        avg[nch][i]+=ch.wvf[i];
+//       cout << i << " " << ch.wvf[i] << endl;
         if(i>=startCharge/dtime && i<chargeTime/dtime){
-          ch->charge+=filtered[i]*dtime;
+          ch.charge+=filtered[i]*dtime;
           if(i <= maxRange/dtime){
-            if(ch->peak==0){ ch->peak = filtered[i]; ch->peakpos = i*dtime;}
-            else if(ch->peak<filtered[i]){ch->peak=filtered[i];ch->peakpos = i*dtime;}
+            if(ch.peak==0){ ch.peak = filtered[i]; ch.peakpos = i*dtime;}
+            else if(ch.peak<filtered[i]){ch.peak=filtered[i];ch.peakpos = i*dtime;}
           }
           if(i<(startCharge+fast)/dtime){
-            fastcomp+=ch->wvf[i];
+            fastcomp+=ch.wvf[i];
           }
           if(i<(startCharge+slow)/dtime){
-            slowcomp+=ch->wvf[i];
+            slowcomp+=ch.wvf[i];
           }
 
         }
       }
 //     cout << fastcomp << " " << slowcomp << endl;
-      ch->fprompt = fastcomp/slowcomp;
+      ch.fprompt = fastcomp/slowcomp;
     }
   
   
