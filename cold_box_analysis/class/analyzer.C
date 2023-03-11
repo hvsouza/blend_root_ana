@@ -66,10 +66,13 @@ class ANALYZER{
       if(t1 == nullptr) t1 = (TTree*)f->Get("t1");
       TList *lb = (TList*)t1->GetListOfBranches();
       this->lev = new TEventList(Form("lev_%s",myname.c_str()),Form("lev_%s",myname.c_str()));
+      // branch title of new data format is equal to "ChX."
+      // while for the old one, it is equal to `tobranch` string
+      // So old branch will have brackets `[]`
       string branchtitle = lb->At(0)->GetTitle();
-      OLD_ADC_DATA temp_adc;
+      size_t bracketpos = branchtitle.find("[");
       nchannels = lb->GetEntries();
-      Bool_t is_old_data = (temp_adc.tobranch == branchtitle) ? true : false;
+      Bool_t is_old_data = (bracketpos != -1) ? true : false;
       setEmpty();
       for (Int_t i = 0; i < nchannels; i++) {
         schannel[i] = lb->At(i)->GetName();
@@ -77,15 +80,14 @@ class ANALYZER{
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
         ch[i] = new ADC_DATA();
-        if(is_old_data) continue;
         string temp_ch_name = schannel[i];
         b[i] = t1->GetBranch(temp_ch_name.c_str());
         b[i]->SetAddress(&ch[i]);
       }
       if (is_old_data){
         cout << "@@@@@@@@@@@@@@@ ________________________________________________________ @@@@@@@@@@@@@@@" << endl;
-        cout << "@@@@@@@@@@@@@@@ This class is not used anymore                           " << endl;
-        cout << "@@@@@@@@@@@@@@@ You can reprocess the data (no data should be loss)      " << endl;
+        cout << "@@@@@@@@@@@@@@@ This data format is not used anymore   " << endl;
+        cout << "@@@@@@@@@@@@@@@ You can reprocess the data (no data should be loss) " << endl;
         cout << "@@@@@@@@@@@@@@@ A copy of the orignal file will be created as backup_" << filename << endl;
         cout << "@@@@@@@@@@@@@@@ Make sure that `memorydepth` is set correctly " << endl;
         cout << "@@@@@@@@@@@@@@@ ________________________________________________________ @@@@@@@@@@@@@@@" << endl;
@@ -95,9 +97,29 @@ class ANALYZER{
         cout << "Do you want to recreate the root file? ([Y]es/[N]o) " << endl;
         cin >> input;
         if(input == "y" || input == "Y" || input == "Yes" || input == "yes"){
+          // gets "peak/D:peakpos/D:charge/D:fprompt/D:event/D:time/D:wvf[2500]/D:base/D:selection/I"
+
+          // Find the position of '[' and ']' in the string
+          size_t left_bracket_pos = branchtitle.find("[");
+          size_t right_bracket_pos = branchtitle.find("]");
+
+          // Extract the substring between '[' and ']'
+          string number_str = branchtitle.substr(left_bracket_pos + 1, right_bracket_pos - left_bracket_pos - 1);
+
+          // Convert the extracted substring to an integer
+          int number = std::stoi(number_str);
+          if(number != memorydepth){
+            cout << "\nERROR: the array length declared as `memorydepth` does not match the data array length" << endl;
+            cout << "Declared: " << memorydepth << ", Actual size: " << number << endl;
+            cout << "To solve this, quit root and execute again as:" << endl;
+            cout << "myclass " << filename << " " << number << endl;
+            return;
+          }
+
           recreateFile();
         }
         else{
+          cout << "Functions will not work" << endl;
           return;
         }
 

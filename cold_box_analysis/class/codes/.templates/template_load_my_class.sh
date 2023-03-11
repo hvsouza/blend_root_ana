@@ -12,16 +12,16 @@
 # If you have different numbers of pts per waveform or file name, you can use, for instance:
 # myclass 1000 "folder/file.root"
 
-if [ -z $1 ]; then
+if [ -z $2 ]; then
     npts=5000
 else
-    npts=$1
+    npts=$2
 fi
 
-if [ -z $2 ]; then
+if [ -z $1 ]; then
     file='analyzed.root'
 else
-    file=$2
+    file=$1
 fi
 
 if [ $file == 'no' ]; then
