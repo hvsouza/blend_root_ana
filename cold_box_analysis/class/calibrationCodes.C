@@ -970,6 +970,8 @@ class SPHE2{
     TFile    *fwvf   = nullptr; // File to save waveforms
     TTree    *twvf   = nullptr; // tree of waveforms
 
+    ADC_DATA sample; // will store the waveforms found
+
     string myname; // name of the declared class
     Bool_t derivate = false; // control if user has set to derivate
     Int_t kch; // current channel used
@@ -981,9 +983,10 @@ class SPHE2{
     Bool_t get_this_wvf = true;
     Bool_t get_this_charge = true;
     Int_t npts_wvf = 1000;
-    Double_t *timeg = new Double_t[memorydepth];
+    Double_t *timeg = nullptr;
 
     string rootfile    = "analyzed.root";
+    Int_t n_points;
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -1032,7 +1035,7 @@ class SPHE2{
       hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),50000,0,0);
       hdiscard     = new TH1D(Form("hdiscard_sphe_%s",myname.c_str()),Form("hdiscard_sphe_%s",myname.c_str()),3,0,3);
 
-      smooted_wvf.resize(memorydepth);
+      smooted_wvf.resize(n_points);
       denoise_wvf.resize(memorydepth);
 
 
@@ -1055,12 +1058,7 @@ class SPHE2{
      * Plot graphs for debugging
      * Save histogram
      */
-    void giveMeSphe(OLD_ADC_DATA sample){
-      if(memorydepth_sample < mean_before/dtime + mean_after/dtime + 1){
-        cout << "memorydepth_sample < mean_before/dtime + mean_after/dtime + 1" << endl;
-        cout << "make it equal to " << mean_before/dtime + mean_after/dtime + 1 << " or equal to memorydepth" << endl;
-        return;
-      }
+    void giveMeSphe(){
       gROOT->SetBatch(kTRUE);
 
       rootfile = filename + ".root";
@@ -1093,39 +1091,40 @@ class SPHE2{
       // we need to get  6 + 25 points + 1 = 32  (+1 because of the peak start)
       // if I found a point in around 100 ns, that is i = 25, I perform a while that goes
       // from i-mean_before = 19 up to i+mean_after = 50 (included) = 32 pts
-      // npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
-      npts_wvf = memorydepth_sample;
+      npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
       mean_waveform.clear();
       mean_waveform.resize(npts_wvf);
       naverages = 0;
-      sample.setBranchName(npts_wvf);
-      twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
+
+      sample.Set_npts(npts_wvf);
+      twvf->Branch(Form("Ch%i",channel),&sample);
 
 
       nshow_start = nshow_range[0];
       nshow_finish = nshow_range[1];
-
+      n_points = z->n_points;
+      timeg = new Double_t[n_points];
       if(led_calibration==true){
         method = "led";
       }
       else{
-        for(int i = 0; i < memorydepth; i++){
+        for(int i = 0; i < n_points; i++){
           timeg[i] = i*dtime;
         }
         // this might be too much, time will tell. Keep an eye in the RAM memory
-        discardedTime.reserve(memorydepth);
-        discardedPeak.reserve(memorydepth);
-        discardedCharge.reserve(memorydepth);
-        discarded_idx.reserve(memorydepth);
-        peakPosition.reserve(memorydepth);
-        peakMax.reserve(memorydepth);
-        peaksFound.reserve(memorydepth);
-        derivateMax.reserve(memorydepth);
-        derivateMaxFound.reserve(memorydepth);
-        temp_selected_peaks.reserve(memorydepth);
-        temp_selected_time.reserve(memorydepth);
-        selected_charge.reserve(memorydepth);
-        selected_charge_time.reserve(memorydepth);
+        discardedTime.reserve(n_points);
+        discardedPeak.reserve(n_points);
+        discardedCharge.reserve(n_points);
+        discarded_idx.reserve(n_points);
+        peakPosition.reserve(n_points);
+        peakMax.reserve(n_points);
+        peaksFound.reserve(n_points);
+        derivateMax.reserve(n_points);
+        derivateMaxFound.reserve(n_points);
+        temp_selected_peaks.reserve(n_points);
+        temp_selected_time.reserve(n_points);
+        selected_charge.reserve(n_points);
+        selected_charge_time.reserve(n_points);
       }
 
       if(method == "static") getstaticbase = true;
@@ -1133,8 +1132,8 @@ class SPHE2{
       }
       else if(method == "derivative"){
         derivate = true;
-        peaksRise.reserve(memorydepth);
-        peaksCross.reserve(memorydepth);
+        peaksRise.reserve(n_points);
+        peaksCross.reserve(n_points);
       }
 
       Double_t delta = sphe_charge2 - sphe_charge;
@@ -1238,9 +1237,9 @@ class SPHE2{
         }
       
         denoise_wvf.clear();
-        denoise_wvf.resize(memorydepth);
+        denoise_wvf.resize(n_points);
         smooted_wvf.clear();
-        smooted_wvf.resize(memorydepth);
+        smooted_wvf.resize(n_points);
     }
 
     void processData(){
@@ -1402,7 +1401,7 @@ class SPHE2{
       Int_t interactions = 0;
       Double_t width = 0;
       Double_t sum = 0;
-      Int_t n = memorydepth;
+      Int_t n = n_points;
 
       vector<Double_t> res(n,0);
       if(myinte==0) { // nothing to do
@@ -1453,7 +1452,7 @@ class SPHE2{
       return res;
     }
 
-    void integrateSignals(OLD_ADC_DATA &sample){
+    void integrateSignals(ADC_DATA &sample){
       unsigned int npeaks = peakPosition.size();
       if (led_calibration) npeaks = 1;
       for(unsigned int i = 0; i < npeaks; i++){
@@ -1502,14 +1501,14 @@ class SPHE2{
       }
     }
 
-    void getIntegral(Int_t peakPosIdx, OLD_ADC_DATA &sample){
+    void getIntegral(Int_t peakPosIdx, ADC_DATA &sample){
       get_this_charge = true;
       if(get_wave_form) get_this_wvf = true; // in the case not, I dont take the waveform
       else get_this_wvf = false;
       Double_t from = peakPosIdx - mean_before/dtime;
       Double_t to = peakPosIdx + mean_after/dtime;
       
-      if(from < 0 || to >= memorydepth){ // check if boundaries are being respected
+      if(from < 0 || to >= n_points){ // check if boundaries are being respected
         from = peakPosIdx - timeLow/dtime;
         to = peakPosIdx + timeHigh/dtime;
         if(get_wave_form) get_this_wvf = false; // in the case not, I dont take the waveform
@@ -1524,7 +1523,7 @@ class SPHE2{
 
       if(led_calibration){
         from = 0;
-        to = memorydepth-1;
+        to = n_points-1;
         integralfrom = start/dtime;
         integralto = finish/dtime;
         get_this_wvf = true;
@@ -1578,8 +1577,8 @@ class SPHE2{
       unsigned int npeakstotal = peaksFound.size();
       string sampleName = "ev_" + to_string(z->currentEvent)+"_"+to_string(npeaksselected)+"_of_"+to_string(npeakstotal);
 
-      TGraph g_smooth(memorydepth, timeg, &smooted_wvf[0]);
-      TGraph g_normal(memorydepth, timeg, &denoise_wvf[0]);
+      TGraph g_smooth(n_points, timeg, &smooted_wvf[0]);
+      TGraph g_normal(n_points, timeg, &denoise_wvf[0]);
       // TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str(),1920,0,700,500);
       // this is not working when saving
       TCanvas *c1 = new TCanvas(sampleName.c_str(),sampleName.c_str());
@@ -1704,6 +1703,7 @@ class MeanSignal{
   
     Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     Int_t nbits = 14; // DIGITIZER bits
+    Int_t n_points = memorydepth;
   
     vector<Int_t> channels = {1,2};
     Double_t minval = 0;
@@ -1740,10 +1740,10 @@ class MeanSignal{
       Int_t nentries = t1->GetEntries();
       vector<Double_t> norm(channels.size(),0);
   
-      vector<vector<Double_t>> avg(channels.size(),std::vector<Double_t>(memorydepth,0));
-      vector<vector<Double_t>> avgn(channels.size(),std::vector<Double_t>(memorydepth,0));
-      vector<Double_t> time(memorydepth);
-      for(Int_t j = 0; j<memorydepth; j++){
+      vector<vector<Double_t>> avg(channels.size(),std::vector<Double_t>(n_points,0));
+      vector<vector<Double_t>> avgn(channels.size(),std::vector<Double_t>(n_points,0));
+      vector<Double_t> time(n_points);
+      for(Int_t j = 0; j<n_points; j++){
         time[j]+=j*dtime;
       }
   
@@ -1758,7 +1758,7 @@ class MeanSignal{
           if(ch[k].charge>minval && ch[k].charge<maxval && ch[k].peak<avoid_saturation){
             if(checkFprompt(ch[k].fprompt,fprompt,mustbe)){
               norm[k]+=1;
-              for(Int_t j = 0; j<memorydepth; j++){
+              for(Int_t j = 0; j<n_points; j++){
                 hpersistence[k]->Fill(j*dtime,ch[k].wvf[j]);
                 avg[k][j]+=ch[k].wvf[j];
               }
@@ -1772,13 +1772,13 @@ class MeanSignal{
       vector<Double_t> maxvalue(channels.size());
       for(Int_t k = 0; k<(int)channels.size(); k++){
         maxvalue[k] = *std::max_element(begin(avg[k]),end(avg[k]))/norm[k];
-        for(Int_t j = 0; j<memorydepth; j++){
+        for(Int_t j = 0; j<n_points; j++){
           avg[k][j]=avg[k][j]/norm[k];
           avgn[k][j]=avg[k][j]/maxvalue[k];
         }
         cout << "Ch" << channels[k] << " total waveforms = " << norm[k] << endl;
-        gavg[k] = new TGraph(memorydepth,&time[0],&avg[k][0]);
-        gavgn[k] = new TGraph(memorydepth,&time[0],&avgn[k][0]);
+        gavg[k] = new TGraph(n_points,&time[0],&avg[k][0]);
+        gavgn[k] = new TGraph(n_points,&time[0],&avgn[k][0]);
         fout->WriteObject(gavg[k],Form("average_ch%i",channels[k]),"TObject::kOverwrite");
         fout->WriteObject(gavgn[k],Form("average_normalized_ch%i",channels[k]),"TObject::kOverwrite");
         fout->WriteObject(hpersistence[k],Form("hpersistence_%i",channels[k]),"TObject::kOverwrite");
@@ -1814,6 +1814,7 @@ class Resolution{
     TTree *tout = nullptr;
     Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     Int_t nbits = 14; // DIGITIZER bits
+    Int_t n_points = memorydepth;
 
     Double_t intmin = 5600;
     Double_t intmax = 20000;
@@ -1949,10 +1950,10 @@ class Resolution{
     void integrate(Double_t wvf[], vector<Double_t> &charges){
       Double_t refCharge = 0;
       Int_t index_ints = 0;
-      for(Int_t i = 0; i<memorydepth; i++){
+      for(Int_t i = 0; i<n_points; i++){
         if(i>=intmin/dtime && i<(intmin+integrations[index_ints])/dtime){
           refCharge+=wvf[i]*dtime;
-          if(i==memorydepth-1){
+          if(i==n_points-1){
             charges[index_ints] = refCharge;
             index_ints++;
           }
@@ -2025,11 +2026,12 @@ class TimeDistribuction{
     Double_t lowerThreshold = 10;
     Double_t gap = 48; // in ns
     vector<Double_t> gtime;
+    Int_t n_points = memorydepth;
   
   
     vector<double> delay_line(Double_t v[], Int_t delay_time){
-      vector<double> res(memorydepth);
-      for(int i=0; i<memorydepth; i++){
+      vector<double> res(n_points);
+      for(int i=0; i<n_points; i++){
         res[i]=v[i] - (i-delay_time>=0 ? v[i-delay_time] : 0);
       }
       return res;
@@ -2049,8 +2051,8 @@ class TimeDistribuction{
     void time_distribuction(string filename){
       gROOT->SetBatch(kTRUE);
       Int_t nchannels = channels.size();
-      vector<vector<Double_t>> peaks(channels.size(),std::vector<Double_t>(memorydepth,0));
-      vector<vector<Double_t>> shifted(channels.size(),std::vector<Double_t>(memorydepth,0));
+      vector<vector<Double_t>> peaks(channels.size(),std::vector<Double_t>(n_points,0));
+      vector<vector<Double_t>> shifted(channels.size(),std::vector<Double_t>(n_points,0));
       vector<TGraph *> gsample(nshow*nchannels);
       vector<TGraph *> gshifted(nshow*nchannels);
       vector<TH1D*> htd(nchannels);
@@ -2068,9 +2070,9 @@ class TimeDistribuction{
       for(Int_t k = 0; k<nchannels;k++){
         bch[k] = t1->GetBranch(Form("Ch%i",channels[k]));
         bch[k]->SetAddress(&ch[k]);
-        htd[k] = new TH1D(Form("h_ch%i",channels[k]),Form("h_ch%i",channels[k]),memorydepth,0,dtime*memorydepth);
+        htd[k] = new TH1D(Form("h_ch%i",channels[k]),Form("h_ch%i",channels[k]),n_points,0,dtime*n_points);
       }
-      for(Int_t j = 0; j<memorydepth; j++){
+      for(Int_t j = 0; j<n_points; j++){
         gtime.push_back(dtime*j);
       }
   
@@ -2090,7 +2092,7 @@ class TimeDistribuction{
           smoothWithMovingAvarage(shifted[k]);
         }
         for(Int_t k = 0; k<nchannels;k++){
-          for(Int_t j = 1; j<memorydepth-1; j++){
+          for(Int_t j = 1; j<n_points-1; j++){
             if(shifted[k][j]>=lowerThreshold ){
               if(shifted[k][j]>shifted[k][j-1]){
                 position[k].push_back(searchMax(ch[k].wvf,shifted[k],j)*dtime);
@@ -2101,8 +2103,8 @@ class TimeDistribuction{
         }
         if(i<nshow){
           for(Int_t k = 0; k<nchannels;k++){
-            gsample[nchannels*i+k] = new TGraph(memorydepth,&gtime[0],&ch[k].wvf[0]);
-            gshifted[nchannels*i+k] = new TGraph(memorydepth,&gtime[0],&shifted[k][0]);
+            gsample[nchannels*i+k] = new TGraph(n_points,&gtime[0],&ch[k].wvf[0]);
+            gshifted[nchannels*i+k] = new TGraph(n_points,&gtime[0],&shifted[k][0]);
           }
         }
       }
@@ -2134,7 +2136,7 @@ class TimeDistribuction{
       Double_t res = -1e12;
       Int_t maxpos = 0;
       for(Int_t i = j; ;i++){
-        if(i<memorydepth){
+        if(i<n_points){
           if(wvf[i]>res){
             res = wvf[i];
             maxpos = i;
@@ -2183,7 +2185,7 @@ class TimeDistribuction{
         sum=0;
       }
   
-      for(Int_t i = 0; i<memorydepth; i++){
+      for(Int_t i = 0; i<n_points; i++){
         shifted[i] = peak_smooth[i];
       }
   

@@ -37,7 +37,7 @@ class WIENER{
 
     string unit_time;
     string unit_freq;
-  
+
 
     // h is the s.p.e. response
     // n is the noise
@@ -159,8 +159,10 @@ class WIENER{
       convertDecibel(hfft);
       convertDecibel(hPSD);
     }
-    void convertDecibel(TH1D *htemp){
-      Double_t max = htemp->GetMaximum();
+    void convertDecibel(TH1D *htemp, Double_t max = 0){
+      if(max==0){
+        max = htemp->GetMaximum();
+      }
       // cout << max << endl;
       Int_t ntemp = htemp->GetEntries();
       for(Int_t k=0; k<npts/2+1; k++){

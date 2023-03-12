@@ -139,9 +139,9 @@ class DENOISE{
 
 
     template<class T>
-    void movingAverage(T* v, T* res, Int_t myinte = 10, Double_t start = 0, Double_t finish = memorydepth){
+    void movingAverage(T* v, T* res, Int_t myinte = 10, Double_t start = 0, Double_t finish = 0){
 
-      Int_t n = memorydepth;
+      Int_t n = finish;
       Int_t midpoint = 0;
       Int_t width = 0;
       Double_t sum = 0;
@@ -205,8 +205,8 @@ class Read{
   
 
     // Created by Henrique Souza, June 2020
-  
 
+    Int_t n_points = 0;
   
     Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     Int_t nbits = 14;
@@ -238,6 +238,7 @@ class Read{
     Double_t baselineTime = 10000; // time limit to start looking for baseline
     Double_t chargeTime = 18000; // last time to integrate
     Bool_t noBaseline=false;
+    Double_t baselineFraction = 1/3.;
     // Bool_t noBaseline=true;
     vector<Int_t> channels = {1,2};
     vector<Double_t> exclusion_baselines = {30};
@@ -372,10 +373,7 @@ class Read{
       vector<TBranch*> bch(channels.size());
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
-      for(Int_t i = 0; i < (int)channels.size(); i++){
-        avg[i].resize(memorydepth,0);
-      }
-    
+
     
       f1 = new TFile(rootfile.c_str(),"RECREATE");
       t1 = new TTree("t1","ADC processed waveform");
@@ -393,12 +391,12 @@ class Read{
       
       readData(file_ch,rootfile,tEvent);
     
-      time.resize(memorydepth);
-      for(Int_t i = 0; i<memorydepth; i++){
+      time.resize(n_points);
+      for(Int_t i = 0; i<n_points; i++){
         time[i] = i*dtime;
       }
       for(Int_t i = 0; i < (int)channels.size(); i++){
-        for(Int_t j = 0; j < (int)memorydepth; j++){
+        for(Int_t j = 0; j < n_points; j++){
           avg[i][j] = avg[i][j]/navg[i];
         }
       }
@@ -410,7 +408,7 @@ class Read{
       }
       vector<TGraph*> gavg(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
-        gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
+        gavg[i] = new TGraph(n_points,&time[0],&avg[i][0]);
         f1->WriteObject(gavg[i],Form("average_ch%i",channels[i]),"TObject::kOverwrite");
       }
 //     f1->Close();
@@ -436,9 +434,6 @@ class Read{
       Bool_t first_file = true;
       avg.resize(channels.size());
       navg.resize(channels.size(),0);
-      for(Int_t i = 0; i < (int)channels.size(); i++){
-        avg[i].resize(memorydepth,0);
-      }
 
       if(isBinary) file_extension = ".dat";
       else file_extension = ".txt";
@@ -487,12 +482,12 @@ class Read{
         readData(file_ch,rootfile,tEvent);
       
       }
-      time.resize(memorydepth);
-      for(Int_t i = 0; i<memorydepth; i++){
+      time.resize(n_points);
+      for(Int_t i = 0; i<n_points; i++){
         time[i] = i*dtime;
       }
       for(Int_t i = 0; i < (int)channels.size(); i++){
-        for(Int_t j = 0; j<memorydepth; j++){
+        for(Int_t j = 0; j<n_points; j++){
           avg[i][j] = avg[i][j]/navg[i];
         }
       }
@@ -504,7 +499,7 @@ class Read{
       }
       vector<TGraph*> gavg(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
-        gavg[i] = new TGraph(memorydepth,&time[0],&avg[i][0]);
+        gavg[i] = new TGraph(n_points,&time[0],&avg[i][0]);
         f1->WriteObject(gavg[i],Form("average_ch%i",channels[i]),"TObject::kOverwrite");
       }
 //     f1->Close();
@@ -538,9 +533,7 @@ class Read{
     
       Int_t numberoflines=0;
       Double_t temp;
-      vector<Double_t> raw(memorydepth);
-      Double_t filtered[memorydepth];
-    
+
       for(Int_t i = 0; i < (int)channels.size(); i++){
         bch[i] = t1->GetBranch(Form("Ch%i.",channels[i]));
         bch[i]->SetAddress(&ch[i]);
@@ -548,7 +541,8 @@ class Read{
       }
 
     
-      vector<ifstream> fin(channels.size());
+
+   vector<ifstream> fin(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
         if(!isBinary) fin[i].open(filename_ch[i].c_str(),ios::in);
         else          fin[i].open(filename_ch[i].c_str(),ios::in | ios::binary);
@@ -580,7 +574,6 @@ class Read{
       vector<Double_t> event_time;
       Double_t starting_time = 0;
       Int_t aux_time = 0;
-      event_time.resize(memorydepth);
       for(Int_t i = 0; i < (int)channels.size(); i++){
         if(isBinary==false){
           // LECROYWR104MXi-A/� 49455 Waveform
@@ -595,19 +588,7 @@ class Read{
           // cout << headers << endl;
           getline(fin[i],headers); // taking extra \r
 
-          if(headers_npoints!=memorydepth && headers_npoints!=memorydepth-1){
-            cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n correct the memorydepth!!! " << endl;
-            cout << "current: " << memorydepth << endl;
-            cout << "set to: " << headers_npoints << endl;
-            return;
-          }
-          //           else{
-          //               cout << "@@@@@ \n\n ALLLL GOOOOOD!!!" << endl;
-          //               return 1;
-          //           }
-          //             cout << headers << endl;
-          //         }
-        
+
           if(withTimestamp){
             getline(fin[i],headers); // reads the header of time stamp
             for(Int_t ln=0;ln<headers_nwvfs;ln++){
@@ -634,21 +615,25 @@ class Read{
 
       if(isBinary){
         fin[0].read((char *) &headbin, nbytes*6);
-        if((headbin.EventSize-24)/2 != memorydepth){
-          cout << "ERROR !!!! INCORRECT LENGTH !!! Reading: " << memorydepth << ", folder: " << (headbin.EventSize-24)/2 << endl;
-          return;
-        }
+        n_points = (headbin.EventSize-24)/2;
         fin[0].clear();
         fin[0].seekg(0);
+        for(Int_t i = 0; i < (int)channels.size(); i++){
+          avg[i].resize(n_points,0);
+          ch[i]->Set_npts(n_points); // gain a few ns
+        }
       }
 
+      vector<Double_t> raw(n_points);
+      Double_t filtered[n_points];
+      event_time.resize(n_points);
       while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
         Int_t n_reads = 0;
 
         for(Int_t i = 0; i < (int)channels.size(); i++){
           if(isBinary==false){
 
-            for(int j = 0; j < memorydepth; j++)
+            for(int j = 0; j < n_points; j++)
             {
               if(withTimestamp) fin[i] >> timestamp >> temp;
               else fin[i] >> temp;
@@ -671,10 +656,9 @@ class Read{
             // printf("%d\n",headbin);
             // }
             timestamp = headbin.TriggerTimeTag;
-            ch[i]->Set_npts(memorydepth);
 
             //           printf("%.0f\n",timestamp);
-            for(int j = 0; j < memorydepth; j++)
+            for(int j = 0; j < n_points; j++)
             {
               fin[i].read((char *) &valbin, 2);
               //             if(j==0) printf("%d\n -- \n",valbin);
@@ -689,10 +673,10 @@ class Read{
             }
           }
 
-          if((fin[i].bad() || fin[i].fail()) && n_reads<memorydepth-5){
+          if((fin[i].bad() || fin[i].fail()) && n_reads<n_points-5){
             // cout << "problems ??" << endl;
             break; // giving a 5 points relaxiation
-                        }
+          }
           if(i==0){
             if(timestamp<0){
               timestamp = timeCicle+timestamp;
@@ -718,14 +702,13 @@ class Read{
           // if(!isBinary) ch[i]->time = event_time[aux_time];
           // printf("time of event = %11f\n",event_time[aux_time]);
           aux_time++;
-          if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i]->wvf[0],&filtered[0],memorydepth,filter);
-          // if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i]->wvf[0],memorydepth,filter);
+          if(filter>0) dn.TV1D_denoise<Double_t>(&ch[i]->wvf[0],&filtered[0],n_points,filter);
+          // if(filter>0) dn.TV1D_denoise<Double_t>(&raw[0],&ch[i]->wvf[0],n_points,filter);
           if(saveFilter==true){
-            for(Int_t l = 0; l<memorydepth; l++){
+            for(Int_t l = 0; l<n_points; l++){
               ch[i]->wvf[l] = filtered[l];
             }
           }
-
           if(exclusion_baselines.size() != 1){
             exclusion_baseline = exclusion_baselines[i];
           }
@@ -733,19 +716,19 @@ class Read{
             exclusion_baseline = exclusion_baselines[0];
           }
           bl = baseline(filtered,ch[i]->selection,i,tEvent);
-          // bl = baseline(ch[i]->wvf,ch[i]->selection,i,tEvent);
-          // if(bl==-9999) cout << i << " " << tEvent << endl;
+          // // bl = baseline(ch[i]->wvf,ch[i]->selection,i,tEvent);
+          // // if(bl==-9999) cout << i << " " << tEvent << endl;
 
           ch[i]->base = bl;
           getvalues(i,*ch[i],filtered,bl);
           ch[i]->event = tEvent;
         
-          numberoflines++;
+          // numberoflines++;
         
         
         
         }
-        if((fin[0].bad() || fin[0].fail()) && n_reads<memorydepth-5){
+        if((fin[0].bad() || fin[0].fail()) && n_reads<n_points-5){
           // cout << "problems ??" << endl;
           break; // giving a 5 points relaxiation
                       }
@@ -781,7 +764,7 @@ class Read{
       Double_t slowcomp = 0;
       ch.charge=0;
       navg[nch]++;
-      for(Int_t i = 0; i<memorydepth; i++){
+      for(Int_t i = 0; i<n_points; i++){
         ch.wvf[i] = ch.wvf[i]-bl;
         filtered[i] = filtered[i]-bl;
         avg[nch][i]+=ch.wvf[i];
@@ -850,7 +833,7 @@ class Read{
         }
       }
       if(bins>0)result/=bins;
-      if(bins > (baselineTime/dtime)/3.){
+      if(bins > (baselineTime/dtime)*baselineFraction){
         selection = 0;
         // // You can use this to debug. If selection == 0, there should not have events here.
         // // this means that res0 should be pretty much the average for a good baseline.
