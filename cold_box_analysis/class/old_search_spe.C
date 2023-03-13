@@ -20,8 +20,8 @@ class SPHE{
     Double_t value = 0;
     Double_t desv = 0;
     Int_t channel = 1;
-    OLD_ADC_DATA ch;
-    OLD_ADC_DATA sample;
+    ADC_DATA* ch = nullptr;
+    ADC_DATA* sample = nullptr;
 
 
     // ____________________ Variables to calculate ____________________ //
@@ -337,7 +337,7 @@ class SPHE{
         for(Int_t j = (peakPosition.at(i))/dtime; j>= (peakPosition[i]-timeLow)/dtime; j--){
           charge += temp_peak.at(j);
           if(withfilter) statcharge[i]+= temp_peak.at(j);
-          else statcharge[i]+= ch.wvf[j];
+          else statcharge[i]+= ch->wvf[j];
           if(temp_peak.at(j)>=statpeak[i]){
             statpeak[i] = temp_peak.at(j);
           }
@@ -356,7 +356,7 @@ class SPHE{
           charge += temp_peak.at(j);
 
           if(withfilter) statcharge[i]+= temp_peak.at(j);
-          else statcharge[i]+= ch.wvf[j];
+          else statcharge[i]+= ch->wvf[j];
           if(temp_peak.at(j)>=statpeak[i]){
             statpeak[i] = temp_peak.at(j);
           }
@@ -382,7 +382,7 @@ class SPHE{
         if(peakPosition.at(i) - mean_before>=0 && peakPosition.at(i)+mean_after<memorydepth*dtime){
           for(Int_t j = peakPosition.at(i)/dtime - mean_before/dtime; j <= peakPosition.at(i)/dtime+mean_after/dtime; j++){
             // temp_waveforms[i].push_back(temp_peak.at(j));
-            temp_waveforms[i].push_back(ch.wvf[j]);
+            temp_waveforms[i].push_back(ch->wvf[j]);
             //           if(temp_waveforms[i].size()>200/dtime && temp_waveforms[i].size()<400/dtime){
             //             if(temp_peak.at(j)<-20) notAGoodWaveform[i]=true;
             //           }
@@ -454,20 +454,20 @@ class SPHE{
 
                   // waveforms[j] = temp_waveforms[i][j];
                   waveforms[j] = temp_waveforms[i][j];
-                  sample.wvf[j]=waveforms[j];
+                  sample->wvf[j]=waveforms[j];
                   if(valid) mean_waveforms[j]+=waveforms[j];
                 }
                 else{
                   waveforms[j] = 0;
-                  sample.wvf[j]=0;
+                  sample->wvf[j]=0;
                   mean_waveforms[j]+=waveforms[j];
                 }
 
               }
               wvfcharge = statcharge[i];
-              sample.event = eventNow;
-              sample.charge = statcharge[i];
-              sample.selection = valid;
+              sample->event = eventNow;
+              sample->charge = statcharge[i];
+              sample->selection = valid;
               twvf->Fill();
 
               //gwaveforms[i] = new TGraph(waveforms.size(),&timeg[0],&waveforms[0]);
@@ -511,7 +511,7 @@ class SPHE{
 
       threshold = tolerance*stddev;
       if(fix_threshold) threshold = tolerance;
-      if(check_selection && ch.selection!=0) return;
+      if(check_selection && ch->selection!=0) return;
 
       for(Int_t i = 0; i<n; i++){
 
@@ -635,7 +635,9 @@ class SPHE{
         tout->Branch("strikes",&strikes,"strikes/D");
         //         creation = false;
 
-        twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
+        sample = new ADC_DATA();
+        sample->Set_npts(memorydepth);
+        // twvf->Branch(Form("Ch%i",channel),&sample);
       }
 
       cout << "reading: " << filename << endl;
@@ -644,7 +646,8 @@ class SPHE{
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
 
-      TBranch *bch = t1->GetBranch(Form("Ch%i",channel));
+      ch = new ADC_DATA();
+      TBranch *bch = t1->GetBranch(Form("Ch%i.",channel));
       bch->SetAddress(&ch);
       Int_t nentries = t1->GetEntries();
 
@@ -732,10 +735,10 @@ class SPHE{
       for(Int_t i = 0; i<nentries; i++){
         bch->GetEvent(i);
         DENOISE dn;
-        if(filter>0)dn.TV1D_denoise<Double_t>(&ch.wvf[0],&temp_peak[0],memorydepth,filter);
+        if(filter>0)dn.TV1D_denoise<Double_t>(&ch->wvf[0],&temp_peak[0],memorydepth,filter);
         else{
           for(Int_t i = 0; i<memorydepth; i++){
-            temp_peak[i] = ch.wvf[i];
+            temp_peak[i] = ch->wvf[i];
           }
         }
         // for(Int_t i = 0; i<memorydepth; i++){
@@ -745,11 +748,11 @@ class SPHE{
         // }
 
 
-        aux = ch.event;
+        aux = ch->event;
         if(static_cast<Int_t>(eventNow)%200==0){
           cout << eventNow << "\r" << flush;
         }
-        eventNow =  ch.event;
+        eventNow =  ch->event;
         // here is were all the calculation is done !!!
         lookWaveform();
 
@@ -973,15 +976,17 @@ class SPHE{
         deltaplus = delta*deltaplus;
       }
       if(creation){
-        twvf->Branch(Form("Ch%i",channel),&sample,sample.tobranch.c_str());
+        sample = new ADC_DATA();
+        sample->Set_npts(memorydepth);
+        twvf->Branch(Form("Ch%i.",channel),&sample);
       }
       cout << "reading: " << filename << endl;
       string rootfile = filename + ".root";
 
       TFile *f1 = new TFile(rootfile.c_str(),"READ");
       TTree *t1 = (TTree*)f1->Get("t1");
-
-      TBranch *bch = t1->GetBranch(Form("Ch%i",channel));
+      ch = new ADC_DATA();
+      TBranch *bch = t1->GetBranch(Form("Ch%i.",channel));
       bch->SetAddress(&ch);
       Int_t nentries = t1->GetEntries();
       Double_t charge = 0;
@@ -1000,13 +1005,13 @@ class SPHE{
       for(Int_t i = 0; i<nentries; i++){
         bch->GetEvent(i);
         DENOISE dn;
-        dn.TV1D_denoise<Double_t>(&ch.wvf[0],&temp_peak[0],memorydepth,filter);
+        dn.TV1D_denoise<Double_t>(&ch->wvf[0],&temp_peak[0],memorydepth,filter);
 
         noise = false;
         max = -1e12;
         for(Int_t j = start/dtime; j<finish/dtime; j++){
           if(withfilter) charge += temp_peak.at(j);
-          else charge += ch.wvf[j];
+          else charge += ch->wvf[j];
           if(temp_peak[j]>=max){
             max = temp_peak[j];
           }
@@ -1041,24 +1046,25 @@ class SPHE{
 
 
         if(noise==false){
-          if(check_selection && ch.selection!=0){
+          if(check_selection && ch->selection!=0){
           }
           else{
             valid = false;
+
             for(Int_t j = 0; j<memorydepth; j++){
-              sample.wvf[j] = ch.wvf[j];
+              sample->wvf[j] = ch->wvf[j];
             }
             if(charge*dtime>=deltaminus  && charge*dtime<=deltaplus){
               valid = true;
               for(Int_t j = 0; j<memorydepth; j++){
-                mean_waveforms[j]+=ch.wvf[j];
+                mean_waveforms[j]+=ch->wvf[j];
               }
               naverages++;
             }
 
             wvfcharge = charge*dtime;
-            sample.charge = wvfcharge;
-            sample.selection = valid;
+            sample->charge = ch->charge;
+            sample->selection = valid;
             twvf->Fill();
             hcharge->Fill(charge*dtime);
             // cout << charge*dtime << endl;
@@ -1067,7 +1073,7 @@ class SPHE{
         }
         charge=0;
       }
-      // ftmp.close();
+      // // ftmp.close();
 
       if(get_wave_form){
         for(Int_t i = 0; i<memorydepth; i++){
