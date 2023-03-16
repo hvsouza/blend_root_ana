@@ -217,7 +217,7 @@ class ANALYZER{
       if (!v) v = ch[kch]->wvf;
       Double_t max = -1e12;
       for (Int_t i = from/dtime; i < to/dtime; i++) {
-        if(v[i]>=max){
+        if(v[i]>max){
           max = v[i];
           temp_max = max;
           temp_pos = i;
@@ -859,7 +859,10 @@ void ANALYZER::recreateFile(){
 
   }
 
-  for(Int_t j = 0; j < oldt->GetEntries(); j++){
+  cout << "\n";
+  Int_t nevts = oldt->GetEntries();
+  for(Int_t j = 0; j < nevts; j++){
+    if(j%200==0) cout << "computing event " << j << " of " << nevts << "\r" << flush;
     for(Int_t i = 0; i < (int)channels.size(); i++){
       bold[i]->GetEntry(j);
 
@@ -880,6 +883,7 @@ void ANALYZER::recreateFile(){
 
     ttemp->Fill();
   }
+  cout << "\n";
 
   ftemp->WriteTObject(ttemp,"t1","TObject::kOverwrite");
 

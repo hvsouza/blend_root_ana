@@ -956,6 +956,8 @@ class SPHE2{
 
     bool check_selection = true; // uses(or not) variable `selection` to discard wvfs
     Bool_t withfilter = true; // Integrate in the filtered waveform
+    Bool_t integrate_from_peak = true; // Set true and the maximum will be searched inside the derivate region.
+                                       // Otherwise the integral is done starting from the crossing negative zero of derivative
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -1021,7 +1023,7 @@ class SPHE2{
     vector<Double_t> discardedPeak; //store position of thed
     vector<Double_t> discardedCharge; //store position of thed
     vector<Int_t> discarded_idx; //store idx (0, 1 or 2) of the peaks
-    const char *selec_types[3] = {"Social distance", "Negative hits", "Too big"};
+    const char *select_types[3] = {"Social distance", "Negative hits", "Too big"};
     TH1D *hdiscard = nullptr;
     vector<Double_t> mean_waveform;
     Int_t naverages = 0;
@@ -1037,7 +1039,12 @@ class SPHE2{
       hbase_smooth = new TH1D(Form("hbase_smooth_sphe_%s",myname.c_str()),"histogram for baseline smoothed",5*800,-400,400);
       hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),50000,0,0);
       hdiscard     = new TH1D(Form("hdiscard_sphe_%s",myname.c_str()),Form("hdiscard_sphe_%s",myname.c_str()),3,0,3);
+      for(Int_t i = 0; i < (int)(sizeof(select_types)/sizeof(select_types[0])); i++){
+        hdiscard->Fill(select_types[i],0);
+      }
 
+      smooted_wvf.resize(n_points);
+      denoise_wvf.resize(n_points);
 
 
     }
@@ -1315,12 +1322,6 @@ class SPHE2{
 
     void derivateApplyThreshold(){
       Int_t ntotal = (int)peaksCross.size();
-      if((int)peaksRise.size() < ntotal){ // there should be only pairs
-        cout << "@@@@@@@@@@@@@@@@@@@@ THIS SHOULD NOT HAPPEN @@@@@@@@@@@@@@@@@@@@" << endl;
-        cout << "\n\n\n\n\n\n\n\n\n\n" << endl;
-        cout << "@@@@@@@@@@@@@@@@@@@@ THIS SHOULD NOT HAPPEN @@@@@@@@@@@@@@@@@@@@" << endl;
-        ntotal = (int)peaksRise.size();
-      }
 
       for(Int_t i = 0; i < ntotal; i++){
         Double_t crossPositive = peaksRise[i];
@@ -1331,9 +1332,15 @@ class SPHE2{
         if(dmax < tolerance) {
           continue;
         }
+        if(integrate_from_peak == true){
+          z->getMaximum(crossPositive*dtime, candidatePosition*dtime, &denoise_wvf[0]);
+          peaksFound.push_back(z->temp_pos);
+        }
+        else{
+          peaksFound.push_back(peaksCross[i]) ;
+        }
 
         derivateMaxFound.push_back(dmax);
-        peaksFound.push_back(peaksCross[i]) ;
       }
 
     }
@@ -1393,7 +1400,7 @@ class SPHE2{
         discardedCharge.push_back(charge);
         discarded_idx.push_back(discardidx);
       }
-      hdiscard->Fill(selec_types[discardidx], 1);
+      hdiscard->Fill(select_types[discardidx], 1);
     }
 
     vector<Double_t> delay_line(vector<Double_t> v, Double_t delay_time){
