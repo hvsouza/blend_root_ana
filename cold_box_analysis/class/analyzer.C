@@ -137,7 +137,8 @@ class ANALYZER{
     }
 
     void setEmpty(){
-      if(!w) w = new WIENER(myname.c_str(),dtime,250,1e-9,1e6,n_points);
+      string wienername = myname + "_w";
+      if(!w) w = new WIENER(wienername.c_str(),dtime,250,1e-9,1e6,n_points);
       raw.resize(nchannels);
       wvf.resize(nchannels);
       haverage.resize(nchannels);
@@ -460,7 +461,7 @@ class ANALYZER{
       }
 
     }
-    void averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = true, Double_t filter = 0){
+    void averageFFT(Int_t maxevent = 0, string selection = "", bool inDecibel = true, Double_t factor = 0, Double_t filter = 0){
       if (maxevent==0) {
         maxevent = nentries;
       }
@@ -489,7 +490,7 @@ class ANALYZER{
       hfft[kch]->SetEntries(total);
 
       if (inDecibel){
-        w->convertDecibel(hfft[kch]);
+        w->convertDecibel(hfft[kch], factor);
         hfft[kch]->GetYaxis()->SetTitle("Magnitude (dB)");
       }
       h = hfft[kch];
@@ -598,7 +599,7 @@ class ANALYZER{
 
     void applyDenoise(Double_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       checkSignals(&_raw,&_filtered);
-      if (filter == 0) return;
+      if (filter == 0 && _filtered == ch[kch]->wvf) return;
       if (filter_type == "default"){
         applyTV1D(filter, _raw, _filtered);
       }

@@ -116,25 +116,25 @@ void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel)
   if (maxevent==0) {
     maxevent = nentries;
   }
-  TH1D *h = (TH1D*)w->hfft->Clone("h");
+  TH1D *hsf = (TH1D*)w->hfft->Clone("hsf");
   vector<TH1D *> hfft(naverage);
   Int_t k = 0;
   TCanvas *c1 = new TCanvas("c1");
+  Double_t maxVal = pow(2,14);
   for(Int_t i = 0; i < maxevent; i++){
     getWaveform(i,kch);
     getFFT();
-    if (inDecibel) w->convertDecibel();
     if (i < naverage) {
-      hfft[k] = (TH1D*)w->hfft->Clone(Form("h%d",k));
-      for (Int_t j = 0; j < n_points/2; j++) h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
-      if (naverage == 1) h->Draw();
+      hfft[k] = (TH1D*)w->hfft->Clone(Form("hsf%d",k));
+      for (Int_t j = 0; j < n_points/2; j++) hsf->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
+      if (naverage == 1) hsf->Draw();
     }
     else{
       if (k < naverage) {
         for (Int_t j = 0; j < n_points/2; j++) {
-          h->AddBinContent(j+1,-hfft[k]->GetBinContent(j+1));
+          hsf->AddBinContent(j+1,-hfft[k]->GetBinContent(j+1));
           hfft[k]->SetBinContent(j+1,w->hfft->GetBinContent(j+1));
-          h->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
+          hsf->AddBinContent(j+1,hfft[k]->GetBinContent(j+1));
         }
         printf("\rEvent %d", i);
         fflush(stdout);
@@ -146,7 +146,9 @@ void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel)
       }
       else{
         if (i == naverage){
-          h->Draw();
+          TH1D *hshowf = (TH1D*)hsf->Clone("hshowf");
+          // if (inDecibel) w->convertDecibel(hshowf);
+          hshowf->Draw();
         }
         k = 0;
       }
