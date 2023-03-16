@@ -144,6 +144,7 @@ class Calibration
     Bool_t is_poisson_test = false; // if running tests of poisson statistics
 
     TH1D *htemp = nullptr;
+    TH1D *hcharge = nullptr;
   
   
     // ____________________________________________________________________________________________________ //
@@ -361,7 +362,6 @@ class Calibration
     void makeSphe(string histogram){
 
       string histogram_tempo = histogram+"_stat";
-      TH1D *hcharge;
       TFile *f1 = nullptr;
       if (rootFile != "") {
         TFile *f1 = new TFile(rootFile.c_str(),"READ");
@@ -578,15 +578,15 @@ class Calibration
         cout << "Fit status with free std dev: " << fit_status << endl;
 
 
-        fu[0]->SetParameter(0,lastOneFree->GetParameter(0));
+        fu[0]->SetParameter(0,abs(lastOneFree->GetParameter(0)));
         fu[0]->SetParameter(1,lastOneFree->GetParameter(1));
         fu[0]->SetParameter(2,lastOneFree->GetParameter(2));
 
-        fu[1]->SetParameter(0,lastOneFree->GetParameter(3));
+        fu[1]->SetParameter(0,abs(lastOneFree->GetParameter(3)));
         fu[1]->SetParameter(1,lastOneFree->GetParameter(4));
         fu[1]->SetParameter(2,lastOneFree->GetParameter(5));
 
-        fu[2]->SetParameter(0,lastOneFree->GetParameter(6));
+        fu[2]->SetParameter(0,abs(lastOneFree->GetParameter(6)));
         fu[2]->SetParameter(1,lastOneFree->GetParameter(7));
         fu[2]->SetParameter(2,lastOneFree->GetParameter(8));
 
@@ -1035,8 +1035,6 @@ class SPHE2{
       hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),50000,0,0);
       hdiscard     = new TH1D(Form("hdiscard_sphe_%s",myname.c_str()),Form("hdiscard_sphe_%s",myname.c_str()),3,0,3);
 
-      smooted_wvf.resize(n_points);
-      denoise_wvf.resize(memorydepth);
 
 
     }
@@ -1061,6 +1059,7 @@ class SPHE2{
     void giveMeSphe(){
       gROOT->SetBatch(kTRUE);
 
+      hcharge->Reset();
       rootfile = filename + ".root";
 
       if(!z){ // load analyzer in case it is nullptr
@@ -1072,45 +1071,51 @@ class SPHE2{
         z->dtime = dtime;
         z->setAnalyzer(rootfile);
       }
+      z->setChannel(Form("Ch%d.",channel));
 
-      z->kch = channel;
-      kch = channel;
-      fout = new TFile(Form("sphe_histograms_Ch%i.root",kch),"RECREATE");
+      kch = z->kch;
+      z->getWaveform(kch);
+      n_points = z->n_points;
+      smooted_wvf.resize(n_points);
+      denoise_wvf.resize(n_points);
+      fout = new TFile(Form("sphe_histograms_Ch%i.root",channel),"RECREATE");
 
       // ____________________ Setting up what needs to be set ____________________ //
 
       if(get_wave_form==true){
-        fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",kch),"RECREATE");
+        fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+        twvf = new TTree("t1","mean waveforms");
       }
       else{ // in the case we are not taking waveform, I change this values for the same setup of integration
         mean_before = timeLow;
         mean_after = timeHigh;
       }
-      twvf = new TTree("t1","mean waveforms");
       // if the user set mean_before = 24 and mean_after = 100
       // we need to get  6 + 25 points + 1 = 32  (+1 because of the peak start)
       // if I found a point in around 100 ns, that is i = 25, I perform a while that goes
       // from i-mean_before = 19 up to i+mean_after = 50 (included) = 32 pts
       npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
+      if (led_calibration) npts_wvf = (mean_after/dtime - mean_before/dtime);
+      
       mean_waveform.clear();
       mean_waveform.resize(npts_wvf);
       naverages = 0;
 
       sample.Set_npts(npts_wvf);
-      twvf->Branch(Form("Ch%i",channel),&sample);
+      if (get_wave_form) twvf->Branch(Form("Ch%i",channel),&sample);
 
 
       nshow_start = nshow_range[0];
       nshow_finish = nshow_range[1];
       n_points = z->n_points;
       timeg = new Double_t[n_points];
+      for(int i = 0; i < n_points; i++){
+        timeg[i] = i*dtime;
+      }
       if(led_calibration==true){
         method = "led";
       }
       else{
-        for(int i = 0; i < n_points; i++){
-          timeg[i] = i*dtime;
-        }
         // this might be too much, time will tell. Keep an eye in the RAM memory
         discardedTime.reserve(n_points);
         discardedPeak.reserve(n_points);
@@ -1138,12 +1143,12 @@ class SPHE2{
 
       Double_t delta = sphe_charge2 - sphe_charge;
       if(deltaminus == 0){
-        deltaminus = sphe_charge - deltaplus*sphe_std;
-        deltaplus = sphe_charge + deltaplus*sphe_std;
+        delta1 = sphe_charge - deltaplus*sphe_std;
+        delta2 = sphe_charge + deltaplus*sphe_std;
       }
       else{
-        deltaminus = delta/deltaminus;
-        deltaplus = delta*deltaplus;
+        delta1 = delta/deltaminus;
+        delta2 = delta*deltaplus;
       }
 
       // ____________________ ___________________________ ____________________ //
@@ -1179,9 +1184,11 @@ class SPHE2{
         integrateSignals(sample);
         if(snap()){
           drawMySamples();
-          cout << "Event " << z->ch[kch]->event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
-          for(unsigned int j = 0; j < selected_charge.size(); j++){
-            cout << "\t\t Charge = " << selected_charge[j] << " at " << selected_charge_time[j] << " ns " << endl;
+          if(!led_calibration){
+            cout << "Event " << z->ch[kch]->event << " total of peaks: " << peaksFound.size() << ", Valid = " << selected_charge.size() << endl;
+            for(unsigned int j = 0; j < selected_charge.size(); j++){
+              cout << "\t\t Charge = " << selected_charge[j] << " at " << selected_charge_time[j] << " ns " << endl;
+            }
           }
         } // draw sample graphs
       }
@@ -1199,12 +1206,12 @@ class SPHE2{
           mean_waveform[i] = mean_waveform[i]/ndiv;
         }
 
-        TGraph *gmean = new TGraph(npts_wvf,&timeg[0],&mean_waveform[0]);
-        fwvf->WriteObject(gmean,Form("mean_ch%i",channel),"TObject::kOverwrite");
+        TGraph *gmean = new TGraph(npts_wvf,timeg,&mean_waveform[0]);
+        fwvf->WriteObject(gmean,"mean","TObject::kOverwrite");
         cout << "A total of " << naverages << " waveforms where found "<< endl;
       }
 
-      fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),channel),"TObject::kOverwrite");
+      fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),z->getIdx()),"TObject::kOverwrite");
       fout->WriteObject(hdiscard,"hdiscard","TObject::kOverwrite");
 
 
@@ -1477,7 +1484,7 @@ class SPHE2{
         }
         if(get_this_wvf){
           sample.selection = 0;
-          if(charge>=deltaminus && charge <= deltaplus){
+          if(charge>=delta1 && charge <= delta2){
             sample.selection = 1;
             for(Int_t j = 0; j < npts_wvf; j++){
               mean_waveform[j] += sample.wvf[j];

@@ -205,8 +205,8 @@ class SPHE{
       darkNoise = true;
       if(get_wave_form==true){
         fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
+        twvf = new TTree("t1","mean waveforms");
       }
-      twvf = new TTree("t1","mean waveforms");
 
       if(led_calibration==false){
         makeHistogram(name);
@@ -223,8 +223,10 @@ class SPHE{
       }
       else{
         fwvf->WriteObject(twvf,"t1","TObject::kOverwrite");
+        fwvf->Close();
       }
       channel=channel + 1;
+      fout->Clone();
     }
 
 
@@ -238,7 +240,7 @@ class SPHE{
       if(get_wave_form==true){
         fwvf = new TFile(Form("sphe_waveforms_Ch%i.root",channel),"RECREATE");
       }
-      twvf = new TTree("t1","mean waveforms");
+      if(get_wave_form) twvf = new TTree("t1","mean waveforms");
 
       makeHistogram(name);
 
@@ -468,7 +470,7 @@ class SPHE{
               sample->event = eventNow;
               sample->charge = statcharge[i];
               sample->selection = valid;
-              twvf->Fill();
+              if(get_wave_form) twvf->Fill();
 
               //gwaveforms[i] = new TGraph(waveforms.size(),&timeg[0],&waveforms[0]);
               //gm->Add(gwaveforms[i],"LP");
@@ -637,7 +639,7 @@ class SPHE{
 
         sample = new ADC_DATA();
         sample->Set_npts(memorydepth);
-        // twvf->Branch(Form("Ch%i",channel),&sample);
+        if( get_wave_form ) twvf->Branch(Form("Ch%i",channel),&sample);
       }
 
       cout << "reading: " << filename << endl;
@@ -978,7 +980,7 @@ class SPHE{
       if(creation){
         sample = new ADC_DATA();
         sample->Set_npts(memorydepth);
-        twvf->Branch(Form("Ch%i.",channel),&sample);
+        if(get_wave_form) twvf->Branch(Form("Ch%i.",channel),&sample);
       }
       cout << "reading: " << filename << endl;
       string rootfile = filename + ".root";
@@ -1015,7 +1017,9 @@ class SPHE{
           if(temp_peak[j]>=max){
             max = temp_peak[j];
           }
-          if(temp_peak[j]>too_big) noise=true;
+          if(temp_peak[j]>too_big) {
+            noise=true;
+          }
           if(temp_peak[j]<lowerThreshold){
             noise_hits++;
             if(noise_hits>=maxHits){
@@ -1065,7 +1069,7 @@ class SPHE{
             wvfcharge = charge*dtime;
             sample->charge = ch->charge;
             sample->selection = valid;
-            twvf->Fill();
+            if(get_wave_form) twvf->Fill();
             hcharge->Fill(charge*dtime);
             // cout << charge*dtime << endl;
             // ftmp << i << "\n";

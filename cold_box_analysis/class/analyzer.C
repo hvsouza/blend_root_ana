@@ -27,7 +27,7 @@ class ANALYZER{
     Int_t kch = 0;
     Int_t currentEvent = 0;
     DENOISE dn;
-    WIENER *w;
+    WIENER *w = nullptr;
     string filter_type = "default";
 
     Int_t n_points;
@@ -161,16 +161,17 @@ class ANALYZER{
     void print(){
       t1->Print();
     }
-    void setChannel(string mych = "Ch1"){
+    Bool_t setChannel(string mych = "Ch1."){
       for(Int_t i = 0; i < nchannels; i++){
         if(mych == schannel[i])
         {
           kch = i;
-          return;
+          return true;
         }
       }
 
       printf("%s not found, run s.print() to check the branches\n",mych.c_str());
+      return false;
     }
 
 

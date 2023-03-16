@@ -622,6 +622,9 @@ class Read{
           avg[i].resize(n_points,0);
           ch[i]->Set_npts(n_points); // gain a few ns
         }
+        if(baselineTime > n_points*dtime){
+          baselineTime = n_points*dtime;
+        }
       }
 
       vector<Double_t> raw(n_points);
@@ -652,7 +655,7 @@ class Read{
           }
           else{
             // for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text)
-                                                                          fin[i].read((char *) &headbin, nbytes*6);
+            fin[i].read((char *) &headbin, nbytes*6);
             // printf("%d\n",headbin);
             // }
             timestamp = headbin.TriggerTimeTag;
@@ -723,7 +726,7 @@ class Read{
           getvalues(i,*ch[i],filtered,bl);
           ch[i]->event = tEvent;
         
-          // numberoflines++;
+          numberoflines++;
         
         
         

@@ -6,10 +6,9 @@
 #include "__USER_PATH__/MYCODES.h"
 
 
-void fit_sphe_wave1(){
+void fit_sphe_wave1(Int_t ch = 0){
     
     Calibration Cal;
-    Int_t ch = 1;
     string histogram = "analyzed_" + to_string(ch);
     Cal.rootFile = "sphe_histograms_darkCount_Ch"+to_string(ch)+".root";
 
