@@ -1025,6 +1025,9 @@ class SPHE2{
     TH1D *hdiscard = nullptr;
     vector<Double_t> mean_waveform;
     Int_t naverages = 0;
+
+    Double_t delta1 = 0;
+    Double_t delta2 = 0;
     // ____________________ ________________________________ ____________________ //
 
     vector<string> discard_reason = {"Social distance", "Negative hits", "Too big"};
@@ -1461,7 +1464,11 @@ class SPHE2{
 
     void integrateSignals(ADC_DATA &sample){
       unsigned int npeaks = peakPosition.size();
-      if (led_calibration) npeaks = 1;
+      if (led_calibration){
+        npeaks = 1;
+        peakPosition.push_back(0);
+      }
+
       for(unsigned int i = 0; i < npeaks; i++){
         Int_t peakPosIdx = peakPosition[i]; // position of the peak as idx ( don't worry for led )
         temp_selected_peaks.clear();
@@ -1498,11 +1505,13 @@ class SPHE2{
             }
             if(sample.selection == 1) naverages+=1;
           }
+          else{
+          }
           sample.peak = peak;
           sample.peakpos = peakPosIdx*dtime;
           sample.charge = charge;
           sample.event = z->currentEvent;
-          sample.fprompt = derivateMax[i];
+          if(derivate) sample.fprompt = derivateMax[i];
           twvf->Fill();
         }
       }
@@ -1529,10 +1538,12 @@ class SPHE2{
       Double_t integralto = peakPosIdx + timeHigh/dtime;
 
       if(led_calibration){
-        from = 0;
-        to = n_points-1;
+        from = mean_before/dtime;
+        to = mean_after/dtime;
         integralfrom = start/dtime;
         integralto = finish/dtime;
+        if (from > integralfrom || from < 0) from = 0;
+        if (to  < integralto || to > n_points) to = n_points-1;
         get_this_wvf = true;
       }
       for(Int_t i = from; i <= to; i++, iwvf++){
