@@ -1106,7 +1106,7 @@ class SPHE2{
       // from i-mean_before = 19 up to i+mean_after = 50 (included) = 32 pts
       npts_wvf = (mean_before/dtime + mean_after/dtime) + 1;
       if (led_calibration) npts_wvf = (mean_after/dtime - mean_before/dtime);
-      
+
       mean_waveform.clear();
       mean_waveform.resize(npts_wvf);
       naverages = 0;
@@ -1546,7 +1546,7 @@ class SPHE2{
 
       if(led_calibration){
         from = mean_before/dtime;
-        to = mean_after/dtime;
+        to = mean_after/dtime-1;
         integralfrom = start/dtime;
         integralto = finish/dtime;
         if (from > integralfrom || from < 0) from = 0;
