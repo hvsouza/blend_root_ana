@@ -4,7 +4,7 @@
 // Created: 2021
 // ________________________________________ //
 #include "MYCODES.h"
-
+#include <arpa/inet.h>
 
 class DENOISE{
   
@@ -206,13 +206,14 @@ class Read{
 
     // Created by Henrique Souza, June 2020
 
-    Int_t n_points = 0;
+    Int_t n_points = memorydepth;
   
     Double_t dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
     Int_t nbits = 14;
     Int_t basebits = nbits;
     Bool_t isBinary = false;
     Bool_t saveFilter = false;
+    Bool_t with_headers = true;
   
     Double_t startCharge = 3300;
     Double_t maxRange = 5000;
@@ -247,7 +248,7 @@ class Read{
     Int_t nfiles = 1;
 
     // THIS did not work properly, sometimes it gets stuck in a bad region.
-       // TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,0);
+    // TH1D *hbase = new TH1D("hbase","finding baseline",TMath::Power(2,nbits),0,0);
 
     TH1D *htests = new TH1D("htests","htests",1000,0,0);
     TH1D *hbase;
@@ -325,7 +326,11 @@ class Read{
         if(logfile.bad() || logfile.fail()){
           break;
         }
-        size_t found  = dataname.find(wave_ref);
+        int found  = dataname.find(wave_ref);
+        if(found==-1){
+          logfile.close();
+          return;
+        }
         found = found + wave_ref.length();
         wavenum = (int)dataname[found] - '0';
         // cout << wavenum << endl;
@@ -542,19 +547,19 @@ class Read{
 
     
 
-   vector<ifstream> fin(channels.size());
+      vector<ifstream> fin(channels.size());
       for(Int_t i = 0; i < (int)channels.size(); i++){
         if(!isBinary) fin[i].open(filename_ch[i].c_str(),ios::in);
         else          fin[i].open(filename_ch[i].c_str(),ios::in | ios::binary);
         // here i check if the data file is open (or exist), if not, I remove the .root files and close the program.
-                                                                       if(fin[i].good() && fin[i].is_open()){ // Ok
-                                                                         cout << "Reading file " << filename_ch[i] << " ... " << endl;
-                                                                       }
-            else{
-              cout << "File " << filename_ch[i] << " did not open!!" << endl;
-              return;
+        if(fin[i].good() && fin[i].is_open()){ // Ok
+          cout << "Reading file " << filename_ch[i] << " ... " << endl;
+        }
+        else{
+          cout << "File " << filename_ch[i] << " did not open!!" << endl;
+          return;
         
-            }
+        }
       }
       Bool_t closeMyWhile = false; // keep it false
       // While for read the entire file
@@ -562,7 +567,7 @@ class Read{
       Int_t eventFile = 0;
       string headers;
       Double_t init_time = 0;
-      uint32_t valbin = 0;
+      uint16_t valbin = 0;
       Headers headbin;
       int nbytes = 4;
       Int_t headers_npoints = 0;
@@ -580,9 +585,9 @@ class Read{
           // Segments 2000 SegmentSize 2502
           // Segment TrigTime TimeSinceSegment1
           // #1 01-Jan-2002 00:32:41 0
-            // #2 01-Jan-2002 00:32:41 0.0001
-            // continue;
-            getline(fin[i],headers);
+          // #2 01-Jan-2002 00:32:41 0.0001
+          // continue;
+          getline(fin[i],headers);
           // cout << headers << endl;
           fin[i] >> headers >> headers_nwvfs >> headers >> headers_npoints;
           // cout << headers << endl;
@@ -614,10 +619,12 @@ class Read{
       }
 
       if(isBinary){
-        fin[0].read((char *) &headbin, nbytes*6);
-        n_points = (headbin.EventSize-24)/2;
-        fin[0].clear();
-        fin[0].seekg(0);
+        if(with_headers){
+          fin[0].read((char *) &headbin, nbytes*6);
+          n_points = (headbin.EventSize-24)/2;
+          fin[0].clear();
+          fin[0].seekg(0);
+        }
         for(Int_t i = 0; i < (int)channels.size(); i++){
           avg[i].resize(n_points,0);
           ch[i]->Set_npts(n_points); // gain a few ns
@@ -628,11 +635,12 @@ class Read{
       }
 
       vector<Double_t> raw(n_points);
-      Double_t filtered[n_points];
+      Double_t *filtered = new Double_t[n_points];
       event_time.resize(n_points);
       while(!fin[0].fail() && closeMyWhile == false){ // We can just look for one file, they shold have the same amount of lines anyway!
         Int_t n_reads = 0;
 
+        Int_t tempsize = n_points;
         for(Int_t i = 0; i < (int)channels.size(); i++){
           if(isBinary==false){
 
@@ -654,16 +662,24 @@ class Read{
             //           getline(fin[i],headers);
           }
           else{
-            // for(Int_t ln=0;ln<6;ln++){ // 4 bytes (32 bits) for each head (no text)
-            fin[i].read((char *) &headbin, nbytes*6);
-            // printf("%d\n",headbin);
-            // }
-            timestamp = headbin.TriggerTimeTag;
+            if(with_headers){
+              fin[i].read((char *) &headbin, nbytes*6);
+              timestamp = headbin.TriggerTimeTag;
+              n_points = (headbin.EventSize-24)/2;
+              if(n_points != tempsize){
+                ch[i]->Set_npts(n_points);
+                avg[i].resize(n_points);
+                raw.resize(n_points);
+                delete[] filtered;
+                filtered = new Double_t[n_points];
+              }
+            }
 
             //           printf("%.0f\n",timestamp);
             for(int j = 0; j < n_points; j++)
             {
               fin[i].read((char *) &valbin, 2);
+              // valbin = be16toh(valbin); // if big ending was used, this converts to small ending
               //             if(j==0) printf("%d\n -- \n",valbin);
 
               if(fin[i].bad() || fin[i].fail()){
@@ -719,8 +735,8 @@ class Read{
             exclusion_baseline = exclusion_baselines[0];
           }
           bl = baseline(filtered,ch[i]->selection,i,tEvent);
-          // // bl = baseline(ch[i]->wvf,ch[i]->selection,i,tEvent);
-          // // if(bl==-9999) cout << i << " " << tEvent << endl;
+          // bl = baseline(ch[i]->wvf,ch[i]->selection,i,tEvent);
+          // if(bl==-9999) cout << i << " " << tEvent << endl;
 
           ch[i]->base = bl;
           getvalues(i,*ch[i],filtered,bl);
@@ -729,12 +745,11 @@ class Read{
           numberoflines++;
         
         
-        
         }
         if((fin[0].bad() || fin[0].fail()) && n_reads<n_points-5){
           // cout << "problems ??" << endl;
           break; // giving a 5 points relaxiation
-                      }
+        }
         // if(fin[0].eof()){
         // numberoflines--;
         // break;
@@ -821,7 +836,7 @@ class Read{
       // }
     
       // if(idx == 0 && mevent == 3294){
-        // cout << hmean << " " << hstd << " " << res0 << endl;
+      // cout << hmean << " " << hstd << " " << res0 << endl;
       // }
     
       Double_t bins=0;
@@ -840,18 +855,18 @@ class Read{
         selection = 0;
         // // You can use this to debug. If selection == 0, there should not have events here.
         // // this means that res0 should be pretty much the average for a good baseline.
-                                                                             // if(res0>hmean+hstd || res0<hmean-hstd){
-                                                                             //   cout << "PROBLEEEMMM " << endl;
-                                                                             //   cout << result << endl;
-                                                                             //     cout << res0 << endl;
-                                                                             //     cout << hmean << endl;
-                                                                             //     cout << hstd << endl;
-                                                                             //     // cout << fitStatus << endl;
-                                                                             //     result = -9999;
-                                                                             // }
+        // if(res0>hmean+hstd || res0<hmean-hstd){
+        //   cout << "PROBLEEEMMM " << endl;
+        //   cout << result << endl;
+        //     cout << res0 << endl;
+        //     cout << hmean << endl;
+        //     cout << hstd << endl;
+        //     // cout << fitStatus << endl;
+        //     result = -9999;
+        // }
 
 
-                                                                             return result;
+        return result;
       }
       else{
         // cout << result << " " << res0 << endl;
