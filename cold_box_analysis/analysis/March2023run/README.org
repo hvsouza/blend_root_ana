@@ -1,0 +1,114 @@
+:PROPERTIES:
+:TOC:      :include all :depth 3 :force (depth) :ignore (nothing) :local (nothing)
+:END:
+
+#+title: Data taking log
+
+* General description
+
+Digitizer: CAEN DT5730SB \\
+Sample rate: 250 MSamples/s (4 ns step) (unless specified) \\
+Samples: 5000 (20 us total) unless specified \\
+Digitizer: 2 Vpp 14 Bits (0.122 mV/ADC) \\
+DC offset: 10% \\
+Pretrigger: 50% or 30% \\
+Acquisition done with Wavedump. \\
+The data are save with 6 headers and nsamples of data. 4 bytes per header and 2 bytes per sample. Please, refer to the wavedump manual. \\
+
+
+| CAEN ADC | Device                   |    |
+| Ch0      | miniArapuca 37V Argon2x2 |    |
+| Ch1      | miniArapuca 37V Argon4   |    |
+| Ch2      | DCem1.0VD                |    |
+| Ch3      | xArapuca v4 Ch2          | S7 |
+| Ch4      | xArapuca v4 Ch1          | S6 |
+| Ch5      | xArapuca v5 ch2          | S4 |
+| Ch6      | xArapuca v5 ch1          | S5 |
+| Ch7      | DCem1.2VD                |    |
+
+
+* 20230313
+
+v4 had offset but no SiPM signals. Sabrina figured it out that the problem was lack of power. \\
+I have checked the two fibers, both looked ok, and I carefully cleaned it and increase the power on laser 2 and 3.\\
+Laser 2: 642 mW -> 890 mW\\
+Laser 3: 630 mW -> Around 900 mW (the powermeter had problems after)\\
+The offset measured before was 56 mV Ch1 and 95 mV Ch2\\
+This changed to 72 and 109 mV, and signals went back\\
+
+** Offset measured:
+Argon2x2
+- 211 mV: 2550 ADCs at 5%
+v4 Ch1
+- 72 mV: 1410 ADCs at 5% after increased power
+v4 ch2
+- 109 mV: 1720 ADCs at 5% after increased power
+v5 Ch1
+- 147 mV: 2030 ADCs at 5%
+v5 Ch2
+- 16 mV: 950 ADCs at 5%
+
+** Random trigger (HV study)
+- CRP see 350 kHz when switching on v5
+- Between run2 and run3, the power supply for the Koherons was change
+- The power of the PoF was adjust before the last run of random trigger
+** SPE
+- Data was taken with Argon2x2, v4 and v5 all powered at the same time.
+* 20230314
+
+** Offset measured:
+Argon2x2
+- 211 mV: 2550 ADCs at 5%
+v4 Ch1
+- 72 mV: 1410 ADCs at 5%
+v4 ch2
+- 109 mV: 1720 ADCs at 5%
+v5 Ch1
+- 147 mV: 2030 ADCs at 5%
+v5 Ch2
+- 16 mV: 950 ADCs at 5%
+
+** Noise level:
+- Measurements of Koheron only
+** SPE:
+- SPE measurements done with one device turned one by time
+** LED Dynamic range
+- Measurements with LED at 365 nm for dynammic range
+- After first round, connected attenuator of 10 dB and 5 dB to ch1 and ch2
+  - V4 first:\\
+    365 nm LED\\
+    275 nm LED for possibly speak
+  - V5\\
+    365 nm LED\\
+    275 nm LED for possibly speak
+
+* 20230315
+
+** Offset measured:
+Argon2x2
+- 211 mV: 2550 ADCs at 5%
+v4 Ch1
+- 72 mV: 1410 ADCs at 5%
+v4 ch2
+- 109 mV: 1720 ADCs at 5%
+v5 Ch1
+- 147 mV: 2030 ADCs at 5%
+v5 Ch2
+- 16 mV: 950 ADCs at 5%
+
+
+
+** SPE
+For SPE of argon2x2 (run2), PoF was off
+** LED
+Recheck of dynamic range using 5 dB attenuator for ch1
+
+** For CRT + CRP data
+The first run failed..\\
+Run17: The config_used.log file will not be accurate: ignore it \\
+       Half of the events for ch6 were not recorded\\
+Run18: Cathode off, no CRP\\
+       The last 17 events have 1 ms acquisition and should be discard
+
+** Cosmic data with cathode off
+Set selftrigger in each channel, 5k waveforms, 10us each

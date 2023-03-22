@@ -1,5 +1,3 @@
-#define memorydepth 250000
-#define memorydepth_sample 501
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 
@@ -54,7 +52,6 @@ void giveMeSphe(){
     dark.spe_max_val_at_time_cut = 1e12; // after `time_cut`, the signal cannot be higher than this
                                        // this allows to remove after pulses
     dark.time_cut = 2000; // in ns seconds
-    ADC_DATA<memorydepth_sample> sample;    // memorydepth_sub = (mean_before/dtime + mean_after/dtime) + 1; ADC_DATA<>
 
     // coeficients to surround gaussian of 1 spe.
     // Gain             = (sphe_charge2 - sphe_charge)
@@ -76,7 +73,7 @@ void giveMeSphe(){
 
 
 
-    dark.giveMeSphe(sample);
+    dark.giveMeSphe();
 
     gROOT->SetBatch(kFALSE);
 }

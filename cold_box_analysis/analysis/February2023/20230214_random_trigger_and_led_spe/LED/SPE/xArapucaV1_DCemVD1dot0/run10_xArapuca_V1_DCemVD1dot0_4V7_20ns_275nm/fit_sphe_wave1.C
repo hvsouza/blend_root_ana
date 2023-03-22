@@ -13,7 +13,7 @@ void fit_sphe_wave1(){
     Cal.rebin = 80;
     // Cal.fixZero = false;
     Cal.make_free_stddevs = true; // starts with false, if good fitting, change to true
-    Cal.searchParameters(histogram.c_str(), 2, false); // give a first search in the parameters.
+    Cal.searchParameters(histogram.c_str(), 2, true); // give a first search in the parameters.
     // Cal.n_peaks = 10; // n peaks after baseline and 1 p.e.. Total = 2 + n_peaks
     // Cal.peak0 =  0.014; // amplitude baseline
     // Cal.mean0 = 0; // average baseline

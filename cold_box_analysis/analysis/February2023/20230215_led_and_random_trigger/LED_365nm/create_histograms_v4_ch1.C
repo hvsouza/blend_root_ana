@@ -3,7 +3,7 @@
 
 void create_histograms_v4_ch1(){
   gStyle->SetCanvasPreferGL(kFALSE);
-  bool just_a_test = true;
+  bool just_a_test = false;
   string mychannel = "Ch4";
   Double_t minInt = 10380;
   Double_t maxInt = 11400;
@@ -25,7 +25,7 @@ void create_histograms_v4_ch1(){
   vector<Double_t> sphes = {7100,400, 7100, 1, 5800, 0, 0, 0};
 
   vector<string> files = {"run44_all_devices_365nm_20ns_3V2", "run45_all_devices_365nm_20ns_3V4", "run46_all_devices_365nm_20ns_3V6", "run47_all_devices_365nm_20ns_3V8", "run48_all_devices_365nm_20ns_4V0", "run49_all_devices_365nm_20ns_4V2", "run50_all_devices_365nm_20ns_4V4", "run51_all_devices_365nm_20ns_4V6", "run52_all_devices_365nm_20ns_4V8", "run53_all_devices_365nm_20ns_5V0", "run54_all_devices_365nm_20ns_5V2", "run55_all_devices_365nm_20ns_5V4", "run56_all_devices_365nm_20ns_5V6", "run57_all_devices_365nm_20ns_5V8", "run58_all_devices_365nm_20ns_6V0", "run59_all_devices_365nm_20ns_6V5", "run60_all_devices_365nm_20ns_7V0", "run61_all_devices_365nm_20ns_7V5", "run62_all_devices_365nm_20ns_8V0", "run63_all_devices_365nm_20ns_8V5", "run64_all_devices_365nm_20ns_9V0", "run65_all_devices_365nm_20ns_10V0", "run66_all_devices_365nm_20ns_11V0", "run67_all_devices_365nm_20ns_12V5", "run68_all_devices_365nm_20ns_15V0", "run69_all_devices_365nm_20ns_17V5", "run70_all_devices_365nm_20ns_20V0", "run71_all_devices_365nm_20ns_22V5", "run72_all_devices_365nm_20ns_25V0", "run73_all_devices_365nm_20ns_30V0"};
-  vector<Double_t> volts = {3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.0, 11.0, 12.5, 15.0, 17.5, 20.0, 22.5, 25.0, 30.0};
+  vector<Double_t> volts = {3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4/* , 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.0, 11.0, 12.5, 15.0, 17.5, 20.0, 22.5, 25.0, 30.0 */};
   Double_t saturation_level;
 
   Int_t n = volts.size();
@@ -120,7 +120,7 @@ void create_histograms_v4_ch1(){
     for(Int_t j = 0; j<nentries; j++){
       z[i]->getWaveform(j,kch);
       charge = 0;
-      if(z[i]->ch[kch].selection!=2){
+      if(z[i]->ch[kch]->selection!=2){
 
         z[i]->applyDenoise(filter);
         z[i]->integrate(minInt,maxInt);
