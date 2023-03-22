@@ -27,14 +27,23 @@ void ANALYZER::showWaveform(Int_t maxevent, Double_t filter, Int_t dt){
   }
   TCanvas *c1 = new TCanvas("c1");
 
+  TLatex *tx = new TLatex();
   for(Int_t i = 0; i < maxevent; i++){
+    if (gSystem->ProcessEvents()) // avoid Canvas freezing and exit with Ctrl+c
+      break;
+    else{
+      if (gROOT->IsBatch() && i!=0) {
+        c1->Print("show_wvfs.gif+");
+      }
+    }
     sample_plot(i,"AL",filter);
     printf("\rEvent %d", i);
     fflush(stdout);
     c1->Modified();
     c1->Update();
-    if (gSystem->ProcessEvents()) // avoid Canvas freezing and exit with Ctrl+c
-      break;
+    tx->DrawLatex(0.8*c1->GetPad(0)->GetUxmax(), 0.8*c1->GetPad(0)->GetUymax(),Form("Event: %i", i));
+    c1->Modified();
+    c1->Update();
     if(dt!=0) this_thread::sleep_for(chrono::milliseconds(dt));
   }
 }
@@ -121,6 +130,8 @@ void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel)
   Int_t k = 0;
   TCanvas *c1 = new TCanvas("c1");
   Double_t maxVal = pow(2,14);
+  TH1D *hshowf = nullptr;
+  TLatex tx;
   for(Int_t i = 0; i < maxevent; i++){
     getWaveform(i,kch);
     getFFT();
@@ -142,13 +153,19 @@ void ANALYZER::showFFT(Int_t naverage, Int_t maxevent, Int_t dt, bool inDecibel)
         c1->Update();
         if (gSystem->ProcessEvents())
           break;
+        else{
+          if (gROOT->IsBatch()) {
+            c1->Print("show_ffts.gif+");
+          }
+        }
         if(dt!=0) this_thread::sleep_for(chrono::milliseconds(dt));
       }
       else{
-        if (i == naverage){
-          TH1D *hshowf = (TH1D*)hsf->Clone("hshowf");
-          // if (inDecibel) w->convertDecibel(hshowf);
+        if (k == naverage){
+          hshowf = (TH1D*)hsf->Clone("hshowf");
+          if (inDecibel) w->convertDecibel(hshowf);
           hshowf->Draw();
+          tx.DrawLatex(0.8*n_points, 0.8*hshowf->GetMaximum(),Form("Event: %i", i));
         }
         k = 0;
       }

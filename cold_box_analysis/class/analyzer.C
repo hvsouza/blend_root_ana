@@ -146,6 +146,7 @@ class ANALYZER{
       for(Int_t i = 0; i < nchannels; i++){
         raw[i].resize(n_points);
         wvf[i].resize(n_points);
+        hfft[i] = nullptr;
       }
       time = new Double_t[n_points];
       tempraw = new Double_t[n_points];
@@ -325,6 +326,15 @@ class ANALYZER{
         integrate(from, to, percent);
         _htemp->Fill(temp_charge/sphe);
       }
+    }
+
+    void exportAsHistogram(TH1D *hexport = nullptr, Double_t x_start = 0){
+      TH1D *_htemp = new TH1D("","",n_points, x_start-dtime/2, x_start+n_points*dtime - dtime/2);
+      for(Int_t i = 0; i < n_points; i++){
+        _htemp->SetBinContent(i+1, ch[kch]->wvf[i]);
+      }
+      if(hexport==nullptr) h = _htemp;
+      else hexport = _htemp;
     }
 
     void getWaveFromHistogram(TH1D *htemp){
