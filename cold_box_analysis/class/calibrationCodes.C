@@ -174,6 +174,7 @@ class Calibration
       if (rootFile != "") {
         f1 = new TFile(rootFile.c_str(),"READ");
         h = (TH1D*)f1->Get(histogram.c_str());
+        if(!h) h = (TH1D*)f1->Get("analyzed");
       }
       else{
         h = (TH1D*)htemp->Clone("");
@@ -366,6 +367,7 @@ class Calibration
       if (rootFile != "") {
         TFile *f1 = new TFile(rootFile.c_str(),"READ");
         hcharge = (TH1D*)f1->Get(histogram.c_str());
+        if(!hcharge) hcharge = (TH1D*)f1->Get("analyzed");
       }
       else{
         hcharge = (TH1D*)htemp->Clone("");
@@ -988,7 +990,7 @@ class SPHE2{
     Double_t *timeg = nullptr;
 
     string rootfile    = "analyzed.root";
-    Int_t n_points;
+    Int_t n_points = 0;
 
 
     // ____________________ Variables to calculate and reset ____________________ //
@@ -1081,7 +1083,7 @@ class SPHE2{
         z->dtime = dtime;
         z->setAnalyzer(rootfile);
       }
-      z->setChannel(Form("Ch%d.",channel));
+      if(z->setChannel(Form("Ch%d.",channel)) == false) return;
 
       kch = z->kch;
       z->getWaveform(kch);
@@ -1221,7 +1223,8 @@ class SPHE2{
         cout << "A total of " << naverages << " waveforms where found "<< endl;
       }
 
-      fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),z->getIdx()),"TObject::kOverwrite");
+      // fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),z->getIdx()),"TObject::kOverwrite");
+      fout->WriteObject(hcharge,Form("%s",filename.c_str()),"TObject::kOverwrite");
       fout->WriteObject(hdiscard,"hdiscard","TObject::kOverwrite");
 
 
