@@ -237,6 +237,7 @@ class Read{
     Int_t maxEvents = 100000;
     
     Double_t baselineTime = 10000; // time limit to start looking for baseline
+    Double_t baselineStart = 0;
     Double_t chargeTime = 18000; // last time to integrate
     Bool_t noBaseline=false;
     Double_t baselineFraction = 1/3.;
@@ -811,7 +812,7 @@ class Read{
       if(noBaseline) return 0;
       Double_t result = 0;
       hbase->Reset();
-      for(Int_t i=0; i<baselineTime/dtime; i++) hbase->Fill(v[i]);
+      for(Int_t i=baselineStart/dtime; i<baselineTime/dtime; i++) hbase->Fill(v[i]);
       Double_t res0 = hbase->GetBinCenter(hbase->GetMaximumBin());
       Double_t hmean = hbase->GetMean();
       Double_t hstd = hbase->GetStdDev();
@@ -840,7 +841,7 @@ class Read{
       // }
     
       Double_t bins=0;
-      for(Int_t i=0; i<baselineTime/dtime;){
+      for(Int_t i=baselineStart/dtime; i<baselineTime/dtime;){
         if(v[i] > res0 + exclusion_baseline || v[i]<res0 - exclusion_baseline) {
           i+=exclusion_window/dtime;
         }
@@ -851,7 +852,7 @@ class Read{
         }
       }
       if(bins>0)result/=bins;
-      if(bins > (baselineTime/dtime)*baselineFraction){
+      if(bins > ((baselineTime - baselineStart)/dtime)*baselineFraction){
         selection = 0;
         // // You can use this to debug. If selection == 0, there should not have events here.
         // // this means that res0 should be pretty much the average for a good baseline.
