@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <chrono>
 #include <thread>
+#include <cstring> // include the <cstring> header file for memset()
 
 
 #include "TROOT.h"

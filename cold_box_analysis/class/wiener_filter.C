@@ -29,8 +29,8 @@ class WIENER{
     Double_t *re_comp = nullptr;
     Double_t *im_comp = nullptr;
   
-    TF1 *f_filter;
-    TF1 *flar;
+    TF1 *f_filter = nullptr;
+    TF1 *flar = nullptr;
 
     Double_t *res = nullptr;
     Int_t maxBin=0;
@@ -38,6 +38,23 @@ class WIENER{
     string unit_time;
     string unit_freq;
 
+
+    void add_fft(WIENER _htemp){
+      for(Int_t k=0; k<npts/2+1; k++){
+        spec[k] += _htemp.spec[k];
+        spec_re[k] = spec[k].Re();
+        spec_im[k] = spec[k].Im();
+      }
+    }
+
+    void scale(Double_t fscale){
+      for(Int_t k=0; k<npts/2+1; k++){
+        spec[k] *= fscale;
+        spec_re[k] = spec[k].Re();
+        spec_im[k] = spec[k].Im();
+      }
+
+    }
 
     // h is the s.p.e. response
     // n is the noise
@@ -47,11 +64,13 @@ class WIENER{
         Double_t S2 = 1;                  // expected signal power spectra (for delta function S2 = 1)
         Double_t H2 = h.spec[k].Rho2();   // single photo-electron power spectra (|H(f)|^2)
         Double_t N2 = n.spec[k].Rho2();   // noise power spectra
-                                               TComplex xH = h.spec[k];          // single photo-electron fourier transformation
+        TComplex xH = h.spec[k];          // single photo-electron fourier transformation
         if(method!=1){
           S2 = s.spec[k].Rho2();
         }
+        
         spec[k] = TComplex::Conjugate(xH)*S2/(H2*S2+N2);
+        // cout << spec[k] << " " << TComplex::Conjugate(xH) << " " << S2 << " " << H2 << " " << N2 << endl;
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
       }
@@ -74,6 +93,15 @@ class WIENER{
       fft(hwvf);
       delete hfinal;
    
+    }
+
+    void applyWienerFilter(WIENER wg){
+      convolve(&wg);
+      recompute_hist();
+      backfft(*this);
+      shift_waveform(hwvf, maxBin);
+      hwvf->Sumw2(kFALSE);
+      set_flar();
     }
 
     void build_noise(Double_t sigma = 3.5, Int_t filter = 25,Int_t myseed = 1){
@@ -104,8 +132,7 @@ class WIENER{
         // cout << spec[k] << endl;
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
-        hfft->SetBinContent(k+1,spec[k].Rho());
-        hPSD->SetBinContent(k+1,spec[k].Rho2());
+        idx_recompt(k);
       }
     }
 
@@ -175,8 +202,7 @@ class WIENER{
         spec[k] = 1;
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
-        hfft->SetBinContent(k+1,spec[k].Rho());
-        hPSD->SetBinContent(k+1,spec[k].Rho2());
+        idx_recompt(k);
       }
     }
     void convolve(WIENER *_temp){
@@ -184,10 +210,18 @@ class WIENER{
         spec[k] = spec[k]*_temp->spec[k];
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
-        hfft->SetBinContent(k+1,spec[k].Rho());
-        hPSD->SetBinContent(k+1,spec[k].Rho2());
+        idx_recompt(k);
       }
 
+    }
+
+    void set_flar(){
+      flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",maxBin*step,maxBin*step),0,npts*step);
+      flar->SetParameters(0.3,10,0.3,1400);
+      flar->SetParName(0,"A_{F}");
+      flar->SetParName(1,"#tau_{F}");
+      flar->SetParName(2,"A_{S}");
+      flar->SetParName(3,"#tau_{S}");
     }
     void frequency_deconv(WIENER y, WIENER G, Double_t cutoff_frequency=0, string filter_type = "gaus"){
 
@@ -234,16 +268,16 @@ class WIENER{
       }
 
       fft(hwvf);
-   
-      flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
-      flar->SetParameters(0.3,10,0.3,1400);
-   
+
+      maxBin = y.maxBin;
+      set_flar();
 
       delete hfinal;
    
     
     }
-    void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50, string filter_type = "gaus"){ // y is the signal, h is the device response (a.k.a single photo-electron)
+    void deconvolve(WIENER y, WIENER h, Double_t cutoff_frequency = 50, string filter_type = "gaus"){
+      // y is the signal, h is the device response (a.k.a single photo-electron)
 
       setFilter(cutoff_frequency,filter_type);
       // the for is performed in k, need to convert back to frequency
@@ -285,11 +319,9 @@ class WIENER{
 
       shift_waveform(hwvf,y.maxBin);
       fft(hwvf);
-   
-      flar = new TF1("flar",Form("[0]*exp(-(x-%f)/[1])+[2]*exp(-(x-%f)/[3])",y.maxBin*step,y.maxBin*step),0,npts*step);
-      flar->SetParameters(0.3,10,0.3,1000);
-   
 
+      maxBin = y.maxBin;
+      set_flar();
       delete hfinal;
    
     }
@@ -326,6 +358,15 @@ class WIENER{
 
 
 
+    void idx_recompt(Int_t k){
+        hfft->SetBinContent(k+1,2*spec[k].Rho()); // factor 2 only for histogram
+        hPSD->SetBinContent(k+1,spec[k].Rho2());
+    }
+    void recompute_hist(){
+      for(Int_t k = 0; k<npts/2+1; k++){
+        idx_recompt(k);
+      }
+    }
 
 
 
@@ -349,16 +390,14 @@ class WIENER{
    
       for(Int_t k = 0; k<npts/2+1; k++){
         spec[k] = TComplex(re_comp[k],im_comp[k])*factor;
-        hfft->SetBinContent(k+1,spec[k].Rho());
+        idx_recompt(k);
         // the same as:
-        // hfft->SetBinContent(k+1,hm->GetBinContent(k+1)*factor);
+        // hfft->SetBinContent(k+1,hm->GetBinContent(k+1)*2*factor);
 
-        //for spectrum density
-        hPSD->SetBinContent(k+1,spec[k].Rho2());
-     
+
         // cout << k << " " << re_comp[k] << " " << im_comp[k] << " " << spec[k].Rho2() << endl;
       }
-      powerSpectrum = hPSD->Integral()*2; // *2 because it is only half of the spectrum
+      powerSpectrum = hPSD->Integral();
      
       delete hm;
       delete fft;
@@ -490,7 +529,7 @@ class WIENER{
       re_comp = new Double_t[npts];
       im_comp = new Double_t[npts];
       res = new Double_t[npts];
-      factor = 1./(npts);
+      factor = 1./(npts); // there is a factor 2 here, but root will not like it
   
     
       if(units_step == 1e-9)
@@ -525,6 +564,8 @@ class WIENER{
 
       hwvf->GetXaxis()->SetTitle(Form("Time (%s)",unit_time.c_str()));
       hwvf->GetYaxis()->SetTitle("Amplitude (A.U.)");
+      hPSD->SetLineWidth(2);
+      hfft->SetLineWidth(2);
     }
   
 

@@ -410,3 +410,71 @@ void ANALYZER::graphTimeTrigger(Int_t nstart, Int_t nfinish, TGraph *_gtemp)
   }
   _gtemp->Draw("ALP");
 }
+
+
+void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, Int_t rebine){
+
+  Int_t max_filter = filter_max_and_step[0];
+  Int_t step_filter = filter_max_and_step[1];
+
+  if(max_filter == 0 || step_filter == 0){
+    max_filter = 32;
+    step_filter = 8;
+  }
+  
+  Int_t nf = max_filter/step_filter + 1;
+  vector<TGraph*> gnf(nf);
+  vector<TH1D*> hnf_fft(nf);
+  TH1D *href = nullptr;
+  TMultiGraph *gm = new TMultiGraph("gm", "gm");
+  THStack *hs = new THStack("hs","hs");
+  for(Int_t i = 0; i < nf; i++){
+    getWaveform(event);
+    Int_t filter = 0 + step_filter*i;
+    if(i!=0) applyDenoise(filter);
+    gnf[i] = new TGraph(drawGraph());
+    gnf[i]->SetTitle(Form("Filter = %d", filter));
+    gm->Add(gnf[i]);
+    getFFT();
+    hnf_fft[i] = (TH1D*)h->Clone(Form("h_nf_%d", filter));
+    if(i == 0){
+      href = (TH1D*)h->Clone("href");
+    }
+    hnf_fft[i]->Divide(hnf_fft[i], href);
+    for(Int_t j = 0; j < hnf_fft[i]->GetNbinsX(); j++){
+      hnf_fft[i]->SetBinContent(j+1, 20*log10(hnf_fft[i]->GetBinContent(j+1)));
+    }
+    hnf_fft[i]->SetTitle(Form("Filter = %d", filter));
+    hnf_fft[i]->Rebin(rebine);
+    hs->Add(hnf_fft[i],"hist");
+  }
+
+  getWaveform(event);
+  setFreqFilter(20,"low");
+  applyDenoise(20);
+  TGraph *glow = new TGraph(drawGraph());
+  glow->SetLineColor(kRed);
+  getFFT();
+  TH1D *hlow_fft = (TH1D*)h->Clone("Low pass 20 MHz");
+  hlow_fft->Divide(hlow_fft, href);
+  for(Int_t j = 0; j < hlow_fft->GetNbinsX(); j++){
+    hlow_fft->SetBinContent(j+1, 20*log10(hlow_fft->GetBinContent(j+1)));
+  }
+  hlow_fft->SetTitle("Low pass 20 MHz");
+  hlow_fft->Rebin(rebine);
+  hlow_fft->SetLineColor(kRed);
+
+  TCanvas *c1 = new TCanvas("c1", "c1",1920,0,1920,1080);
+  gm->Draw("AL plc");
+  glow->Draw("SAME L");
+
+  c1->BuildLegend();
+
+  TCanvas *c2 = new TCanvas("c2", "c2",1920,0,1920,1080);
+  hs->Draw("nostack plc");
+  hlow_fft->Draw("SAME hist");
+  c2->BuildLegend();
+
+
+
+}
