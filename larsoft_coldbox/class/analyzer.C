@@ -641,21 +641,21 @@ void DATA::FillHistoWithData(DATA &data){
       hrange_theta->Fill(in_angle(mtheta),data.total_range[itr]);
       htheta_t->Fill(in_angle(pi-(mtheta)));
       Bool_t hist_filled = false;
-      // if(data.total_range[itr]>20){
-        // if(data.startx[itr]>(wallx[0]+safe_distance) && data.startx[itr]<(wallx[1]-safe_distance)){
-        // if(data.starty[itr]>(wally[0]+safe_distance) && data.starty[itr]<(wally[1]-safe_distance)){
-        // if(in_angle(mtheta)<120){
-        // }
+      if(data.total_range[itr]>20){
+        if(data.startx[itr]>(wallx[0]+safe_distance) && data.startx[itr]<(wallx[1]-safe_distance)){
+        if(data.starty[itr]>(wally[0]+safe_distance) && data.starty[itr]<(wally[1]-safe_distance)){
+        if(in_angle(mtheta)<120){
+        }
         if(data.selected_phi[l][itr]){
            hphi->Fill((mphi));
            hphi_north->Fill(convert_north(mphi));
      
           htheta->Fill(in_angle(pi-(mtheta)));
           hist_filled=true;
-          // }
-          // }
+          }
+          }
         }
-      // }
+      }
       
       
                 
