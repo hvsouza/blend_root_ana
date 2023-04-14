@@ -8,7 +8,7 @@
 
 
 
-void giveMeSphe_darkCount(){
+void giveMeSphe(){
     
     SPHE dark;
     
