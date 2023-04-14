@@ -117,6 +117,11 @@ TGraph ANALYZER::drawGraph(string opt, Int_t n, Double_t* x, Double_t* y){
   }
   gwvf->GetXaxis()->SetRangeUser(xmin,xmax);
   gwvf->SetEditable(kFALSE);
+  TLatex *tx = new TLatex();
+  TPad *currentPad = (TPad*)gROOT->GetSelectedPad();
+  if(plotShowEvent){
+    tx->DrawLatex(0.8*currentPad->GetUxmax(), 0.8*currentPad->GetUymax(),Form("Event: %d", currentEvent));
+  }
   return *gwvf;
 }
 

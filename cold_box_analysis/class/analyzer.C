@@ -44,6 +44,7 @@ class ANALYZER{
     string xlabel = "Time (ns)";
     string ylabel = "Amplitude (ADC Channels)";
     TH2D *hpers = nullptr;
+    bool plotShowEvent = false;
 
     Double_t ymin = 0;
     Double_t ymax = 0;
