@@ -555,6 +555,65 @@ class ANALYZER{
     }
 
 
+    void convert_1D_histogram(TH2D *horiginal, TH1D **hnew, vector<vector<Double_t>> &_hy, vector<vector<Double_t>> &_hx, Int_t rebin = 1){
+      Int_t nx = horiginal->GetNbinsX();
+      Int_t ny = horiginal->GetNbinsY();
+      Double_t hmin = horiginal->GetXaxis()->GetBinLowEdge(1);
+      Double_t hmax = horiginal->GetXaxis()->GetBinLowEdge(nx) + horiginal->GetXaxis()->GetBinWidth(nx);
+
+      *hnew = new TH1D("hnew","hnew",nx/rebin,hmin,hmax);
+      Double_t sum = 0;
+      Double_t div = 0;
+      Double_t stddev = 0;
+      Double_t n = 0;
+      Int_t nrebins = 0;
+      int ndiv = 0;
+      for(Int_t i = 0; i < nx; i++) { // for loop in the X axis of the histogram;
+        for(Int_t j = 0; j < ny; j++) { // for loop in the Y axis of the histogram;
+          Double_t weight = horiginal->GetBinContent(i+1,j+1);
+          if (weight != 0){
+            Double_t bnpes = horiginal->GetYaxis()->GetBinCenter(j);
+            sum += weight*bnpes;
+            div += weight;
+          }
+        }
+        ndiv++;
+        if(ndiv == rebin){
+          if(div == 0){sum = 0; div = 1;}
+          for(Int_t j = 0; j < ny; j++) { // for loop in the Y axis of the histogram;
+            Double_t weight = horiginal->GetBinContent(i+1,j+1);
+            if (weight != 0){
+              Double_t bnpes = horiginal->GetYaxis()->GetBinCenter(j);
+              stddev += weight*(bnpes-sum/div)*(bnpes-sum/div);
+              n += 1;
+            }
+          }
+          if (n == 1){ n = 2;}
+          stddev = (stddev/div)*n/(n-1);
+          (*hnew)->SetBinContent(nrebins+1, sum/div);
+
+          Double_t err = sqrt(abs(sum)/div);
+          (*hnew)->SetBinError(nrebins+1,sqrt(stddev + err*err));
+          if(sum!=0){
+            _hy[0].push_back(sum/div);
+            _hy[1].push_back((*hnew)->GetBinError(nrebins+1));
+            _hx[0].push_back((*hnew)->GetBinCenter(nrebins+1));
+            _hx[1].push_back((*hnew)->GetBinWidth(nrebins+1)/2.);
+          }
+
+          nrebins++;
+
+          sum = 0;
+          div = 0;
+          stddev = 0;
+          n = 0;
+          ndiv = 0;
+        }
+
+
+      }
+
+    }
     // _________________________ _____________________________ _________________________ //
 
 
