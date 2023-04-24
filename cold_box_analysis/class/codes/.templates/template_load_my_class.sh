@@ -10,7 +10,8 @@
 # to use the sample (analyzer) class, just type:
 # myclass
 # If you have different numbers of pts per waveform or file name, you can use, for instance:
-# myclass 1000 "folder/file.root"
+# myclass folder/file.root 1000
+# Number of points is here pretty much because of old data format
 
 if [ -z $2 ]; then
     npts=5000
