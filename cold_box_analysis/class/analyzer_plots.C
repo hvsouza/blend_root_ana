@@ -65,6 +65,10 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Doubl
   Int_t nev = lev->GetN();
   Int_t iev = 0;
   for(Int_t i = 0; i < nev; i++){
+
+    if(static_cast<Int_t>(i)%200==0){
+      cout << i << " out of " << nev << "\r" << flush;
+    }
     iev = lev->GetEntry(i);
     getWaveform(iev,kch);
     applyDenoise(filter);
@@ -75,6 +79,7 @@ void ANALYZER::persistence_plot(Int_t nbins, Double_t ymin, Double_t ymax, Doubl
     }
 
   }
+  cout << "\n";
 
   hpers->SetStats(kFALSE);
   hpers->Draw("colz");

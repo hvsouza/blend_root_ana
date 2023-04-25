@@ -758,6 +758,10 @@ class Read{
         if(eventFile<maxEvents){
           t1->Fill();
           tEvent+=1;
+
+          if(static_cast<Int_t>(tEvent)%200==0) {
+            cout << "Events: " << tEvent << "\r" << flush;
+          }
         }
 
         if(OnlyOneEvent == true && eventFile==stopEvent-1){
@@ -766,6 +770,7 @@ class Read{
         eventFile++;
       
       }
+      cout << "\n";
       cout << tEvent << " events in " << numberoflines << " lines " << endl;
     
       f1->WriteObject(t1,"t1","TObject::kOverwrite");
