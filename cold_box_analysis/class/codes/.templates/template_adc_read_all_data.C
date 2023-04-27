@@ -7,12 +7,17 @@
 #include "__USER_PATH__/MYCODES.h"
 
 
-void adc_read_all_data(){
+void adc_read_all_data(string datadir = "./"){
     
     system("rm files.log");
-    system("ls -1 *.dat| sed -e 's/.dat$//' > files.log");
-    // system("ls -1 *.dat | grep wave | sed -e 's/.dat$//' > files.log"); // to only check one channel
-    // system("ls -1 *.dat | grep wave[2,3] | sed -e 's/.dat$//' > files.log"); // to only check channels 2 and 3
+    int datadirlength = datadir.length();
+    if(datadir[datadirlength-1] != '/'){
+        datadir = datadir + "/";
+    }
+    string packdata = Form("ls -1 %s*.dat | sed -e 's/.dat$//' > files.log", datadir.c_str());
+    // string packadata = Form("ls -1 %s*.dat | grep wave | sed -e 's/.dat$//' > files.log", datadir.c_str()); // to only check one channel
+    // string packadata = Form("ls -1 %s*.dat | grep wave[2,3] | sed -e 's/.dat$//' > files.log", datadir.c_str()); // to only check channels 2 and 3
+    system(packdata.c_str());
     
     Read r;
         
