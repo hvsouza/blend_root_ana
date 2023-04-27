@@ -685,7 +685,7 @@ class ANALYZER{
 
     void applyTV1D(Double_t filter = 0, Double_t *_raw = nullptr, Double_t *_filtered = nullptr){
       checkSignals(&_raw,&_filtered);
-      if (filter == 0) return;
+      if (filter == 0 && _filtered == ch[kch]->wvf) return;
       dn.TV1D_denoise(_raw,_filtered,n_points,filter);
     }
 
