@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 
 class DENOISE{
-  
+
   public:
     template<class T>
     void TV1D_denoise(T* input, T* output, unsigned int width, const Double_t lambda) {
@@ -199,7 +199,10 @@ class Headers{
 };
 
 class Read{
-  
+
+  private:
+    int file_size = 0;
+    int expected_wvfs = 0;
   public:
   
   
@@ -623,6 +626,13 @@ class Read{
         if(with_headers){
           fin[0].read((char *) &headbin, nbytes*6);
           n_points = (headbin.EventSize-24)/2;
+
+          // Get file size in bytes
+          fin[0].seekg(0, ios::end);
+          file_size = fin[0].tellg();
+
+          expected_wvfs = file_size / headbin.EventSize;
+
           fin[0].clear();
           fin[0].seekg(0);
         }
@@ -760,7 +770,7 @@ class Read{
           tEvent+=1;
 
           if(static_cast<Int_t>(tEvent)%200==0) {
-            cout << "Events: " << tEvent << "\r" << flush;
+            cout << "Events: " << tEvent << " out of " << expected_wvfs << "\r" << flush;
           }
         }
 
