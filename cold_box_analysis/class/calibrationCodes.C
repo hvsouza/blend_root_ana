@@ -1099,8 +1099,9 @@ class SPHE2{
         twvf = new TTree("t1","mean waveforms");
       }
       else{ // in the case we are not taking waveform, I change this values for the same setup of integration
-        mean_before = timeLow;
-        mean_after = timeHigh;
+        mean_before = (led_calibration) ? start : timeLow;
+        mean_after  = (led_calibration) ? finish : timeHigh;
+        
       }
       // if the user set mean_before = 24 and mean_after = 100
       // we need to get  6 + 25 points + 1 = 32  (+1 because of the peak start)
@@ -1225,7 +1226,7 @@ class SPHE2{
 
       // fout->WriteObject(hcharge,Form("%s_%i",filename.c_str(),z->getIdx()),"TObject::kOverwrite");
       fout->WriteObject(hcharge,Form("%s",filename.c_str()),"TObject::kOverwrite");
-      fout->WriteObject(hdiscard,"hdiscard","TObject::kOverwrite");
+      if(!led_calibration) fout->WriteObject(hdiscard,"hdiscard","TObject::kOverwrite");
 
 
     }
@@ -1522,7 +1523,7 @@ class SPHE2{
           sample.charge = charge;
           sample.event = z->currentEvent;
           if(derivate) sample.fprompt = derivateMax[i];
-          twvf->Fill();
+          if(get_wave_form) twvf->Fill();
         }
       }
     }
@@ -1552,10 +1553,12 @@ class SPHE2{
         to = mean_after/dtime-1;
         integralfrom = start/dtime;
         integralto = finish/dtime;
-        if (from > integralfrom || from < 0) from = 0;
+        if (from > integralfrom || from < 0) from = integralfrom;
         if (to  < integralto || to > n_points) to = n_points-1;
-        get_this_wvf = true;
+        if(get_wave_form) get_this_wvf = true;
       }
+      // cout << "Cycling over " << from*dtime << " to " << to*dtime << " ns " << endl;
+      // cout << "Integrating over " << integralfrom*dtime << " to " << integralto*dtime << " ns " << endl;
       for(Int_t i = from; i <= to; i++, iwvf++){
         Double_t val = denoise_wvf[i];
         if(get_this_wvf){
