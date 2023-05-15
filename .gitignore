@@ -16,3 +16,15 @@ cold_box_analysis/class/codes/*
 !cold_box_analysis/class/codes/.templates/
 /cold_box_analysis/class/load_my_class.sh
 !/cold_box_analysis/class/codes/setup_codes.sh
+
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps

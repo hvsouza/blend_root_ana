@@ -71,7 +71,7 @@
 
 using namespace std;
 
-#include "variables.C"
+#include "ADC_DATA.h"
 #include "old_class.C"
 #include "timeReader.C"
 #include "readingCodes.C"
