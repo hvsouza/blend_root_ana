@@ -4,12 +4,8 @@
 // Created: 2021
 // ________________________________________ //
 
-
-
 #ifndef ADC_DATA_H
 #define ADC_DATA_H
-
-
 
 class ADC_DATA{
   public:
@@ -25,7 +21,7 @@ class ADC_DATA{
     Int_t selection;
 
     ADC_DATA();
-    ~ADC_DATA();
+    virtual ~ADC_DATA();
     void Set_npts(Int_t n = 100);
 
 };
