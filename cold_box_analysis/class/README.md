@@ -1,5 +1,13 @@
 # PDS analysis class
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [PDS analysis class](#pds-analysis-class)
+    - [Introduction](#introduction)
+    - [How to use:](#how-to-use)
+        - [Most common scripts](#most-common-scripts)
+<!-- markdown-toc end -->
 
 ## Introduction
 
