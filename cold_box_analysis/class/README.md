@@ -4,10 +4,11 @@
 ## Introduction
 
 Here are my analysis class for the Photon Detectors data.
-The data format has been changed in Feb. 2023. If you want to keep the old format, please checkout to the `old_format` branch. 
+
+The data format has been changed in Feb. 2023. If you want to keep the old format, please checkout to the `old_format` branch.<br>
 However, the codes will be not up to date.
 
-If you have processed data in the old format and wish to change to the new one:
+If you have processed data in the old format and wish to change to the new one:<br>
 Just load the class (see below) and an option will come to change the data format (a backup file will be created automatically).
 
 
@@ -46,7 +47,7 @@ To check a few methods, you can run:
 s.sample_plot(4,"",16);
 ```
 
-This will draw event `4` with TV1D denoise filter parameter equal `16`. 
+This will draw event `4` with TV1D denoise filter parameter equal `16`.<br>
 If you have two or more channels, you can draw the event (`4`) in the same graph doing:
 
 ``` root
@@ -73,7 +74,7 @@ giveMeSphe.C        # script to get single photo-electron spectrum
 fit_sphe_wave1.C    # script to fit the spectrum
 ```
 
-To use the scripts, copy the templates to the folder you have your data (or to any place different than their original code). Set the parameters as needed.
+To use the scripts, copy the templates to the folder you have your data (or to any place different than their original code). Set the parameters as needed.<br>
 Check the parameters carefully, if not clear, check their implementation in the codes `readingCodes.C` and `calibrationCodes.C`.
 
 
