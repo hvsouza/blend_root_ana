@@ -7,11 +7,12 @@
 #
 # insert this line to .bashrc
 # alias myclass="source ~__USER_PATH__/load_my_class.sh"
-# to use the sample (analyzer) class, just type:
+# to use the sample (analyzer) class, go to any folder which have "analyzed.root" file and run:
 # myclass
-# If you have different numbers of pts per waveform or file name, you can use, for instance:
-# myclass folder/file.root 1000
-# Number of points is here pretty much because of old data format
+# If you want to execute a specific file instead, you can run
+# myclass {path_to_file}/your_file.root 
+# If you want to change old data, you need to give the number of points per waveform as following:
+# myclass {file.root} {# of pts}
 
 if [ -z $2 ]; then
     npts=5000
