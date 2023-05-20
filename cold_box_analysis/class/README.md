@@ -34,6 +34,8 @@ It will give you the instructions (**with the correct path**) as following:
 # myclass {path_to_file}/your_file.root 
 # If you want to change old data, you need to give the number of points per waveform as following:
 # myclass {file.root} {# of pts}
+# If you want just to load the class without any data, you can run
+# myclass no
 ```
 
 
