@@ -904,8 +904,8 @@ class SPHE2{
     vector<Int_t> nshow_range = {0,100}; // will save some debugging waveforms inside the range.
                                 // Example, nshow_range = {0,2} will save waveforms 0, 1 and 2;
 
-    Double_t tolerance    = 5;  // n sigmas (smoothed) (not used for led)
-                                // if `method` is set to `fix`, the threshold will be the absolute value of tolerance, no baseline is calculated
+    Double_t tolerance    = 5;    // n sigmas (smoothed) (not used for led)
+                                  // if `method` is set to `fix`, the threshold will be the absolute value of tolerance, no baseline is calculated
     Double_t baselineTime = 5000; // is the time to compute the baseline (not used for led)
                                   // If the `method` is set to `dynamic` the baseline is calculated over the range of baselineTime
                                   // and it is updated depending on the next point with a weigth of `influece`
@@ -915,27 +915,27 @@ class SPHE2{
     Double_t start  = 0;        // start the search for peaks or start the integration (led)
     Double_t finish = 10250;    // fisish the search or finish the integration (led)
 
-    Double_t timeLow         = 60; // integration time before peak (not used for led)
-    Double_t timeHigh        = 400; // integration time after peak (not used for led)
-    Double_t lowerThreshold  = -1; // threshold to detect noise (normal waveform) (not used for led)
-    Double_t maxHits         = 1; // maximum hit before discarding   (not used for led)
+    Double_t timeLow         = 60;   // integration time before peak (not used for led)
+    Double_t timeHigh        = 400;  // integration time after peak (not used for led)
+    Double_t lowerThreshold  = -1;   // threshold to detect noise (normal waveform) (not used for led)
+    Double_t maxHits         = 1;    // maximum hit before discarding   (not used for led)
     Double_t too_big         = 1000; // if there is a peak > "too_big" .. wait "waiting" ns for next peak
     Double_t waiting         = 1000;
-    Double_t filter          = 14; // one dimentional denoise filter (0 equal no filder)
-    Double_t interactions    = 45; // for moving avarage filter (not used on led)
-    Int_t    ninter          = 2; // N times that moving average is applied
-    Double_t diff_multiplier = 1e3; //derivative can be very small. Use this to make it easier to see
+    Double_t filter          = 14;   // one dimentional denoise filter (0 equal no filder)
+    Double_t interactions    = 45;   // for moving avarage filter (not used on led)
+    Int_t    ninter          = 2;    // N times that moving average is applied
+    Double_t diff_multiplier = 1e3;  //derivative can be very small. Use this to make it easier to see
     Bool_t derivate_raw      = true; // If you apply a denoise in the data and want to take derivative on that, set to false
 
     Double_t dtime = 4.;        // time step in ns
 
 
-    Double_t get_wave_form = false; // for getting spe waveforms
-    Double_t mean_before   = 120; // time recorded before and after the peak found
+    Double_t get_wave_form = false;    // for getting spe waveforms
+    Double_t mean_before   = 120;      // time recorded before and after the peak found
     Double_t mean_after    = 1000;
-    Double_t sphe_charge   = 1809.52; // charge of 1 and 2 p.e. (use fit_sphe.C)
+    Double_t sphe_charge   = 1809.52;  // charge of 1 and 2 p.e. (use fit_sphe.C)
     Double_t sphe_charge2  = 3425.95;
-    Double_t sphe_std      = 500; // std dev of the first peak (not needed of deltaminus != 0)
+    Double_t sphe_std      = 500;      // std dev of the first peak (not needed of deltaminus != 0)
     Double_t spe_max_val_at_time_cut = 20; // after `time_cut`, the signal cannot be higher than this
                                            // this allows to remove after pulses
     Double_t time_cut = 2000; // in ns seconds
@@ -956,10 +956,14 @@ class SPHE2{
                                              // `fix` will not evaluate baseline and use raw threshold over moving average
                                              // See tolerance, baselineTime and baselineLimit above
 
-    bool check_selection = true; // uses(or not) variable `selection` to discard wvfs
-    Bool_t withfilter = true; // Integrate in the filtered waveform
+    bool   check_selection     = true; // uses(or not) variable `selection` to discard wvfs
+    Bool_t withfilter          = true; // Integrate in the filtered waveform
     Bool_t integrate_from_peak = true; // Set true and the maximum will be searched inside the derivate region.
                                        // Otherwise the integral is done starting from the crossing negative zero of derivative
+
+    Int_t hnbins = 50000;       // Output histogram bins and limits. Does not change this unless you will analyze alway the same device
+    Int_t hxmin  = 0;           // The fit function has the `rebin` argument to avoid changing this values
+    Int_t hxmax  = 0;
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -1039,7 +1043,7 @@ class SPHE2{
     SPHE2(string m_name) : myname{m_name}{
       hbase        = new TH1D(Form("hbase_sphe_%s",myname.c_str()),"histogram for baseline",5*800,-400,400);
       hbase_smooth = new TH1D(Form("hbase_smooth_sphe_%s",myname.c_str()),"histogram for baseline smoothed",5*800,-400,400);
-      hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),50000,0,0);
+      hcharge      = new TH1D(Form("hcharge_sphe_%s",myname.c_str()),Form("hcharge_sphe_%s",myname.c_str()),hnbins,hxmin,hxmax);
       hdiscard     = new TH1D(Form("hdiscard_sphe_%s",myname.c_str()),Form("hdiscard_sphe_%s",myname.c_str()),3,0,3);
       for(Int_t i = 0; i < (int)(sizeof(select_types)/sizeof(select_types[0])); i++){
         hdiscard->Fill(select_types[i],0);
@@ -1072,6 +1076,7 @@ class SPHE2{
       gROOT->SetBatch(kTRUE);
 
       hcharge->Reset();
+      hcharge->SetBins(hnbins, hxmax, hxmin);
       rootfile = filename + ".root";
 
       if(!z){ // load analyzer in case it is nullptr
