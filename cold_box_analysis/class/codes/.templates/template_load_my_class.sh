@@ -6,7 +6,7 @@
 # ________________________________________ #
 #
 # insert this line to .bashrc
-# alias myclass="source ~__USER_PATH__/load_my_class.sh"
+# alias myclass="source __USER_PATH__/load_my_class.sh"
 # to use the sample (analyzer) class, go to any folder which have "analyzed.root" file and run:
 # myclass
 # If you want to execute a specific file instead, you can run
