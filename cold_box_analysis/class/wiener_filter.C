@@ -287,7 +287,7 @@ class WIENER{
       Double_t gaus_blur = 1;
       for(Int_t k=0; k<npts/2+1; k++){
         if(cutoff_frequency!=0) gaus_blur = f_filter->Eval(convert_freq*k);
-        if(h.spec[k].Re()!=0 && h.spec[k].Re()!= 0){
+        if(!(h.spec[k].Re()==0 && h.spec[k].Im()== 0)){
           spec[k] = y.spec[k]*gaus_blur/h.spec[k];
         }
         else{
