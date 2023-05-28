@@ -427,14 +427,13 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   Int_t max_filter = filter_max_and_step[0];
   Int_t step_filter = filter_max_and_step[1];
 
-  Int_t nf = 0;
-  if(step_filter == 0){
-    nf = 1;
+  if(max_filter == 0 || step_filter == 0){
+    max_filter = 32;
+    step_filter = 8;
   }
-  else{
-    nf = max_filter/step_filter + 1;
-  }
-  
+
+  Int_t nf = max_filter/step_filter + 1;
+
   
   vector<TGraph*> gnf(nf);
   vector<TH1D*> hnf_fft(nf);
