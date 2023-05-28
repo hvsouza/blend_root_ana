@@ -422,7 +422,7 @@ void ANALYZER::graphTimeTrigger(Int_t nstart, Int_t nfinish, TGraph *_gtemp)
 }
 
 
-void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, Int_t rebine, Double_t refFreq = 20){
+void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, Int_t rebine, Double_t refFreq){
 
   Int_t max_filter = filter_max_and_step[0];
   Int_t step_filter = filter_max_and_step[1];

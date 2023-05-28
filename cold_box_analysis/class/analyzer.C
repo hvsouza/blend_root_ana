@@ -899,7 +899,7 @@ class ANALYZER{
     void drawZeroCrossingLines(vector<Int_t> &peaksCross, vector<Int_t> &peaksRise, TCanvas *c = nullptr, Double_t ymin = 0, Double_t ymax = 0);
     void histoTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TH1D *_htemp = nullptr);
     void graphTimeTrigger(Int_t nstart = 0, Int_t nfinish = 0, TGraph *_gtemp = nullptr);
-    void check_filtering(vector<Int_t> filter_max_and_step = {0,0}, Int_t event = 0, Int_t rebine = 1);
+    void check_filtering(vector<Int_t> filter_max_and_step = {0,0}, Int_t event = 0, Int_t rebine = 1, Double_t refFreq = 20);
 
     ANALYZER(string m_myname = "z") : myname{m_myname}{
     }
