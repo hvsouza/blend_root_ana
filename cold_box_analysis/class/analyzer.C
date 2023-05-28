@@ -753,9 +753,12 @@ class ANALYZER{
     }
 
 
-    Double_t reval_baseline(vector<Double_t> range_base, Double_t exclusion_baseline, Double_t exclusion_window, TH1D *hbase = nullptr){
+    Double_t reval_baseline(vector<Double_t> range_base, Double_t exclusion_baseline, Double_t exclusion_window, Double_t validfraction = 3., TH1D *hbase = nullptr){
       Double_t result = 0;
-      if(!hbase) hbase = new TH1D("hbase","finding baseline",TMath::Power(2,14),0,TMath::Power(2,14));
+      if(!hbase){
+        if(!h) h = new TH1D("hbase","finding baseline",TMath::Power(2,14),0,TMath::Power(2,14));
+        hbase = h;
+      }
       hbase->Reset();
       for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime; i++) hbase->Fill(ch[kch]->wvf[i]);
       Double_t res0 = hbase->GetBinCenter(hbase->GetMaximumBin());
@@ -773,11 +776,11 @@ class ANALYZER{
         }
       }
       if(bins>0)result/=bins;
-      if(bins > (range_base[1]/dtime)/3.){
+      if(bins > (range_base[1]/dtime)/validfraction){
       }
       else{
         result = res0;
-        cout << "Not enough points probably.. " << endl;
+        cout << "Not enough points probably... valid points = " << bins << endl;
       }
       addOffet(-result);
       return result;
