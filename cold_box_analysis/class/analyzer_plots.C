@@ -431,9 +431,9 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
     max_filter = 32;
     step_filter = 8;
   }
-
   Int_t nf = max_filter/step_filter + 1;
 
+  filter_type = "default";
   
   vector<TGraph*> gnf(nf);
   vector<TH1D*> hnf_fft(nf);
@@ -447,7 +447,6 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
     gnf[i] = new TGraph(drawGraph());
     gnf[i]->SetTitle(Form("Filter = %d", filter));
     gm->Add(gnf[i]);
-    getFFT();
     hnf_fft[i] = (TH1D*)h->Clone(Form("h_nf_%d", filter));
     if(i == 0){
       href = (TH1D*)h->Clone("href");
@@ -467,7 +466,7 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   TGraph *glow = new TGraph(drawGraph());
   glow->SetLineColor(kRed);
   getFFT();
-  TH1D *hlow_fft = (TH1D*)h->Clone("Low pass 20 MHz");
+  TH1D *hlow_fft = (TH1D*)h->Clone(Form("Low pass %0.f MHz", refFreq));
   hlow_fft->Divide(hlow_fft, href);
   for(Int_t j = 0; j < hlow_fft->GetNbinsX(); j++){
     hlow_fft->SetBinContent(j+1, 20*log10(hlow_fft->GetBinContent(j+1)));
