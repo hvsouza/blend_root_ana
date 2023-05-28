@@ -765,8 +765,10 @@ class ANALYZER{
       Double_t hmean = hbase->GetMean();
       Double_t hstd = hbase->GetStdDev();
       Double_t bins=0;
+      cout << "Maximum bin: " << res0 << endl;
       for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime;){
         if(ch[kch]->wvf[i] > res0 + exclusion_baseline || ch[kch]->wvf[i]<res0 - exclusion_baseline) {
+          cout << "Too big... wvf[" << i << "] = " << ch[kch]->wvf[i] << endl;
           i+=exclusion_window/dtime;
         }
         else{
