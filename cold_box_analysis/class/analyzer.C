@@ -330,12 +330,14 @@ class ANALYZER{
     }
 
     void exportAsHistogram(TH1D *hexport = nullptr, Double_t x_start = 0){
-      TH1D *_htemp = new TH1D("","",n_points, x_start-dtime/2, x_start+n_points*dtime - dtime/2);
-      for(Int_t i = 0; i < n_points; i++){
-        _htemp->SetBinContent(i+1, ch[kch]->wvf[i]);
+
+      if (hexport == nullptr){
+        hexport = new TH1D("","",n_points, x_start-dtime/2, x_start+n_points*dtime - dtime/2);
+        h = hexport;
       }
-      if(hexport==nullptr) h = _htemp;
-      else hexport = _htemp;
+      for(Int_t i = 0; i < n_points; i++){
+        hexport->SetBinContent(i+1, ch[kch]->wvf[i]);
+      }
     }
 
     void getWaveFromHistogram(TH1D *htemp){
@@ -765,10 +767,10 @@ class ANALYZER{
       Double_t hmean = hbase->GetMean();
       Double_t hstd = hbase->GetStdDev();
       Double_t bins=0;
-      cout << "Maximum bin: " << res0 << endl;
+      // cout << "Maximum bin: " << res0 << endl;
       for(Int_t i=range_base[0]/dtime; i<range_base[1]/dtime;){
         if(ch[kch]->wvf[i] > res0 + exclusion_baseline || ch[kch]->wvf[i]<res0 - exclusion_baseline) {
-          cout << "Too big... wvf[" << i << "] = " << ch[kch]->wvf[i] << endl;
+          // cout << "Too big... wvf[" << i << "] = " << ch[kch]->wvf[i] << endl;
           i+=exclusion_window/dtime;
         }
         else{
