@@ -422,17 +422,20 @@ void ANALYZER::graphTimeTrigger(Int_t nstart, Int_t nfinish, TGraph *_gtemp)
 }
 
 
-void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, Int_t rebine){
+void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, Int_t rebine, Double_t refFreq = 20){
 
   Int_t max_filter = filter_max_and_step[0];
   Int_t step_filter = filter_max_and_step[1];
 
-  if(max_filter == 0 || step_filter == 0){
-    max_filter = 32;
-    step_filter = 8;
+  Int_t nf = 0;
+  if(step_filter == 0){
+    nf = 1;
+  }
+  else{
+    nf = max_filter/step_filter + 1;
   }
   
-  Int_t nf = max_filter/step_filter + 1;
+  
   vector<TGraph*> gnf(nf);
   vector<TH1D*> hnf_fft(nf);
   TH1D *href = nullptr;
@@ -460,8 +463,8 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   }
 
   getWaveform(event);
-  setFreqFilter(20,"low");
-  applyDenoise(20);
+  setFreqFilter(refFreq,"low");
+  applyDenoise(refFreq);
   TGraph *glow = new TGraph(drawGraph());
   glow->SetLineColor(kRed);
   getFFT();
@@ -470,7 +473,7 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   for(Int_t j = 0; j < hlow_fft->GetNbinsX(); j++){
     hlow_fft->SetBinContent(j+1, 20*log10(hlow_fft->GetBinContent(j+1)));
   }
-  hlow_fft->SetTitle("Low pass 20 MHz");
+  hlow_fft->SetTitle(Form("Low pass %0.f MHz", refFreq));
   hlow_fft->Rebin(rebine);
   hlow_fft->SetLineColor(kRed);
 
