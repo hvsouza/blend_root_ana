@@ -447,6 +447,7 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
     gnf[i] = new TGraph(drawGraph());
     gnf[i]->SetTitle(Form("Filter = %d", filter));
     gm->Add(gnf[i]);
+    getFFT();
     hnf_fft[i] = (TH1D*)h->Clone(Form("h_nf_%d", filter));
     if(i == 0){
       href = (TH1D*)h->Clone("href");
