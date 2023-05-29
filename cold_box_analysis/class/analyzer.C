@@ -52,7 +52,9 @@ class ANALYZER{
     Double_t xmax = 0;
     Double_t temp_charge = 0;
     Double_t temp_max = 0;
+    Double_t temp_min = 0
     Double_t temp_pos = 0;
+    Double_t temp_pos_min = 0;
 
     TCanvas *cpers = nullptr;
 
@@ -227,6 +229,39 @@ class ANALYZER{
       }
       return max;
     }
+
+    Double_t getMinimum(Double_t from, Double_t to, Double_t *v = nullptr){
+      if (!v) v = ch[kch]->wvf;
+      Double_t min = 1e12;
+      for (Int_t i = from/dtime; i < to/dtime; i++) {
+        if(v[i]<min){
+          min = v[i];
+          temp_min = min;
+          temp_pos_min = i;
+        }
+      }
+      return min;
+    }
+
+    void getMaxMin(Double_t from, Double_t to, Double_t *v = nullptr){
+      if (!v) v = ch[kch]->wvf;
+      Double_t max = -1e12;
+      Double_t min = 1e12;
+      for (Int_t i = from/dtime; i < to/dtime; i++) {
+        if(v[i]>max){
+          max = v[i];
+          temp_max = max;
+          temp_pos = i;
+        }
+        if(v[i]<min){
+          min = v[i];
+          temp_min = min;
+          temp_pos_min = i;
+        }
+      }
+
+    }
+
 
     void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr, string selection = ""){
       getSelection(selection);
