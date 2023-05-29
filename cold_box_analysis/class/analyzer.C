@@ -52,7 +52,7 @@ class ANALYZER{
     Double_t xmax = 0;
     Double_t temp_charge = 0;
     Double_t temp_max = 0;
-    Double_t temp_min = 0
+    Double_t temp_min = 0;
     Double_t temp_pos = 0;
     Double_t temp_pos_min = 0;
 
