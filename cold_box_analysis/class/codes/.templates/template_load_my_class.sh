@@ -15,21 +15,111 @@
 # myclass {file.root} {# of pts}
 # If you want just to load the class without any data, you can run
 # myclass no
+#
+# Using `-c` flag will compile the code, which will run much faster
 
-if [ -z $2 ]; then
-    npts=5000
-else
-    npts=$2
+#!/bin/bash
+
+#!/bin/bash
+
+# Set default values for the parameters
+file="analyzed.root"
+npts=5000
+compile_flag=""
+
+# Process the command-line arguments using getopt
+TEMP=$(getopt -o c -- "$@") #
+eval set -- "$TEMP"
+
+# Loop through the options and arguments
+while true; do
+    case "$1" in
+        -c)
+            compile_flag="+"
+            shift # this changed the position 1, 2, 3 to 2, 3 and so on
+            ;;
+        --) # reach end if parameters
+            shift
+            ;;
+        *)
+            if [[ -n "$1" ]]; then
+                file="$1"
+            fi
+            shift
+            break
+            ;;
+    esac
+done
+
+# Assign the remaining positional parameters
+if [[ $# -ge 1 ]]; then
+    npts="$1"
+    echo "Npts: $npts (only needed when changing from old to new format)"
 fi
 
-if [ -z $1 ]; then
-    file='analyzed.root'
-else
-    file=$1
-fi
+
+try_changing_ext() {
+    # local file="$1" # dont need this, but interesting
+    new_file="${file%.*}.root"
+    if [[ -f $new_file ]]; then
+        echo "Root file found with the same name, trying this one..."
+        file=$new_file
+    else
+        return 1
+    fi
+}
+
+check_file_extension() {
+    local file="$1"
+    local root_ext="${file##*.}"
+
+    if [[ $root_ext != "root" ]]; then
+        if ! try_changing_ext; then
+            echo "ERROR: The file must have a 'root' extension."
+            return 1
+        fi
+    fi
+}
+
+search_for_analyzed_file() {
+    local dir="$1"
+
+    if [[ -f "$dir/analyzed.root" ]]; then
+        echo "$dir/analyzed.root"
+    fi
+}
+
+process_file() {
+    if [[ $file == "no" ]]; then
+       echo "Loading only the class"
+       return
+    fi
+    if [[ -f "$file" ]]; then
+        check_file_extension "$file" || return 1
+    elif [[ -d "$file" ]]; then
+        echo "Searching the directory $file for 'analyzed.root' file..."
+        local analyzed_file=$(search_for_analyzed_file "$file")
+        if [[ -n "$analyzed_file" ]]; then
+            file="$analyzed_file"
+        else
+            echo "ERROR: no 'analyzed.root' file was found, please provide the file name"
+            return 1
+        fi
+    else
+        if ! try_changing_ext; then
+            echo "Invalid input: $file"
+            return 1
+        fi
+    fi
+    echo "File: $file"
+}
+
+# File/Path validadtion:
+process_file || return 1
+
 
 if [ $file == 'no' ]; then
-    eval 'root -e "#define memorydepth $npts" -e ".L __USER_PATH__/MYCODES.h"'
+    eval 'root -e "#define memorydepth $npts" -e ".L __USER_PATH__/MYCODES.h$compile_flag"'
 else
-    eval 'root -e "#define memorydepth $npts" -e ".L __USER_PATH__/MYCODES.h" -e "ANALYZER s(\"s\")" -e "s.setAnalyzer(\"$file\")"'
+    eval 'root -e "#define memorydepth $npts" -e ".L __USER_PATH__/MYCODES.h$compile_flag" -e "ANALYZER s(\"s\")" -e "s.setAnalyzer(\"$file\")"'
 fi
