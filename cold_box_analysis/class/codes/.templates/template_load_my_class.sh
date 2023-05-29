@@ -61,6 +61,10 @@ fi
 try_changing_ext() {
     # local file="$1" # dont need this, but interesting
     new_file="${file%.*}.root"
+    if [[ $new_file == '..root' ]]; then #didnt found any
+        new_file="$file.root"
+    fi
+
     if [[ -f $new_file ]]; then
         echo "Root file found with the same name, trying this one..."
         file=$new_file
