@@ -465,6 +465,7 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   setFreqFilter(refFreq,"low");
   applyDenoise(refFreq);
   TGraph *glow = new TGraph(drawGraph());
+  glow->SetTitle(Form("Low pass %0.f MHz", refFreq));
   glow->SetLineColor(kRed);
   getFFT();
   TH1D *hlow_fft = (TH1D*)h->Clone(Form("Low pass %0.f MHz", refFreq));
@@ -477,6 +478,7 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   hlow_fft->SetLineColor(kRed);
 
   TCanvas *c1 = new TCanvas("c1", "c1",1920,0,1920,1080);
+  c1->SetLogx(1);
   gm->Draw("AL plc");
   glow->Draw("SAME L");
 
