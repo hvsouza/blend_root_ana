@@ -478,13 +478,13 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   hlow_fft->SetLineColor(kRed);
 
   TCanvas *c1 = new TCanvas("c1", "c1",1920,0,1920,1080);
-  c1->SetLogx(1);
   gm->Draw("AL plc");
   glow->Draw("SAME L");
 
   c1->BuildLegend();
 
   TCanvas *c2 = new TCanvas("c2", "c2",1920,0,1920,1080);
+  c2->SetLogx(1);
   hs->Draw("nostack plc");
   hlow_fft->Draw("SAME hist");
   c2->BuildLegend();
