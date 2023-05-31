@@ -1120,7 +1120,7 @@ class SPHE2{
       naverages = 0;
 
       sample.Set_npts(npts_wvf);
-      if (get_wave_form) twvf->Branch(Form("Ch%i",channel),&sample);
+      if (get_wave_form) twvf->Branch(Form("Ch%i.",channel),&sample);
 
 
       nshow_start = nshow_range[0];
