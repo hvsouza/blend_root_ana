@@ -95,7 +95,7 @@ class ANALYZER{
         cout << "@@@@@@@@@@@@@@@ ________________________________________________________ @@@@@@@@@@@@@@@" << endl;
         cout << "@@@@@@@@@@@@@@@ This data format is not used anymore   " << endl;
         cout << "@@@@@@@@@@@@@@@ You can reprocess the data (no data should be loss) " << endl;
-        cout << "@@@@@@@@@@@@@@@ A copy of the orignal file will be created as backup_" << filename << endl;
+        cout << "@@@@@@@@@@@@@@@ A copy of the original file will be created as backup_" << filename << endl;
         cout << "@@@@@@@@@@@@@@@ Make sure that `memorydepth` is set correctly " << endl;
         cout << "@@@@@@@@@@@@@@@ ________________________________________________________ @@@@@@@@@@@@@@@" << endl;
         cout << "\n" << endl;
@@ -525,7 +525,7 @@ class ANALYZER{
       Int_t total = 0;
       for(Int_t i = 0; i < nev; i++){
         iev = lev->GetEntry(i);
-        if(i%200==0) cout << "computing event " << i << " of " << nev << "\r" << flush;
+        printev(i,nev);
         getWaveform(iev,kch);
         applyDenoise(filter);
         // applyFreqFilter();
@@ -900,7 +900,6 @@ class ANALYZER{
 
     }
 
-
     Double_t computeSNR_simple(Double_t xmin, Double_t xmax, vector<Double_t> signal_range){
       Double_t snr = 0;
       Double_t avg = 0;
@@ -927,6 +926,16 @@ class ANALYZER{
       return snr;
     }
 
+
+    void printev(Int_t i, Int_t nev){
+      Int_t reference = 200;
+      if(nev<500){
+        reference = 20;
+      }
+      if(static_cast<Int_t>(i)%reference==0){
+        cout << i << " out of " << nev << "\r" << flush;
+      }
+    }
 
 
 
@@ -975,7 +984,7 @@ void ANALYZER::recreateFile(){
   cout << "\n";
   Int_t nevts = oldt->GetEntries();
   for(Int_t j = 0; j < nevts; j++){
-    if(j%200==0) cout << "computing event " << j << " of " << nevts << "\r" << flush;
+    printev(j,nevts);
     for(Int_t i = 0; i < (int)channels.size(); i++){
       bold[i]->GetEntry(j);
 
