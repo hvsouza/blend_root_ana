@@ -107,7 +107,7 @@ void create_histograms(){
     // for(Int_t j = 0; j<2000; j++){
       z[i]->getWaveform(j,kch);
       charge = 0;
-      if(z[i]->ch[kch].selection==0){
+      if(z[i]->ch[kch]->selection==0){
 
         z[i]->applyDenoise(filter);
         z[i]->integrate(kch,minInt,maxInt);

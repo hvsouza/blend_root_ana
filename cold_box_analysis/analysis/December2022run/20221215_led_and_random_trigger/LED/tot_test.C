@@ -292,14 +292,14 @@ void tot_test(){
     for(Int_t j = 0; j < nentries; j++){
       z[i]->getWaveform(j,kch);
       z[i]->applyDenoise(filter);
-      if(z[i]->ch[kch].selection!=0) continue;
+      if(z[i]->ch[kch]->selection!=0) continue;
       // z[i]->applyDenoise(16);
       Double_t tot = z[i]->getTOT(kch, minInt, 15000, threshold, 12);
-      z[i]->integrate(kch, minInt-200, minInt);
+      z[i]->integrate(minInt-200, minInt);
       if (z[i]->temp_max > 20 || tot <= 12){
         continue;
       }
-      z[i]->integrate(kch,minInt,maxInt);
+      z[i]->integrate(minInt,maxInt);
 
       Double_t pe = z[i]->temp_charge/sphe;
       htot->Fill(pe, tot);
@@ -312,11 +312,11 @@ void tot_test(){
 
         z[i]->getWaveform(j,kch);
         for (Int_t k = 0; k < memorydepth; k++) {
-          z[i]->ch[kch].wvf[k] = (z[i]->ch[kch].wvf[k] >= saturation_level) ? r3->Gaus(saturation_level,0.5*sqrt(saturation_level)) : z[i]->ch[kch].wvf[k];
+          z[i]->ch[kch]->wvf[k] = (z[i]->ch[kch]->wvf[k] >= saturation_level) ? r3->Gaus(saturation_level,0.5*sqrt(saturation_level)) : z[i]->ch[kch]->wvf[k];
         }
         z[i]->applyDenoise(filter);
         tot = z[i]->getTOT(kch, minInt, 15000, threshold, 12);
-        z[i]->integrate(kch,minInt,maxInt);
+        z[i]->integrate(minInt,maxInt);
         Double_t prev_pe = pe;
         pe = z[i]->temp_charge/sphe;
         gpe_sat.push_back(pe);

@@ -44,8 +44,8 @@ void giveMeSphe_Ch1(){
 
 
     dark.get_wave_form = true; // for getting spe waveforms
-    dark.mean_before   = 8000;   // time recorded before and after the peak found
-    dark.mean_after    = 20000;
+    dark.mean_before   = 5000;   // time recorded before and after the peak found
+    dark.mean_after    = 15000;
     dark.sphe_charge   = 2348.03; // charge of 1 and 2 p.e. (use fit_sphe.C)
     dark.sphe_charge2  = 4717.85;
     dark.sphe_std      = 634.354;
@@ -58,7 +58,7 @@ void giveMeSphe_Ch1(){
     // spe's get events where charge < Gain*deltaplus  and charge < Gain/deltaminus
     // If deltaminus is set to zero, sphe_std*deltaplus will be used instead
     // This value can be checked with fit_sphe.C
-    dark.deltaplus  = 1.5;
+    dark.deltaplus  = 1;
     dark.deltaminus = 0;
 
 

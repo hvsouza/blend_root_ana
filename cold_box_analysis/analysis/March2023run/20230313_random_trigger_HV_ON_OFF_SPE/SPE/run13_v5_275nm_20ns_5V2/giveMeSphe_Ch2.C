@@ -44,11 +44,11 @@ void giveMeSphe_Ch2(){
 
 
     dark.get_wave_form = true; // for getting spe waveforms
-    dark.mean_before   = 8000;   // time recorded before and after the peak found
-    dark.mean_after    = 20000;
-    dark.sphe_charge   = 331.443; // charge of 1 and 2 p.e. (use fit_sphe.C)
+    dark.mean_before   = 5000;   // time recorded before and after the peak found
+    dark.mean_after    = 15000;
+    dark.sphe_charge   = 322.781; // charge of 1 and 2 p.e. (use fit_sphe.C)
     dark.sphe_charge2  = 666.108;
-    dark.sphe_std      = 118.778;
+    dark.sphe_std      = 110.788;
     dark.spe_max_val_at_time_cut = 1e12; // after `time_cut`, the signal cannot be higher than this
                                        // this allows to remove after pulses
     dark.time_cut = 2000; // in ns seconds

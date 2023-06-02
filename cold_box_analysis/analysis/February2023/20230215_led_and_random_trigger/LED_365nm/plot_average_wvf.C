@@ -4,7 +4,7 @@
 void plot_average_wvf(){
   // gStyle->SetCanvasPreferGL(kFALSE);
   bool just_a_test = false;
-  string mychannel = "Ch5";
+  string mychannel = "Ch2";
   Double_t minInt = 10380;
   Double_t maxInt = 11400;
   if(mychannel == "Ch0"){minInt = 10280; maxInt = 10700;}
@@ -32,7 +32,8 @@ void plot_average_wvf(){
   Int_t n = volts.size();
   vector<Int_t> range_files(2);
   if(mychannel == "Ch0") range_files = {2,24};
-  if(mychannel == "Ch3") range_files = {1, 15};
+  if(mychannel == "Ch2") range_files = {1,15};
+  if(mychannel == "Ch3") range_files = {0,15};
   if(mychannel == "Ch4") range_files = {1, 8};
   if(mychannel == "Ch5") range_files = {1,12};
 

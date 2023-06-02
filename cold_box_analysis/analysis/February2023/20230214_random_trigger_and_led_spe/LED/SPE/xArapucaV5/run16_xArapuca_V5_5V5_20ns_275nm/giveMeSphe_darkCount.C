@@ -45,15 +45,15 @@ void giveMeSphe_darkCount(){
     dark.deltaminus = 1.5;
     
 
-    dark.sphe_charge_ch0 = 2380.92; //wave0
-    dark.sphe_charge2_ch0 = 4897.22; // wave0
+    dark.sphe_charge_ch0 = 2764.98; //wave0
+    dark.sphe_charge2_ch0 = 5371.42; // wave0
 
     dark.channel = 5;
-    dark.giveMeSphe_darkCount("analyzed");
+    // dark.giveMeSphe_darkCount("analyzed");
 
 
-    dark.sphe_charge_ch0 = 2380.92; //wave0
-    dark.sphe_charge2_ch0 = 4897.22; // wave0
+    dark.sphe_charge_ch0 = 2373.59; //wave0
+    dark.sphe_charge2_ch0 = 4850.95; // wave0
 
     dark.channel = 6;
     dark.giveMeSphe_darkCount("analyzed");

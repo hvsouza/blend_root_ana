@@ -1,18 +1,18 @@
-#define memorydepth 5000
+#define memorydepth 250
 #include "/home/henrique/Dropbox/APC_Paris/Root/cold_box_analysis/class/MYCODES.h"
 
 
 
-void giveMeSphe_Ch1(){
+void giveMeSphe_Ch2(){
     
-    SPHE2 dark("Ch1");
+    SPHE2 dark("Ch2");
 
 
     dark.led_calibration = true; // if external trigger + led was used, set true
                                  // start and finish will be the time of integration
     dark.just_a_test     = false; // well.. it is just a test, so `just_this` is the total waveforms analysed
     dark.just_this       = 200;
-    dark.channel         = 6;
+    dark.channel         = 5;
     dark.rootfile        = "analyzed.root";
 
     dark.nshow_range = {0,100}; // will save some debugging waveforms inside the range.
@@ -35,7 +35,7 @@ void giveMeSphe_Ch1(){
     dark.maxHits        = 5;    // maximum hit before discarding   (not used for led)
     dark.too_big        = 2000;  // if there is a peak > "too_big" .. wait "waiting" ns for next peak
     dark.waiting        = 1000;
-    dark.filter         = 16;   // one dimentional denoise filter (0 equal no filder)
+    dark.filter         = 4;   // one dimentional denoise filter (0 equal no filder)
     dark.interactions   = 60;   // for moving avarage filter (not used on led)
     dark.ninter         = 2;    // N times that moving average is applied
     dark.derivate_raw   = true;
@@ -44,11 +44,11 @@ void giveMeSphe_Ch1(){
 
 
     dark.get_wave_form = true; // for getting spe waveforms
-    dark.mean_before   = 5000;   // time recorded before and after the peak found
-    dark.mean_after    = 15000;
-    dark.sphe_charge   = 1940; // charge of 1 and 2 p.e. (use fit_sphe.C)
-    dark.sphe_charge2  = 4320.74;
-    dark.sphe_std      = 604.909;
+    dark.mean_before   = 8000;   // time recorded before and after the peak found
+    dark.mean_after    = 20000;
+    dark.sphe_charge   = 331.443; // charge of 1 and 2 p.e. (use fit_sphe.C)
+    dark.sphe_charge2  = 666.108;
+    dark.sphe_std      = 118.778;
     dark.spe_max_val_at_time_cut = 1e12; // after `time_cut`, the signal cannot be higher than this
                                        // this allows to remove after pulses
     dark.time_cut = 2000; // in ns seconds
@@ -58,7 +58,7 @@ void giveMeSphe_Ch1(){
     // spe's get events where charge < Gain*deltaplus  and charge < Gain/deltaminus
     // If deltaminus is set to zero, sphe_std*deltaplus will be used instead
     // This value can be checked with fit_sphe.C
-    dark.deltaplus  = 1;
+    dark.deltaplus  = 1.;
     dark.deltaminus = 0;
 
 
