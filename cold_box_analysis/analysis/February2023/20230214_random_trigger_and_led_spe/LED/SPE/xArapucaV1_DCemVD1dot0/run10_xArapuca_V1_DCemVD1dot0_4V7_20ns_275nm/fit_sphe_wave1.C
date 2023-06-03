@@ -6,7 +6,7 @@ void fit_sphe_wave1(){
     
     Int_t ch = 2;
     string histogram = "analyzed_" + to_string(ch);
-    Cal.rootFile = "sphe_histograms_darkCount_Ch"+to_string(ch)+".root";
+    Cal.rootFile = "sphe_histograms_Ch"+to_string(ch)+".root";
 
     Cal.dtime = 4; // steps (ADC's MS/s, 500 MS/s = 2 ns steps)
 
@@ -28,8 +28,8 @@ void fit_sphe_wave1(){
     // Cal.xmin = -10000; // range for graph display (not fit)
     // Cal.xmax = 60000;
 
-    Cal.deltaminus = 1.5;
-    Cal.deltaplus = 1.3;
+    Cal.deltaminus = 0;
+    Cal.deltaplus = 1;
 
     Cal.fit_sphe_wave(histogram.c_str());
 }
