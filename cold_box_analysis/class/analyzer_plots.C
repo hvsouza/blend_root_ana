@@ -432,8 +432,8 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   }
   Int_t nf = max_filter/step_filter + 1;
 
-  filter_type = "default";
-  
+  string reference_filter = filter_type;
+
   vector<TGraph*> gnf(nf);
   vector<TH1D*> hnf_fft(nf);
   TH1D *href = nullptr;
@@ -442,6 +442,8 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   for(Int_t i = 0; i < nf; i++){
     getWaveform(event);
     Int_t filter = 0 + step_filter*i;
+    filter_type = reference_filter;
+    if(filter_type != "default") setFreqFilter(filter, filter_type);
     if(i!=0) applyDenoise(filter);
     gnf[i] = new TGraph(drawGraph());
     gnf[i]->SetTitle(Form("Filter = %d", filter));
@@ -491,5 +493,6 @@ void ANALYZER::check_filtering(vector<Int_t> filter_max_and_step, Int_t event, I
   c2->BuildLegend();
 
 
+  filter_type = reference_filter;
 
 }

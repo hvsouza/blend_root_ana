@@ -130,7 +130,7 @@ class WIENER{
       for(Int_t k=0; k<npts/2+1; k++){
         filter = f_filter->Eval(convert_freq*k);
         spec[k] = spec[k]*filter;
-        // cout << spec[k] << endl;
+        // cout << spec[k] << " " << filter << endl;
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
         idx_recompt(k);
@@ -423,6 +423,7 @@ class WIENER{
       
         spec_re[k] = spec[k].Re();
         spec_im[k] = spec[k].Im();
+        // cout << spec_re[k] << " " << spec_im[k] << endl;
 
       }
       //Now let's make a backward transform:
