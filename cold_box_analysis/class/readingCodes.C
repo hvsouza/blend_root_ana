@@ -244,6 +244,9 @@ class Read{
     Double_t chargeTime = 18000; // last time to integrate
     Bool_t noBaseline=false;
     Double_t baselineFraction = 1/3.;
+
+
+    Double_t polarity=1; // set -1 invert to negative pulses
     // Bool_t noBaseline=true;
     vector<Int_t> channels = {1,2};
     vector<Double_t> exclusion_baselines = {30};
@@ -697,8 +700,8 @@ class Read{
                 break;
               }
               // cout << valbin << endl;
-              raw[j] = valbin;
-              ch[i]->wvf[j] = valbin;
+              raw[j] = polarity*valbin;
+              ch[i]->wvf[j] = polarity*valbin;
               filtered[j] = valbin;
             }
           }
