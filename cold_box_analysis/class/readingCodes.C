@@ -260,6 +260,7 @@ class Read{
     TH1D *htests = new TH1D("htests","htests",1000,0,0);
     TH1D *hbase;
     TF1* fbase = new TF1("fbase","gaus(0)",0,TMath::Power(2,nbits));
+    Double_t max_bits = 0;
 
 
     vector<Int_t> navg;
@@ -357,7 +358,7 @@ class Read{
     }
   
     void adc_read_all_data(Bool_t do_get_ch_info = true){
-
+      max_bits = TMath::Power(2,nbits);
       if (do_get_ch_info) get_ch_info("files.log");
       readFiles("files.log"); //use it like this
       return;
@@ -700,8 +701,11 @@ class Read{
                 break;
               }
               // cout << valbin << endl;
-              raw[j] = polarity*valbin;
-              ch[i]->wvf[j] = polarity*valbin;
+              if(polarity==-1){
+                valbin = max_bits - valbin;
+              }
+              raw[j] = valbin;
+              ch[i]->wvf[j] = valbin;
               filtered[j] = valbin;
             }
           }
