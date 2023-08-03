@@ -262,6 +262,32 @@ class ANALYZER{
 
     }
 
+    Double_t getRMS(Double_t from, Double_t to, Double_t *v = nullptr){
+      if (!v) v = ch[kch]->wvf;
+      Double_t rms = 0;
+      Double_t n = 0;
+      for (Int_t i = from/dtime; i < to/dtime; i++) {
+        rms += v[i]*v[i];
+        n+=1;
+      }
+      return sqrt(rms/n);
+    }
+
+    void gen_RMS(Int_t channel = 0, Double_t from = 0, Double_t to = 0, string selection="", Double_t filter=0, TH1D *htemp = nullptr){
+      getSelection(selection);
+      kch = channel;
+      htemp->GetYaxis()->SetTitle("# of events");
+      htemp->GetXaxis()->SetTitle("RMS (ADCs)");
+      if (to == 0) to = n_points*dtime;
+
+      for(Int_t i = 0; i < lev->GetN(); i++){
+        getWaveform(lev->GetEntry(i),kch);
+        applyDenoise(filter);
+        Double_t val = getRMS(from,to);
+        htemp->Fill(val);
+      }
+    }
+
 
     void gen_rise_time(Int_t channel = 0, vector<Double_t> baseline_range = {0,0}, Bool_t ispulse = true, vector<Double_t> peak_range = {0,0}, Double_t filter = 0, TH1D *htemp = nullptr, string selection = ""){
       getSelection(selection);
