@@ -1,1 +1,0 @@
- s.persistence_plot(2000,-500,7000,16,"Ch5.selection == 0 && Ch5.charge/441>1500 && Ch5.charge/441<2000")

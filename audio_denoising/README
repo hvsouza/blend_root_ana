@@ -1,5 +1,0 @@
-Files creating using:
-
-sox -t alsa default test.wav #record
-sox test.wav -c 1 test_mono.wav #remove one channel to be easier 
-sox test_mono.wav test_mono.dat #convert to .dat file.
