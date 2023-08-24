@@ -5,18 +5,16 @@
 *.jpeg
 *.pdf
 *.txt
-/cold_box_analysis/analysis/December2022run/20221215_led_and_random_trigger/LED/tot_test_C_ACLiC_dict1b81f18281_dictContent.h
-/cold_box_analysis/analysis/December2022run/20221215_led_and_random_trigger/LED/tot_test_C_ACLiC_dict33c407fae8_dictUmbrella.h
 .ipynb_checkpoints
 *_C.d
 *_C.so
 *.pcm
 *_C_ACLiC_dict*
 *MYCODES_h*
-cold_box_analysis/class/codes/*
-!cold_box_analysis/class/codes/.templates/
-/cold_box_analysis/class/load_my_class.sh
-!/cold_box_analysis/class/codes/setup_codes.sh
+codes/*
+!codes/.templates/
+load_my_class.sh
+!codes/setup_codes.sh
 
 CMakeLists.txt.user
 CMakeCache.txt
@@ -29,4 +27,4 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
-cold_box_analysis/class/tags
+tags
