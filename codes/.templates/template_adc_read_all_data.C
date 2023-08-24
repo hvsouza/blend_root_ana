@@ -25,24 +25,20 @@ void adc_read_all_data(string datadir = "./"){
     r.nbits = 14; // this is used only for baseline histogram, changing it to 12 might help
     r.isBinary = true;
     
-    r.baselineTime = 20000; // time limit for baseline
-    r.chargeTime = 10300; // last time to integrate
-    r.startCharge = 9950;
-    r.maxRange = 5500; // max range to search for amplitude peak
-    r.fast = 200; // fprompt fast integration time
-    r.slow = 1700; //fprompt slow integration time
-    r.exclusion_baseline = 35; // filtered waveform, anything above here will do +exclusion window while evaluating the baseline
-    // r.exclusion_baselines = {35,15};
-    r.exclusion_window = 1000; // time in ns that it will jump for baseline
-    r.filter = 14; // denoise filter.. if filter = 0, no denoise is done.
-    r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely (you can set stopEvent)
-    r.stopEvent = 1000; //
-    r.noBaseline = false; // if you dont want to calculate baseline
-    // r.saveFilter = true;
-
-    // r.channels = {1};
-    // r.channels = {1,2,3,4};
-      
+    r.baselineTime = 1200; // time limit for baseline
+    r.chargeTime = 3800; // last time to integrate
+    r.startCharge = 1300;
+    r.maxRange = 1600; // max range to search for amplitude peak
+    r.fast = 100; // fprompt fast integration time
+    r.slow = 5000; //fprompt slow integration time
+    r.exclusion_baselines = {20, 20}; // filtered waveform, anything above here will trigger +exclusion window (two channels are being set to the same value)
+    r.exclusion_window = 100; // time in ns that it will jump for baseline
+    r.filter = 4; // denoise filter.. if filter = 0, no denoise is done. r.OnlyOneEvent = false; // Do you want only one event? Choose it wisely
+    // r.OnlyOneEvent = true;
+    r.stopEvent = 1000; // in case you want to collect only n events, set `stopEvent` = n and set `OnlyOneEvent` = True
+    r.noBaseline = false; // Skip baseline correction when set to true
+    r.polarity = -1; // Pulse polarity 1: positive, -1: negative
+    // r.saveFilter = true; // This will save the waveforms with filter (not recommended)
 
     
     r.adc_read_all_data();
